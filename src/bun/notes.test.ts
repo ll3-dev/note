@@ -83,4 +83,33 @@ describe("notes repository", () => {
     const document = getPageDocument(handle, { pageId: page.id });
     expect(document.blocks.map((item) => item.id)).not.toContain(block.id);
   });
+
+  test("inserts blocks after an existing block without sort key collisions", () => {
+    const handle = openTempDatabase();
+    const page = createPage(handle, { title: "Ordered" }).page;
+    const document = getPageDocument(handle, { pageId: page.id });
+    const first = document.blocks[0];
+
+    const third = createBlock(handle, {
+      pageId: page.id,
+      afterBlockId: first.id,
+      text: "Third"
+    });
+    const second = createBlock(handle, {
+      pageId: page.id,
+      afterBlockId: first.id,
+      text: "Second"
+    });
+
+    const ordered = getPageDocument(handle, { pageId: page.id }).blocks;
+
+    expect(ordered.map((block) => block.id)).toEqual([
+      first.id,
+      second.id,
+      third.id
+    ]);
+    expect(new Set(ordered.map((block) => block.sortKey)).size).toBe(
+      ordered.length
+    );
+  });
 });

@@ -37,6 +37,7 @@ new BrowserWindow({
     width: 1180,
     height: 760
   },
+  titleBarStyle: "hiddenInset",
   renderer: "native",
   rpc
 });

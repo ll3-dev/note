@@ -2,11 +2,16 @@ import type { QueryClient } from "@tanstack/react-query";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { noteApi } from "@/mainview/lib/rpc";
 import { queryKeys } from "@/mainview/lib/queryClient";
-import type { Block } from "../../../../shared/contracts";
+import type {
+  Block,
+  BlockProps,
+  BlockType,
+  Page
+} from "../../../../shared/contracts";
 
 type UseWorkspaceMutationsOptions = {
   navigateToPage: (pageId: string) => Promise<void>;
-  onPageCreated: (pageId: string) => void;
+  onPageCreated: (page: Page) => void;
 };
 
 export function useWorkspaceMutations({
@@ -22,7 +27,7 @@ export function useWorkspaceMutations({
         parentPageId: null
       }),
     onSuccess: async (document) => {
-      onPageCreated(document.page.id);
+      onPageCreated(document.page);
       queryClient.setQueryData(
         queryKeys.pageDocument(document.page.id),
         document
@@ -34,23 +39,42 @@ export function useWorkspaceMutations({
   });
 
   const createBlockMutation = useMutation({
-    mutationFn: (pageId: string) =>
+    mutationFn: (input: {
+      pageId: string;
+      afterBlockId?: string | null;
+      type?: BlockType;
+      text?: string;
+      props?: BlockProps;
+    }) =>
       noteApi.createBlock({
-        pageId,
-        type: "paragraph",
-        text: "",
-        props: {}
+        pageId: input.pageId,
+        afterBlockId: input.afterBlockId ?? null,
+        type: input.type ?? "paragraph",
+        text: input.text ?? "",
+        props: input.props ?? {}
       }),
-    onSuccess: async (_block, pageId) => {
-      await invalidateDocument(queryClient, pageId);
+    onSuccess: async (block) => {
+      await invalidateDocument(queryClient, block.pageId);
     }
   });
 
   const updateBlockMutation = useMutation({
-    mutationFn: ({ block, text }: { block: Block; text: string }) =>
+    mutationFn: ({
+      block,
+      props,
+      text,
+      type
+    }: {
+      block: Block;
+      props?: BlockProps;
+      text?: string;
+      type?: BlockType;
+    }) =>
       noteApi.updateBlock({
         blockId: block.id,
-        text
+        props,
+        text,
+        type
       }),
     onSuccess: async (block) => {
       await invalidateDocument(queryClient, block.pageId);

@@ -8,6 +8,8 @@
     "build": "bun run build:mainview && electrobun build",
     "build:dev": "bun run build:mainview && electrobun build",
     "build:mainview": "vite build",
+    "check": "bun run typecheck && bun test && bun run build",
+    "test": "bun test",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
