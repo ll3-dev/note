@@ -4,11 +4,12 @@ import {
   deleteBlock,
   updateBlock
 } from "./repositories/blockRepository";
+import { moveBlock } from "./repositories/blockMoveRepository";
 import { listBlocksForPage } from "./repositories/blockReadRepository";
 import { createPage, getPage, listPages } from "./repositories/pageRepository";
 import type { GetPageDocumentInput, PageDocument } from "../shared/contracts";
 
-export { createBlock, createPage, deleteBlock, listPages, updateBlock };
+export { createBlock, createPage, deleteBlock, listPages, moveBlock, updateBlock };
 
 export function getPageDocument(
   handle: DatabaseHandle,

@@ -7,10 +7,8 @@ Electrobun + Bun + React 기반의 block note 앱 프로토타입입니다.
 - `src/bun/`: Electrobun main process와 SQLite bootstrap
 - `src/bun/repositories/`: pages, blocks, ordering, operation 기록 저장소
 - `src/mainview/`: React webview UI
-- `src/mainview/features/workspace/components/`: workspace 화면과 block editor 컴포넌트
-- `src/mainview/features/workspace/hooks/`: workspace query/mutation/focus 훅
-- `src/mainview/features/workspace/lib/`: block command, shortcut, style helper
-- `src/mainview/features/workspace/types/`: workspace feature 전용 타입
+- `src/mainview/features/workspace/`: sidebar, tab, page list, 전체 workspace shell
+- `src/mainview/features/page/`: page editor, block editor, slash command, block drag/drop
 - `src/shared/`: main process와 webview가 공유하는 타입/RPC contract
 - `thoughts/`: 설계와 구현 계획 문서
 

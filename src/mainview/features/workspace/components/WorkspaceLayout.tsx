@@ -5,54 +5,53 @@ import { Input } from "@/mainview/components/ui/input";
 import { ScrollArea } from "@/mainview/components/ui/scroll-area";
 import { Separator } from "@/mainview/components/ui/separator";
 import { cn } from "@/mainview/lib/utils";
-import type { WorkspaceTab } from "@/mainview/store/useWorkspaceStore";
+import { useWorkspaceStore } from "@/mainview/store/useWorkspaceStore";
 import type { Page } from "../../../../shared/contracts";
 import { StatusFooter } from "./StatusFooter";
 import { WorkspaceTitleBar } from "./WorkspaceTitleBar";
 
 type WorkspaceLayoutProps = {
   activePageId: string | null;
-  activeTabId: string | null;
   blocksCount: number;
   children: ReactNode;
   isCreatingPage: boolean;
-  isSidebarCollapsed: boolean;
   onCloseTab: (event: MouseEvent<HTMLButtonElement>, tabId: string) => void;
   onCreatePage: (event: FormEvent<HTMLFormElement>) => void;
   onCreateUntitledPage: () => void;
-  onPageTitleChange: (title: string) => void;
   onRefreshWorkspace: () => void;
   onSelectPage: (page: Page) => void;
   onSelectTab: (tabId: string) => void;
-  onToggleSidebar: () => void;
-  pageTitle: string;
   pages: Page[];
   pagesCount: number;
   sqliteVersion?: string;
-  tabs: WorkspaceTab[];
 };
 
 export function WorkspaceLayout({
   activePageId,
-  activeTabId,
   blocksCount,
   children,
   isCreatingPage,
-  isSidebarCollapsed,
   onCloseTab,
   onCreatePage,
   onCreateUntitledPage,
-  onPageTitleChange,
   onRefreshWorkspace,
   onSelectPage,
   onSelectTab,
-  onToggleSidebar,
-  pageTitle,
   pages,
   pagesCount,
-  sqliteVersion,
-  tabs
+  sqliteVersion
 }: WorkspaceLayoutProps) {
+  const activeTabId = useWorkspaceStore((state) => state.activeTabId);
+  const isSidebarCollapsed = useWorkspaceStore(
+    (state) => state.isSidebarCollapsed
+  );
+  const pageTitleDraft = useWorkspaceStore((state) => state.pageTitleDraft);
+  const setPageTitleDraft = useWorkspaceStore(
+    (state) => state.setPageTitleDraft
+  );
+  const tabs = useWorkspaceStore((state) => state.tabs);
+  const toggleSidebar = useWorkspaceStore((state) => state.toggleSidebar);
+
   return (
     <main className="flex h-screen min-h-[640px] flex-col bg-background text-foreground">
       <WorkspaceTitleBar
@@ -62,7 +61,7 @@ export function WorkspaceLayout({
         onCloseTab={onCloseTab}
         onCreateUntitledPage={onCreateUntitledPage}
         onSelectTab={onSelectTab}
-        onToggleSidebar={onToggleSidebar}
+        onToggleSidebar={toggleSidebar}
         tabs={tabs}
       />
 
@@ -100,13 +99,13 @@ export function WorkspaceLayout({
                     aria-label="새 페이지 제목"
                     className="h-7 bg-background text-sm"
                     onChange={(event) =>
-                      onPageTitleChange(event.target.value)
+                      setPageTitleDraft(event.target.value)
                     }
                     placeholder="New page"
-                    value={pageTitle}
+                    value={pageTitleDraft}
                   />
                   <Button
-                    disabled={isCreatingPage || !pageTitle.trim()}
+                    disabled={isCreatingPage || !pageTitleDraft.trim()}
                     size="icon-sm"
                     type="submit"
                     variant="outline"

@@ -9,6 +9,7 @@ import {
   deleteBlock,
   getPageDocument,
   listPages,
+  moveBlock,
   updateBlock
 } from "./notes";
 
@@ -111,5 +112,45 @@ describe("notes repository", () => {
     expect(new Set(ordered.map((block) => block.sortKey)).size).toBe(
       ordered.length
     );
+  });
+
+  test("moves blocks within a page document and rewrites sort keys", () => {
+    const handle = openTempDatabase();
+    const page = createPage(handle, { title: "Movable" }).page;
+    const document = getPageDocument(handle, { pageId: page.id });
+    const first = document.blocks[0];
+    const second = createBlock(handle, {
+      pageId: page.id,
+      afterBlockId: first.id,
+      text: "Second"
+    });
+    const third = createBlock(handle, {
+      pageId: page.id,
+      afterBlockId: second.id,
+      text: "Third"
+    });
+
+    moveBlock(handle, { blockId: third.id, afterBlockId: null });
+
+    const movedToStart = getPageDocument(handle, { pageId: page.id }).blocks;
+    expect(movedToStart.map((block) => block.id)).toEqual([
+      third.id,
+      first.id,
+      second.id
+    ]);
+
+    moveBlock(handle, { blockId: third.id, afterBlockId: second.id });
+
+    const movedToEnd = getPageDocument(handle, { pageId: page.id }).blocks;
+    expect(movedToEnd.map((block) => block.id)).toEqual([
+      first.id,
+      second.id,
+      third.id
+    ]);
+    expect(movedToEnd.map((block) => block.sortKey)).toEqual([
+      "00000000",
+      "00000001",
+      "00000002"
+    ]);
   });
 });

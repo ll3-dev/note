@@ -4,15 +4,14 @@ import {
   MouseEvent,
   useEffect,
   useLayoutEffect,
-  useRef,
-  useState
+  useRef
 } from "react";
 import { useWorkspaceStore } from "@/mainview/store/useWorkspaceStore";
 import type { Block } from "../../../shared/contracts";
+import { PageEditor } from "../page/components/PageEditor";
+import { useBlockFocus } from "../page/hooks/useBlockFocus";
 import { EmptyEditorState } from "./components/EmptyEditorState";
-import { PageEditor } from "./components/PageEditor";
 import { WorkspaceLayout } from "./components/WorkspaceLayout";
-import { useBlockFocus } from "./hooks/useBlockFocus";
 import { useWorkspaceMutations } from "./hooks/useWorkspaceMutations";
 import { useWorkspaceQueries } from "./hooks/useWorkspaceQueries";
 
@@ -24,17 +23,16 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
   const navigate = useNavigate();
   const activeTabId = useWorkspaceStore((state) => state.activeTabId);
   const closeTab = useWorkspaceStore((state) => state.closeTab);
-  const isSidebarCollapsed = useWorkspaceStore(
-    (state) => state.isSidebarCollapsed
-  );
   const openPageTab = useWorkspaceStore((state) => state.openPageTab);
+  const pageTitleDraft = useWorkspaceStore((state) => state.pageTitleDraft);
   const selectedPageId = useWorkspaceStore((state) => state.selectedPageId);
   const setActiveTabId = useWorkspaceStore((state) => state.setActiveTabId);
+  const setPageTitleDraft = useWorkspaceStore(
+    (state) => state.setPageTitleDraft
+  );
   const setSelectedPageId = useWorkspaceStore((state) => state.setSelectedPageId);
   const tabs = useWorkspaceStore((state) => state.tabs);
-  const toggleSidebar = useWorkspaceStore((state) => state.toggleSidebar);
   const hasOpenedInitialPage = useRef(false);
-  const [pageTitle, setPageTitle] = useState("");
   const activePageId = routePageId ?? selectedPageId;
   const {
     databaseStatusQuery,
@@ -47,6 +45,7 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
     createBlockMutation,
     createPageMutation,
     deleteBlockMutation,
+    moveBlockMutation,
     updateBlockMutation
   } = useWorkspaceMutations({
     navigateToPage: async (pageId) => {
@@ -54,7 +53,7 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
     },
     onPageCreated: (page) => {
       openPageTab(page);
-      setPageTitle("");
+      setPageTitleDraft("");
     }
   });
 
@@ -84,7 +83,7 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
 
   function handleCreatePage(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const title = pageTitle.trim();
+    const title = pageTitleDraft.trim();
 
     if (title) {
       createPageMutation.mutate(title);
@@ -142,23 +141,17 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
   return (
     <WorkspaceLayout
       activePageId={activePageId}
-      activeTabId={activeTabId}
       blocksCount={databaseStatusQuery.data?.blocksCount ?? 0}
       isCreatingPage={createPageMutation.isPending}
-      isSidebarCollapsed={isSidebarCollapsed}
       onCloseTab={closeWorkspaceTab}
       onCreatePage={handleCreatePage}
       onCreateUntitledPage={() => createPageMutation.mutate("Untitled")}
-      onPageTitleChange={setPageTitle}
       onRefreshWorkspace={() => void refreshWorkspace()}
       onSelectPage={selectPage}
       onSelectTab={selectTab}
-      onToggleSidebar={toggleSidebar}
-      pageTitle={pageTitle}
       pages={pages}
       pagesCount={databaseStatusQuery.data?.pagesCount ?? 0}
       sqliteVersion={databaseStatusQuery.data?.sqliteVersion}
-      tabs={tabs}
     >
       <div className="mx-auto flex h-full w-full max-w-[920px] flex-col px-10 py-8">
         {selectedDocument ? (
@@ -174,6 +167,9 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
             onCreateBlockAfter={createBlockAfter}
             onDeleteBlock={(target) => deleteBlockMutation.mutate(target)}
             onFocusPreviousBlock={focusPreviousBlock}
+            onMoveBlock={(target, afterBlockId) =>
+              moveBlockMutation.mutate({ afterBlockId, block: target })
+            }
             onUpdateBlock={(target, changes) =>
               updateBlockMutation.mutate({ block: target, ...changes })
             }

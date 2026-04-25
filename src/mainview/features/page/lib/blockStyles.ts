@@ -12,7 +12,7 @@ export function blockShellClass(type: BlockType) {
   return "";
 }
 
-export function textareaClass(type: BlockType) {
+export function editableClass(type: BlockType) {
   switch (type) {
     case "heading_1":
       return "text-[30px] font-bold leading-9";

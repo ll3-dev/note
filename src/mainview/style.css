@@ -88,12 +88,33 @@
 
   button,
   input,
-  textarea {
+  textarea,
+  [contenteditable] {
     font: inherit;
   }
 
   textarea {
     field-sizing: content;
+  }
+
+  .block-editable:empty::before {
+    color: var(--muted-foreground);
+    content: attr(data-placeholder);
+    pointer-events: none;
+  }
+
+  body[data-input-mode="keyboard"],
+  body[data-input-mode="keyboard"] * {
+    cursor: none;
+  }
+
+  body[data-input-mode="keyboard"] .block-hover-action {
+    opacity: 0 !important;
+    pointer-events: none;
+  }
+
+  body[data-input-mode="keyboard"] .block-editor-shell:not(.block-editor-quote):hover {
+    background: transparent !important;
   }
 
   .electrobun-webkit-app-region-drag {

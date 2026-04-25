@@ -15,17 +15,20 @@ type WorkspaceState = {
   selectedPageId: string | null;
   activeTabId: string | null;
   isSidebarCollapsed: boolean;
+  pageTitleDraft: string;
   tabs: WorkspaceTab[];
   closeTab: (tabId: string) => void;
   openPageTab: (page: WorkspacePageRef) => void;
   setSelectedPageId: (pageId: string | null) => void;
   setActiveTabId: (tabId: string) => void;
+  setPageTitleDraft: (title: string) => void;
   toggleSidebar: () => void;
 };
 
 export const useWorkspaceStore = create<WorkspaceState>((set) => ({
   activeTabId: null,
   isSidebarCollapsed: false,
+  pageTitleDraft: "",
   selectedPageId: null,
   tabs: [],
   closeTab: (tabId) =>
@@ -75,6 +78,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set) => ({
         selectedPageId: tab.pageId
       };
     }),
+  setPageTitleDraft: (title) => set({ pageTitleDraft: title }),
   setSelectedPageId: (pageId) => set({ selectedPageId: pageId }),
   toggleSidebar: () =>
     set((state) => ({ isSidebarCollapsed: !state.isSidebarCollapsed }))

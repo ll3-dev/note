@@ -1,36 +1,51 @@
-import type { KeyboardEvent, RefObject } from "react";
-import { Textarea } from "@/mainview/components/ui/textarea";
+import type { ClipboardEvent, KeyboardEvent, RefObject } from "react";
 import { cn } from "@/mainview/lib/utils";
 import type { Block } from "../../../../shared/contracts";
 import { BLOCK_COMMANDS, type BlockCommand } from "../lib/blockCommands";
-import { blockShellClass, textareaClass } from "../lib/blockStyles";
+import { blockShellClass, editableClass } from "../lib/blockStyles";
 import type { BlockEditorUpdate } from "../types/blockEditorTypes";
 
 type BlockBodyProps = {
   block: Block;
   blockIndex: number;
   checked: boolean;
-  draft: string;
   onApplyCommand: (command: BlockCommand) => void;
   onBlur: () => void;
   onChange: (value: string) => void;
-  onKeyDown: (event: KeyboardEvent<HTMLTextAreaElement>) => void;
+  onKeyDown: (event: KeyboardEvent<HTMLDivElement>) => void;
   onUpdate: (block: Block, changes: BlockEditorUpdate) => void;
-  textareaRef: RefObject<HTMLTextAreaElement | null>;
+  editableRef: RefObject<HTMLDivElement | null>;
 };
 
 export function BlockBody({
   block,
   blockIndex,
   checked,
-  draft,
   onApplyCommand,
   onBlur,
   onChange,
   onKeyDown,
   onUpdate,
-  textareaRef
+  editableRef
 }: BlockBodyProps) {
+  function handlePaste(event: ClipboardEvent<HTMLDivElement>) {
+    event.preventDefault();
+    const text = event.clipboardData.getData("text/plain");
+    const selection = window.getSelection();
+
+    if (!selection?.rangeCount) {
+      return;
+    }
+
+    const range = selection.getRangeAt(0);
+    range.deleteContents();
+    range.insertNode(window.document.createTextNode(text));
+    range.collapse(false);
+    selection.removeAllRanges();
+    selection.addRange(range);
+    onChange(event.currentTarget.textContent ?? "");
+  }
+
   return (
     <div className={cn("flex min-w-0 items-start gap-2", blockShellClass(block.type))}>
       {block.type === "todo" ? (
@@ -65,20 +80,23 @@ export function BlockBody({
           <span className="sr-only">텍스트 블록으로 변경</span>
         </button>
       ) : (
-        <Textarea
+        <div
           aria-label={`${block.type} block`}
           className={cn(
-            "min-h-9 resize-none border-0 bg-transparent px-1 py-2 leading-6 shadow-none focus-visible:ring-0",
-            textareaClass(block.type),
+            "block-editable min-h-9 w-full min-w-0 whitespace-pre-wrap break-words rounded-sm bg-transparent px-1 py-2 outline-none",
+            editableClass(block.type),
             checked && block.type === "todo" && "text-muted-foreground line-through"
           )}
+          contentEditable="plaintext-only"
+          data-placeholder="Type '/' for commands"
           onBlur={onBlur}
-          onChange={(event) => onChange(event.currentTarget.value)}
+          onInput={(event) => onChange(event.currentTarget.textContent ?? "")}
           onKeyDown={onKeyDown}
-          placeholder="Type '/' for commands"
-          ref={textareaRef}
-          rows={1}
-          value={draft}
+          onPaste={handlePaste}
+          ref={editableRef}
+          role="textbox"
+          spellCheck
+          suppressContentEditableWarning
         />
       )}
     </div>

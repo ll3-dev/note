@@ -79,6 +79,11 @@ export type DeleteBlockInput = {
   blockId: string;
 };
 
+export type MoveBlockInput = {
+  blockId: string;
+  afterBlockId?: string | null;
+};
+
 export type NoteRPC = {
   bun: RPCSchema<{
     requests: {
@@ -109,6 +114,10 @@ export type NoteRPC = {
       deleteBlock: {
         params: DeleteBlockInput;
         response: { deleted: true };
+      };
+      moveBlock: {
+        params: MoveBlockInput;
+        response: Block;
       };
     };
   }>;

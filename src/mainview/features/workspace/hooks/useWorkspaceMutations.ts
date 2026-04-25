@@ -89,10 +89,28 @@ export function useWorkspaceMutations({
     }
   });
 
+  const moveBlockMutation = useMutation({
+    mutationFn: ({
+      afterBlockId,
+      block
+    }: {
+      afterBlockId?: string | null;
+      block: Block;
+    }) =>
+      noteApi.moveBlock({
+        afterBlockId: afterBlockId ?? null,
+        blockId: block.id
+      }),
+    onSuccess: async (block) => {
+      await invalidateDocument(queryClient, block.pageId);
+    }
+  });
+
   return {
     createBlockMutation,
     createPageMutation,
     deleteBlockMutation,
+    moveBlockMutation,
     updateBlockMutation
   };
 }
