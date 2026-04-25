@@ -15,7 +15,11 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "skipLibCheck": true,
-    "types": ["bun"]
+    "types": ["bun"],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    }
   },
-  "include": ["electrobun.config.ts", "src"]
+  "include": ["electrobun.config.ts", "vite.config.ts", "src"]
 }

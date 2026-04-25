@@ -13,14 +13,8 @@ const config: ElectrobunConfig = {
     bun: {
       entrypoint: "src/bun/index.ts",
     },
-    views: {
-      mainview: {
-        entrypoint: "src/mainview/index.tsx",
-      },
-    },
     copy: {
-      "src/mainview/index.html": "views/mainview/index.html",
-      "src/mainview/style.css": "views/mainview/style.css",
+      "dist/mainview": "views/mainview",
     },
     mac: {
       codesign: false,
