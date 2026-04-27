@@ -23,6 +23,7 @@ export function useBlockTextEditing({
 }: UseBlockTextEditingOptions) {
   const [draft, setDraft] = useState(block.text);
   const [isCommandMenuOpen, setIsCommandMenuOpen] = useState(false);
+  const [selectedCommandIndex, setSelectedCommandIndex] = useState(0);
   const commandQuery = draft.startsWith("/") ? draft.slice(1).toLowerCase() : "";
   const visibleCommands = useMemo(
     () =>
@@ -41,7 +42,19 @@ export function useBlockTextEditing({
     setIsCommandMenuOpen(draft.startsWith("/"));
   }, [draft]);
 
-  function commitDraft() {
+  useEffect(() => {
+    setSelectedCommandIndex(0);
+  }, [commandQuery]);
+
+  useEffect(() => {
+    setSelectedCommandIndex((current) =>
+      visibleCommands.length === 0
+        ? 0
+        : Math.min(current, visibleCommands.length - 1)
+    );
+  }, [visibleCommands.length]);
+
+  async function commitDraft() {
     if (draft !== block.text) {
       onUpdate(block, { text: draft });
     }
@@ -63,6 +76,14 @@ export function useBlockTextEditing({
     editableRef.current?.focus();
   }
 
+  function applySelectedCommand() {
+    const command = visibleCommands[selectedCommandIndex];
+
+    if (command) {
+      applyCommand(command);
+    }
+  }
+
   function changeDraft(nextValue: string) {
     const shortcut = getMarkdownShortcut(nextValue);
 
@@ -81,6 +102,27 @@ export function useBlockTextEditing({
     setIsCommandMenuOpen(false);
   }
 
+  function selectNextCommand() {
+    if (visibleCommands.length === 0) {
+      return;
+    }
+
+    setSelectedCommandIndex(
+      (current) => (current + 1) % visibleCommands.length
+    );
+  }
+
+  function selectPreviousCommand() {
+    if (visibleCommands.length === 0) {
+      return;
+    }
+
+    setSelectedCommandIndex(
+      (current) =>
+        (current - 1 + visibleCommands.length) % visibleCommands.length
+    );
+  }
+
   function syncEditableText(nextText: string) {
     const editable = editableRef.current;
 
@@ -92,11 +134,16 @@ export function useBlockTextEditing({
 
   return {
     applyCommand,
+    applySelectedCommand,
     changeDraft,
     closeCommandMenu,
     commitDraft,
     draft,
     isCommandMenuOpen,
+    selectedCommandIndex,
+    selectNextCommand,
+    selectPreviousCommand,
+    setSelectedCommandIndex,
     visibleCommands
   };
 }

@@ -6,6 +6,7 @@ import { isCursorAtEnd, isCursorAtStart } from "./domSelection";
 export type BlockShortcutContext = {
   block: Block;
   blocksCount: number;
+  applySelectedCommand: () => void;
   closeCommandMenu: () => void;
   commitDraft: () => void;
   draft: string;
@@ -15,9 +16,41 @@ export type BlockShortcutContext = {
   onDelete: (block: Block) => void;
   onFocusNext: (block: Block) => void;
   onFocusPrevious: (block: Block) => void;
+  selectNextCommand: () => void;
+  selectPreviousCommand: () => void;
 };
 
 export const BLOCK_EDITOR_COMMANDS: Command<BlockShortcutContext>[] = [
+  {
+    canRun: ({ isCommandMenuOpen }) => isCommandMenuOpen,
+    defaultKeybindings: ["Enter"],
+    id: "editor.commandMenu.applySelected",
+    scope: "commandMenu",
+    title: "Apply selected command",
+    run: ({ applySelectedCommand }) => {
+      applySelectedCommand();
+    }
+  },
+  {
+    canRun: ({ isCommandMenuOpen }) => isCommandMenuOpen,
+    defaultKeybindings: ["ArrowDown"],
+    id: "editor.commandMenu.selectNext",
+    scope: "commandMenu",
+    title: "Select next command",
+    run: ({ selectNextCommand }) => {
+      selectNextCommand();
+    }
+  },
+  {
+    canRun: ({ isCommandMenuOpen }) => isCommandMenuOpen,
+    defaultKeybindings: ["ArrowUp"],
+    id: "editor.commandMenu.selectPrevious",
+    scope: "commandMenu",
+    title: "Select previous command",
+    run: ({ selectPreviousCommand }) => {
+      selectPreviousCommand();
+    }
+  },
   {
     defaultKeybindings: ["Enter"],
     id: "editor.block.createBelow",

@@ -35,11 +35,16 @@ export function BlockEditor({
   const checked = Boolean(block.props.checked);
   const {
     applyCommand,
+    applySelectedCommand,
     changeDraft,
     closeCommandMenu,
     commitDraft,
     draft,
     isCommandMenuOpen,
+    selectedCommandIndex,
+    selectNextCommand,
+    selectPreviousCommand,
+    setSelectedCommandIndex,
     visibleCommands
   } = useBlockTextEditing({ block, checked, editableRef, onUpdate });
   const { handleKeyDown } = useKeyboardShortcuts({
@@ -48,6 +53,7 @@ export function BlockEditor({
       : ["global", "editor", "block"],
     commands: BLOCK_EDITOR_COMMANDS,
     context: {
+      applySelectedCommand,
       block,
       blocksCount,
       closeCommandMenu,
@@ -57,7 +63,9 @@ export function BlockEditor({
       onCreateAfter,
       onDelete,
       onFocusNext,
-      onFocusPrevious
+      onFocusPrevious,
+      selectNextCommand,
+      selectPreviousCommand
     },
     keybindings
   });
@@ -110,7 +118,9 @@ export function BlockEditor({
 
         {isCommandMenuOpen ? (
           <BlockCommandMenu
+            activeIndex={selectedCommandIndex}
             commands={visibleCommands}
+            onActiveIndexChange={setSelectedCommandIndex}
             onSelect={applyCommand}
           />
         ) : null}
