@@ -1,6 +1,4 @@
-import { Trash2 } from "lucide-react";
 import { DragEvent, KeyboardEvent, useRef } from "react";
-import { Button } from "@/mainview/components/ui/button";
 import { cn } from "@/mainview/lib/utils";
 import { BlockBody } from "./BlockBody";
 import { BlockCommandMenu } from "./BlockCommandMenu";
@@ -8,6 +6,7 @@ import { BlockDragHandle } from "./BlockDragHandle";
 import { BlockDropIndicator } from "./BlockDropIndicator";
 import { useBlockTextEditing } from "../hooks/useBlockTextEditing";
 import { getDropPlacement } from "../lib/blockDrag";
+import { isCursorAtEnd, isCursorAtStart } from "../lib/domSelection";
 import type { BlockEditorProps } from "../types/blockEditorTypes";
 
 export function BlockEditor({
@@ -15,7 +14,6 @@ export function BlockEditor({
   blockIndex,
   blocksCount,
   isDragging,
-  isDeleting,
   isDropAfter,
   isDropBefore,
   isSelected,
@@ -25,6 +23,7 @@ export function BlockEditor({
   onDragOver,
   onDragStart,
   onDrop,
+  onFocusNext,
   onFocusPrevious,
   onSelect,
   onUpdate
@@ -56,6 +55,20 @@ export function BlockEditor({
       return;
     }
 
+    if (event.key === "ArrowUp" && isCursorAtStart(event.currentTarget)) {
+      event.preventDefault();
+      commitDraft();
+      onFocusPrevious(block);
+      return;
+    }
+
+    if (event.key === "ArrowDown" && isCursorAtEnd(event.currentTarget)) {
+      event.preventDefault();
+      commitDraft();
+      onFocusNext(block);
+      return;
+    }
+
     if (event.key === "Escape" && isCommandMenuOpen) {
       event.preventDefault();
       closeCommandMenu();
@@ -75,9 +88,9 @@ export function BlockEditor({
   return (
     <div
       className={cn(
-        "block-editor-shell group relative grid grid-cols-[28px_minmax(0,1fr)_32px] items-start gap-1 rounded-md px-1 py-0.5 hover:bg-muted/60",
+        "block-editor-shell group relative -ml-10 grid grid-cols-[40px_minmax(0,1fr)] rounded-md py-0.5",
         block.type === "quote" && "block-editor-quote bg-muted/30",
-        isSelected && "bg-muted/70 ring-1 ring-border",
+        isSelected && "bg-muted/50",
         isDragging && "opacity-50"
       )}
       data-block-id={block.id}
@@ -115,17 +128,6 @@ export function BlockEditor({
           />
         ) : null}
       </div>
-
-      <Button
-        aria-label="block 삭제"
-        className="block-hover-action opacity-0 transition-opacity group-hover:opacity-100"
-        disabled={isDeleting || blocksCount <= 1}
-        onClick={() => onDelete(block)}
-        size="icon-sm"
-        variant="ghost"
-      >
-        <Trash2 className="size-4" />
-      </Button>
     </div>
   );
 }

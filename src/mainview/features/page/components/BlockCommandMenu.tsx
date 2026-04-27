@@ -10,7 +10,7 @@ export function BlockCommandMenu({
   onSelect
 }: BlockCommandMenuProps) {
   return (
-    <div className="absolute left-8 top-10 z-20 w-[260px] rounded-md border border-border bg-popover p-1 shadow-lg">
+    <div className="absolute left-8 top-10 z-20 w-65 rounded-md border border-border bg-popover p-1">
       {commands.length === 0 ? (
         <div className="px-2 py-2 text-sm text-muted-foreground">
           No blocks found

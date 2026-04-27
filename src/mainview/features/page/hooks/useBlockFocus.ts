@@ -1,30 +1,39 @@
 import { useEffect, useState } from "react";
 import type { PageDocument } from "../../../../shared/contracts";
+import { placeCursorAtEnd, placeCursorAtStart } from "../lib/domSelection";
+
+type FocusPlacement = "start" | "end";
+
+type FocusTarget = {
+  blockId: string;
+  placement: FocusPlacement;
+};
 
 export function useBlockFocus(document: PageDocument | null) {
-  const [focusBlockId, setFocusBlockId] = useState<string | null>(null);
+  const [focusTarget, setFocusTarget] = useState<FocusTarget | null>(null);
 
   useEffect(() => {
-    if (!focusBlockId) {
+    if (!focusTarget) {
       return;
     }
 
     const editable = window.document.querySelector<HTMLElement>(
-      `[data-block-id="${focusBlockId}"] [contenteditable]`
+      `[data-block-id="${focusTarget.blockId}"] [contenteditable]`
     );
 
     if (editable) {
-      const range = window.document.createRange();
-      const selection = window.getSelection();
-
-      editable.focus();
-      range.selectNodeContents(editable);
-      range.collapse(false);
-      selection?.removeAllRanges();
-      selection?.addRange(range);
-      setFocusBlockId(null);
+      if (focusTarget.placement === "start") {
+        placeCursorAtStart(editable);
+      } else {
+        placeCursorAtEnd(editable);
+      }
+      setFocusTarget(null);
     }
-  }, [document, focusBlockId]);
+  }, [document, focusTarget]);
+
+  function setFocusBlockId(blockId: string, placement: FocusPlacement = "end") {
+    setFocusTarget({ blockId, placement });
+  }
 
   return { setFocusBlockId };
 }

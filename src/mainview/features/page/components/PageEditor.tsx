@@ -1,6 +1,3 @@
-import { Plus } from "lucide-react";
-import { Badge } from "@/mainview/components/ui/badge";
-import { Button } from "@/mainview/components/ui/button";
 import { ScrollArea } from "@/mainview/components/ui/scroll-area";
 import type { Block, PageDocument } from "../../../../shared/contracts";
 import { BlockEditor } from "./BlockEditor";
@@ -11,11 +8,9 @@ import type { BlockEditorUpdate } from "../types/blockEditorTypes";
 
 type PageEditorProps = {
   document: PageDocument;
-  isCreatingBlock: boolean;
-  isDeletingBlock: boolean;
-  onCreateBlock: () => void;
   onCreateBlockAfter: (block: Block) => Promise<void>;
   onDeleteBlock: (block: Block) => void;
+  onFocusNextBlock: (block: Block) => void;
   onFocusPreviousBlock: (block: Block) => void;
   onMoveBlock: (block: Block, afterBlockId: string | null) => void;
   onUpdateBlock: (block: Block, changes: BlockEditorUpdate) => void;
@@ -23,11 +18,9 @@ type PageEditorProps = {
 
 export function PageEditor({
   document,
-  isCreatingBlock,
-  isDeletingBlock,
-  onCreateBlock,
   onCreateBlockAfter,
   onDeleteBlock,
+  onFocusNextBlock,
   onFocusPreviousBlock,
   onMoveBlock,
   onUpdateBlock
@@ -51,33 +44,23 @@ export function PageEditor({
 
   return (
     <>
-      <header className="mb-7">
-        <div className="mb-5 flex items-center justify-between gap-4">
-          <Badge variant="outline">{document.blocks.length} blocks</Badge>
-          <Button
-            disabled={isCreatingBlock}
-            onClick={onCreateBlock}
-            size="sm"
-            variant="ghost"
-          >
-            <Plus className="size-4" />
-            Block
-          </Button>
-        </div>
+      <header className="mb-7 pl-10">
         <h1 className="text-[40px] font-bold leading-tight tracking-normal">
           {document.page.title}
         </h1>
       </header>
 
       <ScrollArea className="min-h-0 flex-1">
-        <div className="grid min-h-full gap-1 pb-20" onMouseDown={focusLastBlock}>
+        <div
+          className="grid min-h-full gap-1 pb-20 pl-10"
+          onMouseDown={focusLastBlock}
+        >
           {document.blocks.map((block, blockIndex) => (
             <BlockEditor
               block={block}
               blockIndex={blockIndex}
               blocksCount={document.blocks.length}
               isDragging={draggedBlockId === block.id}
-              isDeleting={isDeletingBlock}
               isDropAfter={
                 dropTarget?.blockId === block.id && dropTarget.placement === "after"
               }
@@ -92,6 +75,7 @@ export function PageEditor({
               onDragOver={setDropPlacement}
               onDragStart={startDrag}
               onDrop={dropBlock}
+              onFocusNext={onFocusNextBlock}
               onFocusPrevious={onFocusPreviousBlock}
               onSelect={selectBlock}
               onUpdate={onUpdateBlock}

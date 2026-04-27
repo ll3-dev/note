@@ -97,7 +97,7 @@
     field-sizing: content;
   }
 
-  .block-editable:empty::before {
+  .block-editable:empty:focus::before {
     color: var(--muted-foreground);
     content: attr(data-placeholder);
     pointer-events: none;
@@ -111,10 +111,6 @@
   body[data-input-mode="keyboard"] .block-hover-action {
     opacity: 0 !important;
     pointer-events: none;
-  }
-
-  body[data-input-mode="keyboard"] .block-editor-shell:not(.block-editor-quote):hover {
-    background: transparent !important;
   }
 
   .electrobun-webkit-app-region-drag {

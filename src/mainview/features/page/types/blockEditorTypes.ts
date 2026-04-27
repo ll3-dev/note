@@ -15,7 +15,6 @@ export type BlockEditorProps = {
   blockIndex: number;
   blocksCount: number;
   isDragging: boolean;
-  isDeleting: boolean;
   isDropAfter: boolean;
   isDropBefore: boolean;
   isSelected: boolean;
@@ -25,6 +24,7 @@ export type BlockEditorProps = {
   onDragOver: (block: Block, placement: "before" | "after") => void;
   onDragStart: (block: Block) => void;
   onDrop: (block: Block, placement: "before" | "after") => void;
+  onFocusNext: (block: Block) => void;
   onFocusPrevious: (block: Block) => void;
   onSelect: (block: Block) => void;
   onUpdate: (block: Block, changes: BlockEditorUpdate) => void;

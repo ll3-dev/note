@@ -47,7 +47,12 @@ export function BlockBody({
   }
 
   return (
-    <div className={cn("flex min-w-0 items-start gap-2", blockShellClass(block.type))}>
+    <div
+      className={cn(
+        "flex min-w-0 items-start gap-2",
+        blockShellClass(block.type),
+      )}
+    >
       {block.type === "todo" ? (
         <input
           aria-label="완료 여부"
@@ -55,7 +60,7 @@ export function BlockBody({
           className="mt-2.5 size-4 shrink-0 accent-foreground"
           onChange={(event) =>
             onUpdate(block, {
-              props: { ...block.props, checked: event.target.checked }
+              props: { ...block.props, checked: event.target.checked },
             })
           }
           type="checkbox"
@@ -83,9 +88,11 @@ export function BlockBody({
         <div
           aria-label={`${block.type} block`}
           className={cn(
-            "block-editable min-h-9 w-full min-w-0 whitespace-pre-wrap break-words rounded-sm bg-transparent px-1 py-2 outline-none",
+            "block-editable min-h-9 w-full min-w-0 whitespace-pre-wrap wrap-break-word rounded-sm bg-transparent px-1 py-2 outline-none",
             editableClass(block.type),
-            checked && block.type === "todo" && "text-muted-foreground line-through"
+            checked &&
+              block.type === "todo" &&
+              "text-muted-foreground line-through",
           )}
           contentEditable="plaintext-only"
           data-placeholder="Type '/' for commands"

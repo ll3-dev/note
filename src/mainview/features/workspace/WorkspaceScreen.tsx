@@ -10,6 +10,7 @@ import { useWorkspaceStore } from "@/mainview/store/useWorkspaceStore";
 import type { Block } from "../../../shared/contracts";
 import { PageEditor } from "../page/components/PageEditor";
 import { useBlockFocus } from "../page/hooks/useBlockFocus";
+import { useBlockKeyboardFocus } from "../page/hooks/useBlockKeyboardFocus";
 import { EmptyEditorState } from "./components/EmptyEditorState";
 import { WorkspaceLayout } from "./components/WorkspaceLayout";
 import { useWorkspaceMutations } from "./hooks/useWorkspaceMutations";
@@ -60,6 +61,10 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
   const pages = pagesQuery.data ?? [];
   const selectedDocument = pageDocumentQuery.data ?? null;
   const { setFocusBlockId } = useBlockFocus(selectedDocument);
+  const { focusNextBlock, focusPreviousBlock } = useBlockKeyboardFocus(
+    selectedDocument,
+    setFocusBlockId
+  );
 
   useLayoutEffect(() => {
     if (routePageId) {
@@ -131,13 +136,6 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
     setFocusBlockId(created.id);
   }
 
-  function focusPreviousBlock(block: Block) {
-    const blocks = selectedDocument?.blocks ?? [];
-    const index = blocks.findIndex((item) => item.id === block.id);
-    const previous = index > 0 ? blocks[index - 1] : null;
-    if (previous) setFocusBlockId(previous.id);
-  }
-
   return (
     <WorkspaceLayout
       activePageId={activePageId}
@@ -157,15 +155,9 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
         {selectedDocument ? (
           <PageEditor
             document={selectedDocument}
-            isCreatingBlock={!activePageId || createBlockMutation.isPending}
-            isDeletingBlock={deleteBlockMutation.isPending}
-            onCreateBlock={() =>
-              activePageId
-                ? createBlockMutation.mutate({ pageId: activePageId })
-                : undefined
-            }
             onCreateBlockAfter={createBlockAfter}
             onDeleteBlock={(target) => deleteBlockMutation.mutate(target)}
+            onFocusNextBlock={focusNextBlock}
             onFocusPreviousBlock={focusPreviousBlock}
             onMoveBlock={(target, afterBlockId) =>
               moveBlockMutation.mutate({ afterBlockId, block: target })
