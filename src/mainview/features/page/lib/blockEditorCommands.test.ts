@@ -97,6 +97,44 @@ describe("block editor commands", () => {
     ]);
   });
 
+  test.each([
+    "bulleted_list",
+    "numbered_list",
+    "quote",
+    "todo"
+  ] as const)("resets an empty %s block to paragraph on Enter", async (type) => {
+    const updates: unknown[] = [];
+    const { calls, context } = createContext({
+      block: {
+        ...block,
+        props: type === "todo" ? { checked: true, depth: 1 } : { depth: 1 },
+        type
+      },
+      draft: "",
+      onUpdate: (_block, changes) => {
+        calls.push(`onUpdate:${changes.type}`);
+        updates.push(changes);
+      }
+    });
+    const command = resolveKeybinding({
+      activeScopes: ["global", "editor", "block"],
+      commands: BLOCK_EDITOR_COMMANDS,
+      context,
+      event: {
+        altKey: false,
+        ctrlKey: false,
+        key: "Enter",
+        metaKey: false,
+        shiftKey: false
+      }
+    });
+
+    expect(command?.id).toBe("editor.block.resetEmptyStructuredBlock");
+    await command?.run(context);
+    expect(calls).toEqual(["commitDraft", "onUpdate:paragraph"]);
+    expect(updates).toEqual([{ props: { depth: 1 }, type: "paragraph" }]);
+  });
+
   test("resets heading blocks to paragraph when creating below", async () => {
     const createdDrafts: unknown[] = [];
     const { context } = createContext({

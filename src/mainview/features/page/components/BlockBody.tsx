@@ -2,6 +2,7 @@ import type { ClipboardEvent, KeyboardEvent, RefObject } from "react";
 import { cn } from "@/mainview/lib/utils";
 import type { Block } from "../../../../shared/contracts";
 import { BLOCK_COMMANDS, type BlockCommand } from "../lib/blockCommands";
+import { getBlockDepth } from "../lib/blockEditingBehavior";
 import { blockShellClass, editableClass } from "../lib/blockStyles";
 import type { BlockEditorUpdate } from "../types/blockEditorTypes";
 
@@ -28,6 +29,8 @@ export function BlockBody({
   onUpdate,
   editableRef
 }: BlockBodyProps) {
+  const blockDepth = getBlockDepth(block);
+
   function handlePaste(event: ClipboardEvent<HTMLDivElement>) {
     event.preventDefault();
     const text = event.clipboardData.getData("text/plain");
@@ -68,7 +71,7 @@ export function BlockBody({
       ) : null}
       {block.type === "bulleted_list" ? (
         <span className="flex h-7 w-3 shrink-0 items-center justify-center">
-          <span className="size-1.5 rounded-full bg-foreground/70" />
+          <BulletMarker depth={blockDepth} />
         </span>
       ) : null}
       {block.type === "numbered_list" ? (
@@ -108,4 +111,16 @@ export function BlockBody({
       )}
     </div>
   );
+}
+
+function BulletMarker({ depth }: { depth: number }) {
+  if (depth % 3 === 1) {
+    return <span className="size-1.5 rounded-[1px] bg-foreground/70" />;
+  }
+
+  if (depth % 3 === 2) {
+    return <span className="size-1.5 rounded-full border border-foreground/70" />;
+  }
+
+  return <span className="size-1.5 rounded-full bg-foreground/70" />;
 }

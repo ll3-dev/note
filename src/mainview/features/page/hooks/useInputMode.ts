@@ -36,7 +36,6 @@ export function useInputMode() {
     function scheduleKeyboardMode(event: KeyboardEvent) {
       if (!shouldUseKeyboardMode(event)) {
         clearKeyboardTimer();
-        usePointerMode();
         return;
       }
 

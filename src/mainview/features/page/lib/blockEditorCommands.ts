@@ -1,9 +1,20 @@
 import type { KeyboardEvent } from "react";
 import type { Command } from "@/mainview/features/commands/types";
-import type { Block } from "../../../../shared/contracts";
-import { getBlockIndentUpdate, getNextBlockDraft } from "./blockEditingBehavior";
+import type { Block, BlockType } from "../../../../shared/contracts";
+import {
+  getBlockDepth,
+  getBlockIndentUpdate,
+  getNextBlockDraft
+} from "./blockEditingBehavior";
 import { isCursorAtEnd, isCursorAtStart } from "./domSelection";
 import type { BlockEditorUpdate } from "../types/blockEditorTypes";
+
+const EMPTY_ENTER_RESET_TYPES = new Set<BlockType>([
+  "bulleted_list",
+  "numbered_list",
+  "quote",
+  "todo"
+]);
 
 export type BlockShortcutContext = {
   block: Block;
@@ -56,6 +67,23 @@ export const BLOCK_EDITOR_COMMANDS: Command<BlockShortcutContext>[] = [
     title: "Select previous command",
     run: ({ selectPreviousCommand }) => {
       selectPreviousCommand();
+    }
+  },
+  {
+    canRun: ({ block, draft }) =>
+      EMPTY_ENTER_RESET_TYPES.has(block.type) && draft.length === 0,
+    defaultKeybindings: ["Enter"],
+    id: "editor.block.resetEmptyStructuredBlock",
+    scope: "block",
+    title: "Reset empty structured block",
+    run: async ({ block, commitDraft, onUpdate }) => {
+      await commitDraft();
+      const depth = getBlockDepth(block);
+
+      onUpdate(block, {
+        props: depth > 0 ? { depth } : {},
+        type: "paragraph"
+      });
     }
   },
   {

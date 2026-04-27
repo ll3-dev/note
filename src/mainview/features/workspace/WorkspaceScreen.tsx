@@ -44,6 +44,9 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
     onPageCreated: (page) => {
       openPageTab(page);
       setPageTitleDraft("");
+    },
+    onPageUpdated: (page) => {
+      renamePageRefs(page);
     }
   });
 
@@ -132,14 +135,15 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
   }
 
   function updatePageTitle(page: Page, title: string) {
-    updatePageMutation.mutate(
-      { page, title },
-      {
-        onSuccess: (updatedPage) => {
-          renamePageRefs(updatedPage);
-        }
-      }
-    );
+    updatePageMutation.mutate({ page, title });
+  }
+
+  function focusFirstBlock() {
+    const firstBlock = selectedDocument?.blocks[0];
+
+    if (firstBlock) {
+      setFocusBlockId(firstBlock.id, "start");
+    }
   }
 
   return (
@@ -173,6 +177,7 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
                 deleteBlockMutation.mutate(target)
               );
             }}
+            onFocusFirstBlock={focusFirstBlock}
             onFocusNextBlock={focusNextBlock}
             onFocusPreviousBlock={focusPreviousBlock}
             onMoveBlock={(target, afterBlockId) => {
@@ -182,9 +187,7 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
             }}
             onTextDraftChange={queueTextDraft}
             onTextDraftFlush={flushTextDraft}
-            onUpdateBlock={(target, changes) =>
-              void updateBlock(target, changes)
-            }
+            onUpdateBlock={(target, changes) => void updateBlock(target, changes)}
             onUpdatePageTitle={updatePageTitle}
           />
         ) : (
