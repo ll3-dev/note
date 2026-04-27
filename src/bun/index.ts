@@ -8,6 +8,8 @@ import {
   getPageDocument,
   listPages,
   moveBlock,
+  movePage,
+  updatePage,
   updateBlock
 } from "./notes";
 
@@ -21,10 +23,12 @@ const rpc = BrowserView.defineRPC<NoteRPC>({
       listPages: () => listPages(databaseHandle),
       getPageDocument: (input) => getPageDocument(databaseHandle, input),
       createPage: (input) => createPage(databaseHandle, input),
+      updatePage: (input) => updatePage(databaseHandle, input),
       createBlock: (input) => createBlock(databaseHandle, input),
       updateBlock: (input) => updateBlock(databaseHandle, input),
       deleteBlock: (input) => deleteBlock(databaseHandle, input),
-      moveBlock: (input) => moveBlock(databaseHandle, input)
+      moveBlock: (input) => moveBlock(databaseHandle, input),
+      movePage: (input) => movePage(databaseHandle, input)
     },
     messages: {}
   }

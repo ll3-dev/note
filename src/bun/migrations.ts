@@ -1,8 +1,8 @@
-import { eq, sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import type { BunSQLiteDatabase } from "drizzle-orm/bun-sqlite";
 import { schema, schemaMigrations } from "./schema";
 
-const CURRENT_SCHEMA_VERSION = 1;
+const CURRENT_SCHEMA_VERSION = 2;
 
 const migrationTableSql = `
 CREATE TABLE IF NOT EXISTS schema_migrations (
@@ -130,24 +130,52 @@ const migrations = [
       )
       `
     ]
+  },
+  {
+    version: 2,
+    name: "add page tree sort key",
+    statements: [
+      `
+      ALTER TABLE pages
+      ADD COLUMN sort_key TEXT NOT NULL DEFAULT '00000000'
+      `,
+      `
+      UPDATE pages
+      SET sort_key = printf('%08d', rowid - 1)
+      `,
+      `
+      CREATE INDEX IF NOT EXISTS idx_pages_parent_sort
+      ON pages(parent_page_id, sort_key)
+      `
+    ]
   }
 ] as const;
 
 export function runMigrations(orm: BunSQLiteDatabase<typeof schema>) {
   orm.run(sql.raw(migrationTableSql));
 
-  const applied = orm
-    .select({ version: schemaMigrations.version })
-    .from(schemaMigrations)
-    .where(eq(schemaMigrations.version, CURRENT_SCHEMA_VERSION))
-    .get();
+  const appliedVersions = new Set(
+    orm
+      .select({ version: schemaMigrations.version })
+      .from(schemaMigrations)
+      .all()
+      .map((row) => row.version)
+  );
 
-  if (applied) {
+  if (appliedVersions.has(CURRENT_SCHEMA_VERSION)) {
+    return;
+  }
+
+  const pendingMigrations = migrations.filter(
+    (migration) => !appliedVersions.has(migration.version)
+  );
+
+  if (pendingMigrations.length === 0) {
     return;
   }
 
   orm.transaction((tx) => {
-    for (const migration of migrations) {
+    for (const migration of pendingMigrations) {
       for (const statement of migration.statements) {
         tx.run(sql.raw(statement));
       }
@@ -160,4 +188,8 @@ export function runMigrations(orm: BunSQLiteDatabase<typeof schema>) {
         .run();
     }
   });
+}
+
+export function getCurrentSchemaVersion() {
+  return CURRENT_SCHEMA_VERSION;
 }

@@ -12,6 +12,7 @@ export const pages = sqliteTable("pages", {
   id: text("id").primaryKey(),
   parent_page_id: text("parent_page_id"),
   title: text("title").notNull().default(""),
+  sort_key: text("sort_key").notNull().default("00000000"),
   icon: text("icon"),
   cover: text("cover"),
   archived_at: text("archived_at"),

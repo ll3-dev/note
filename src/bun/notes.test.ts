@@ -10,6 +10,8 @@ import {
   getPageDocument,
   listPages,
   moveBlock,
+  movePage,
+  updatePage,
   updateBlock
 } from "./notes";
 
@@ -46,7 +48,7 @@ describe("notes repository", () => {
     });
   });
 
-  test("lists pages ordered by recent updates", () => {
+  test("lists pages by tree sort order", () => {
     const handle = openTempDatabase();
 
     const first = createPage(handle, { title: "First" });
@@ -55,9 +57,56 @@ describe("notes repository", () => {
     const pages = listPages(handle);
 
     expect(pages.map((page) => page.id)).toEqual([
-      second.page.id,
-      first.page.id
+      first.page.id,
+      second.page.id
     ]);
+  });
+
+  test("moves pages within a parent and under another page", () => {
+    const handle = openTempDatabase();
+    const first = createPage(handle, { title: "First" }).page;
+    const second = createPage(handle, { title: "Second" }).page;
+    const third = createPage(handle, { title: "Third" }).page;
+
+    movePage(handle, {
+      afterPageId: null,
+      pageId: third.id,
+      parentPageId: null
+    });
+
+    expect(
+      listPages(handle)
+        .filter((page) => page.parentPageId === null)
+        .map((page) => page.id)
+    ).toEqual([third.id, first.id, second.id]);
+
+    const movedChild = movePage(handle, {
+      afterPageId: null,
+      pageId: second.id,
+      parentPageId: first.id
+    });
+
+    expect(movedChild.parentPageId).toBe(first.id);
+    expect(
+      listPages(handle)
+        .filter((page) => page.parentPageId === first.id)
+        .map((page) => page.id)
+    ).toEqual([second.id]);
+  });
+
+  test("updates a page title", () => {
+    const handle = openTempDatabase();
+    const page = createPage(handle, { title: "Draft" }).page;
+
+    const updated = updatePage(handle, {
+      pageId: page.id,
+      title: "Published"
+    });
+
+    expect(updated.title).toBe("Published");
+    expect(getPageDocument(handle, { pageId: page.id }).page.title).toBe(
+      "Published"
+    );
   });
 
   test("creates, updates, and deletes blocks in a page document", () => {

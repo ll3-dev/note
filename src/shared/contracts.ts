@@ -11,6 +11,7 @@ export type Page = {
   id: string;
   parentPageId: string | null;
   title: string;
+  sortKey: string;
   icon: string | null;
   cover: string | null;
   archivedAt: string | null;
@@ -55,6 +56,11 @@ export type CreatePageInput = {
   parentPageId?: string | null;
 };
 
+export type UpdatePageInput = {
+  pageId: string;
+  title?: string;
+};
+
 export type GetPageDocumentInput = {
   pageId: string;
 };
@@ -84,6 +90,12 @@ export type MoveBlockInput = {
   afterBlockId?: string | null;
 };
 
+export type MovePageInput = {
+  pageId: string;
+  parentPageId?: string | null;
+  afterPageId?: string | null;
+};
+
 export type NoteRPC = {
   bun: RPCSchema<{
     requests: {
@@ -103,6 +115,10 @@ export type NoteRPC = {
         params: CreatePageInput;
         response: PageDocument;
       };
+      updatePage: {
+        params: UpdatePageInput;
+        response: Page;
+      };
       createBlock: {
         params: CreateBlockInput;
         response: Block;
@@ -118,6 +134,10 @@ export type NoteRPC = {
       moveBlock: {
         params: MoveBlockInput;
         response: Block;
+      };
+      movePage: {
+        params: MovePageInput;
+        response: Page;
       };
     };
   }>;

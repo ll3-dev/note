@@ -6,6 +6,7 @@ export function mapPage(row: PageRow): Page {
     id: row.id,
     parentPageId: row.parent_page_id,
     title: row.title,
+    sortKey: row.sort_key,
     icon: row.icon,
     cover: row.cover,
     archivedAt: row.archived_at,
