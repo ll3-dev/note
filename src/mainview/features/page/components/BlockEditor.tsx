@@ -1,4 +1,6 @@
-import { DragEvent, KeyboardEvent, useRef } from "react";
+import { DragEvent, useRef } from "react";
+import { useKeybindingStore } from "@/mainview/features/commands/keybindingStore";
+import { useKeyboardShortcuts } from "@/mainview/features/commands/useKeyboardShortcuts";
 import { cn } from "@/mainview/lib/utils";
 import { BlockBody } from "./BlockBody";
 import { BlockCommandMenu } from "./BlockCommandMenu";
@@ -6,7 +8,7 @@ import { BlockDragHandle } from "./BlockDragHandle";
 import { BlockDropIndicator } from "./BlockDropIndicator";
 import { useBlockTextEditing } from "../hooks/useBlockTextEditing";
 import { getDropPlacement } from "../lib/blockDrag";
-import { isCursorAtEnd, isCursorAtStart } from "../lib/domSelection";
+import { BLOCK_EDITOR_COMMANDS } from "../lib/blockEditorCommands";
 import type { BlockEditorProps } from "../types/blockEditorTypes";
 
 export function BlockEditor({
@@ -29,6 +31,7 @@ export function BlockEditor({
   onUpdate
 }: BlockEditorProps) {
   const editableRef = useRef<HTMLDivElement>(null);
+  const keybindings = useKeybindingStore((state) => state.keybindings);
   const checked = Boolean(block.props.checked);
   const {
     applyCommand,
@@ -39,41 +42,25 @@ export function BlockEditor({
     isCommandMenuOpen,
     visibleCommands
   } = useBlockTextEditing({ block, checked, editableRef, onUpdate });
-
-  async function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
-    if (event.key === "Enter" && !event.shiftKey) {
-      event.preventDefault();
-      commitDraft();
-      await onCreateAfter(block);
-      return;
-    }
-
-    if (event.key === "Backspace" && draft.length === 0 && blocksCount > 1) {
-      event.preventDefault();
-      onFocusPrevious(block);
-      onDelete(block);
-      return;
-    }
-
-    if (event.key === "ArrowUp" && isCursorAtStart(event.currentTarget)) {
-      event.preventDefault();
-      commitDraft();
-      onFocusPrevious(block);
-      return;
-    }
-
-    if (event.key === "ArrowDown" && isCursorAtEnd(event.currentTarget)) {
-      event.preventDefault();
-      commitDraft();
-      onFocusNext(block);
-      return;
-    }
-
-    if (event.key === "Escape" && isCommandMenuOpen) {
-      event.preventDefault();
-      closeCommandMenu();
-    }
-  }
+  const { handleKeyDown } = useKeyboardShortcuts({
+    activeScopes: isCommandMenuOpen
+      ? ["global", "editor", "block", "commandMenu"]
+      : ["global", "editor", "block"],
+    commands: BLOCK_EDITOR_COMMANDS,
+    context: {
+      block,
+      blocksCount,
+      closeCommandMenu,
+      commitDraft,
+      draft,
+      isCommandMenuOpen,
+      onCreateAfter,
+      onDelete,
+      onFocusNext,
+      onFocusPrevious
+    },
+    keybindings
+  });
 
   function handleDragOver(event: DragEvent<HTMLDivElement>) {
     event.preventDefault();
@@ -116,7 +103,7 @@ export function BlockEditor({
           onApplyCommand={applyCommand}
           onBlur={commitDraft}
           onChange={changeDraft}
-          onKeyDown={(event) => void handleKeyDown(event)}
+          onKeyDown={handleKeyDown}
           onUpdate={onUpdate}
           editableRef={editableRef}
         />

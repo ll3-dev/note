@@ -6,6 +6,7 @@ import { ScrollArea } from "@/mainview/components/ui/scroll-area";
 import { Separator } from "@/mainview/components/ui/separator";
 import { useWorkspaceStore } from "@/mainview/store/useWorkspaceStore";
 import type { Page } from "../../../../shared/contracts";
+import { useSidebarResize } from "../hooks/useSidebarResize";
 import { StatusFooter } from "./StatusFooter";
 import { WorkspaceTitleBar } from "./WorkspaceTitleBar";
 
@@ -48,8 +49,14 @@ export function WorkspaceLayout({
   const setPageTitleDraft = useWorkspaceStore(
     (state) => state.setPageTitleDraft
   );
+  const setSidebarWidth = useWorkspaceStore((state) => state.setSidebarWidth);
+  const sidebarWidth = useWorkspaceStore((state) => state.sidebarWidth);
   const tabs = useWorkspaceStore((state) => state.tabs);
   const toggleSidebar = useWorkspaceStore((state) => state.toggleSidebar);
+  const { handleResizeSidebar, isResizingSidebar } = useSidebarResize({
+    setSidebarWidth,
+    sidebarWidth
+  });
 
   return (
     <main className="flex h-screen min-h-[640px] flex-col bg-background text-foreground">
@@ -65,8 +72,29 @@ export function WorkspaceLayout({
       />
 
       <div className="flex min-h-0 flex-1">
-        {!isSidebarCollapsed ? (
-          <aside className="flex w-[272px] shrink-0 flex-col border-r border-border bg-sidebar">
+        <div
+          aria-hidden={isSidebarCollapsed}
+          className={
+            isResizingSidebar
+              ? "shrink-0 overflow-hidden"
+              : "shrink-0 overflow-hidden transition-[width] duration-150 ease-out"
+          }
+          inert={isSidebarCollapsed ? true : undefined}
+          style={{ width: isSidebarCollapsed ? 0 : sidebarWidth }}
+        >
+          <aside
+            className={
+              isResizingSidebar
+                ? "relative flex h-full flex-col border-r border-border bg-sidebar"
+                : "relative flex h-full flex-col border-r border-border bg-sidebar transition-transform duration-150 ease-out"
+            }
+            style={{
+              transform: isSidebarCollapsed
+                ? "translateX(-100%)"
+                : "translateX(0)",
+              width: sidebarWidth
+            }}
+          >
             <header className="flex h-9 items-center justify-between px-2.5">
               <div className="flex items-center gap-2">
                 <div className="flex size-6 items-center justify-center rounded-md border border-border bg-background">
@@ -136,8 +164,14 @@ export function WorkspaceLayout({
                 sqliteVersion={sqliteVersion}
               />
             </>
+            <div
+              aria-label="사이드바 너비 조절"
+              className="absolute right-0 top-0 h-full w-1 cursor-col-resize transition-colors hover:bg-border"
+              onPointerDown={handleResizeSidebar}
+              role="separator"
+            />
           </aside>
-        ) : null}
+        </div>
 
         <section className="min-w-0 flex-1 bg-background">{children}</section>
       </div>

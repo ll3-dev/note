@@ -26,7 +26,7 @@ export function WorkspaceTitleBar({
   tabs
 }: WorkspaceTitleBarProps) {
   return (
-    <header className="electrobun-webkit-app-region-drag flex h-8 shrink-0 items-center gap-1 border-b border-border bg-sidebar/95 pl-[72px] pr-1.5">
+    <header className="electrobun-webkit-app-region-drag flex h-8 shrink-0 items-center gap-1 bg-sidebar/95 pl-[76px] pr-1.5">
       <Button
         aria-label={isSidebarCollapsed ? "사이드바 열기" : "사이드바 닫기"}
         className="electrobun-webkit-app-region-no-drag"

@@ -1,11 +1,7 @@
 import { useNavigate } from "@tanstack/react-router";
-import {
-  FormEvent,
-  MouseEvent,
-  useEffect,
-  useLayoutEffect,
-  useRef
-} from "react";
+import { FormEvent, MouseEvent, useEffect, useLayoutEffect, useMemo, useRef } from "react";
+import { useGlobalKeyboardShortcuts } from "@/mainview/features/commands/useGlobalKeyboardShortcuts";
+import { useKeybindingStore } from "@/mainview/features/commands/keybindingStore";
 import { useWorkspaceStore } from "@/mainview/store/useWorkspaceStore";
 import type { Block } from "../../../shared/contracts";
 import { PageEditor } from "../page/components/PageEditor";
@@ -15,6 +11,7 @@ import { EmptyEditorState } from "./components/EmptyEditorState";
 import { WorkspaceLayout } from "./components/WorkspaceLayout";
 import { useWorkspaceMutations } from "./hooks/useWorkspaceMutations";
 import { useWorkspaceQueries } from "./hooks/useWorkspaceQueries";
+import { WORKSPACE_COMMANDS } from "./lib/workspaceCommands";
 
 type WorkspaceScreenProps = {
   routePageId: string | null;
@@ -33,14 +30,12 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
   );
   const setSelectedPageId = useWorkspaceStore((state) => state.setSelectedPageId);
   const tabs = useWorkspaceStore((state) => state.tabs);
+  const toggleSidebar = useWorkspaceStore((state) => state.toggleSidebar);
+  const keybindings = useKeybindingStore((state) => state.keybindings);
   const hasOpenedInitialPage = useRef(false);
   const activePageId = routePageId ?? selectedPageId;
-  const {
-    databaseStatusQuery,
-    pageDocumentQuery,
-    pagesQuery,
-    refreshWorkspace
-  } = useWorkspaceQueries(activePageId);
+  const { databaseStatusQuery, pageDocumentQuery, pagesQuery, refreshWorkspace } =
+    useWorkspaceQueries(activePageId);
 
   const {
     createBlockMutation,
@@ -65,6 +60,17 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
     selectedDocument,
     setFocusBlockId
   );
+  const workspaceCommandContext = useMemo(
+    () => ({ toggleSidebar }),
+    [toggleSidebar]
+  );
+
+  useGlobalKeyboardShortcuts({
+    activeScopes: ["global", "workspace"],
+    commands: WORKSPACE_COMMANDS,
+    context: workspaceCommandContext,
+    keybindings
+  });
 
   useLayoutEffect(() => {
     if (routePageId) {
