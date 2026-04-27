@@ -135,7 +135,11 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
   }
 
   function updatePageTitle(page: Page, title: string) {
-    updatePageMutation.mutate({ page, title });
+    const nextTitle = title.trim();
+
+    if (nextTitle && nextTitle !== page.title) {
+      updatePageMutation.mutate({ page, title: nextTitle });
+    }
   }
 
   function focusFirstBlock() {
@@ -167,7 +171,7 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
       saveStatus={saveStatus}
       sqliteVersion={databaseStatusQuery.data?.sqliteVersion}
     >
-      <div className="mx-auto flex h-full w-full max-w-[920px] flex-col px-10 py-8">
+      <div className="mx-auto flex h-full w-full max-w-230 flex-col px-10 py-8">
         {selectedDocument ? (
           <PageEditor
             document={selectedDocument}

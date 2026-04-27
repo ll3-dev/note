@@ -1,4 +1,4 @@
-import { useEffect, useRef, type KeyboardEvent } from "react";
+import { useEffect, useLayoutEffect, useRef, type KeyboardEvent } from "react";
 import { ScrollArea } from "@/mainview/components/ui/scroll-area";
 import type { Block, Page, PageDocument } from "../../../../shared/contracts";
 import { BlockEditor } from "./BlockEditor";
@@ -40,7 +40,7 @@ export function PageEditor({
   onUpdatePageTitle
 }: PageEditorProps) {
   useInputMode();
-  const titleRef = useRef<HTMLHeadingElement>(null);
+  const titleRef = useRef<HTMLDivElement>(null);
   const titleSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const focusLastBlock = useLastBlockFocus(document);
@@ -58,7 +58,7 @@ export function PageEditor({
     onMoveBlock
   });
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const titleElement = titleRef.current;
 
     if (titleElement && window.document.activeElement !== titleElement) {
@@ -93,7 +93,7 @@ export function PageEditor({
     }, 700);
   }
 
-  function handleTitleKeyDown(event: KeyboardEvent<HTMLHeadingElement>) {
+  function handleTitleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
     if (event.key === "Enter") {
       event.preventDefault();
       saveTitle(event.currentTarget);
@@ -116,17 +116,18 @@ export function PageEditor({
   return (
     <>
       <header className="mb-7 pl-10">
-        <h1
+        <div
+          aria-level={1}
+          aria-label={document.page.title}
           className="rounded-sm text-[40px] font-bold leading-tight tracking-normal outline-none"
           contentEditable="plaintext-only"
           onBlur={(event) => saveTitle(event.currentTarget)}
           onInput={(event) => queueTitleSave(event.currentTarget)}
           onKeyDown={handleTitleKeyDown}
           ref={titleRef}
+          role="heading"
           suppressContentEditableWarning
-        >
-          {document.page.title}
-        </h1>
+        />
       </header>
 
       <ScrollArea className="min-h-0 flex-1">

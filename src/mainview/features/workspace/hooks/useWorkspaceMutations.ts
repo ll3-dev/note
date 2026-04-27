@@ -2,7 +2,13 @@ import type { QueryClient } from "@tanstack/react-query";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { noteApi } from "@/mainview/lib/rpc";
 import { queryKeys } from "@/mainview/lib/queryClient";
-import type { Block, BlockProps, BlockType, Page, PageDocument } from "../../../../shared/contracts";
+import type {
+  Block,
+  BlockProps,
+  BlockType,
+  Page,
+  PageDocument
+} from "../../../../shared/contracts";
 
 type UseWorkspaceMutationsOptions = {
   navigateToPage: (pageId: string) => Promise<void>;
@@ -95,18 +101,28 @@ export function useWorkspaceMutations({
   });
 
   const updatePageMutation = useMutation({
+    scope: { id: "update-page-title" },
     mutationFn: ({ page, title }: { page: Page; title: string }) =>
       noteApi.updatePage({
         pageId: page.id,
         title
       }),
     onMutate: async ({ page, title }) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.pages });
+      await queryClient.cancelQueries({
+        queryKey: queryKeys.pageDocument(page.id)
+      });
+
       const updatedPage = { ...page, title };
 
       updatePageInCache(queryClient, updatedPage);
       onPageUpdated(updatedPage);
     },
-    onSuccess: async (page) => {
+    onSuccess: async (page, variables) => {
+      if (getCachedPageTitle(queryClient, page.id) !== variables.title) {
+        return;
+      }
+
       updatePageInCache(queryClient, page);
       onPageUpdated(page);
       await queryClient.invalidateQueries({ queryKey: queryKeys.pages });
@@ -187,10 +203,17 @@ function updateBlockInCache(
 }
 
 function updatePageInCache(client: QueryClient, page: Page) {
-  client.setQueryData<PageDocument>(queryKeys.pageDocument(page.id), (document) => document ? { ...document, page } : document);
+  client.setQueryData<PageDocument>(queryKeys.pageDocument(page.id), (document) =>
+    document ? { ...document, page } : document
+  );
   client.setQueryData<Page[]>(queryKeys.pages, (pages) =>
     pages?.map((item) => (item.id === page.id ? page : item))
   );
+}
+
+function getCachedPageTitle(client: QueryClient, pageId: string) {
+  return client.getQueryData<PageDocument>(queryKeys.pageDocument(pageId))?.page
+    .title;
 }
 
 function definedValues<T extends Record<string, unknown>>(values: T) {
