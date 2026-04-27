@@ -4,7 +4,6 @@ import { Button } from "@/mainview/components/ui/button";
 import { Input } from "@/mainview/components/ui/input";
 import { ScrollArea } from "@/mainview/components/ui/scroll-area";
 import { Separator } from "@/mainview/components/ui/separator";
-import { cn } from "@/mainview/lib/utils";
 import { useWorkspaceStore } from "@/mainview/store/useWorkspaceStore";
 import type { Page } from "../../../../shared/contracts";
 import { StatusFooter } from "./StatusFooter";
@@ -66,13 +65,8 @@ export function WorkspaceLayout({
       />
 
       <div className="flex min-h-0 flex-1">
-        <aside
-          className={cn(
-            "flex shrink-0 flex-col border-r border-border bg-sidebar transition-[width]",
-            isSidebarCollapsed ? "w-12" : "w-[272px]"
-          )}
-        >
-          {!isSidebarCollapsed ? (
+        {!isSidebarCollapsed ? (
+          <aside className="flex w-[272px] shrink-0 flex-col border-r border-border bg-sidebar">
             <header className="flex h-9 items-center justify-between px-2.5">
               <div className="flex items-center gap-2">
                 <div className="flex size-6 items-center justify-center rounded-md border border-border bg-background">
@@ -89,9 +83,7 @@ export function WorkspaceLayout({
                 <RefreshCw className="size-3.5" />
               </Button>
             </header>
-          ) : null}
 
-          {!isSidebarCollapsed ? (
             <>
               <form className="px-2.5 pb-2" onSubmit={onCreatePage}>
                 <div className="flex gap-2">
@@ -144,31 +136,8 @@ export function WorkspaceLayout({
                 sqliteVersion={sqliteVersion}
               />
             </>
-          ) : (
-            <div className="flex flex-1 flex-col items-center gap-1.5 px-1.5 py-1.5">
-              <Button
-                aria-label="새로고침"
-                onClick={onRefreshWorkspace}
-                size="icon-xs"
-                variant="ghost"
-              >
-                <RefreshCw className="size-3.5" />
-              </Button>
-              <Separator />
-              {pages.slice(0, 8).map((page) => (
-                <Button
-                  aria-label={page.title}
-                  key={page.id}
-                  onClick={() => onSelectPage(page)}
-                  size="icon-xs"
-                  variant={page.id === activePageId ? "secondary" : "ghost"}
-                >
-                  <FileText className="size-3.5" />
-                </Button>
-              ))}
-            </div>
-          )}
-        </aside>
+          </aside>
+        ) : null}
 
         <section className="min-w-0 flex-1 bg-background">{children}</section>
       </div>
