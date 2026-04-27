@@ -2,10 +2,11 @@ import { FormEvent, useCallback, useEffect, useLayoutEffect, useMemo, useRef } f
 import { useGlobalKeyboardShortcuts } from "@/mainview/features/commands/useGlobalKeyboardShortcuts";
 import { useKeybindingStore } from "@/mainview/features/commands/keybindingStore";
 import { useWorkspaceStore } from "@/mainview/store/useWorkspaceStore";
-import type { Block } from "../../../shared/contracts";
+import type { Block, Page } from "../../../shared/contracts";
 import { PageEditor } from "../page/components/PageEditor";
 import { useBlockFocus } from "../page/hooks/useBlockFocus";
 import { useBlockKeyboardFocus } from "../page/hooks/useBlockKeyboardFocus";
+import type { CreateBlockDraft } from "../page/lib/blockEditingBehavior";
 import type { BlockEditorUpdate } from "../page/types/blockEditorTypes";
 import { EmptyEditorState } from "./components/EmptyEditorState";
 import { WorkspaceLayout } from "./components/WorkspaceLayout";
@@ -24,27 +25,19 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
   const closeTab = useWorkspaceStore((state) => state.closeTab);
   const openPageTab = useWorkspaceStore((state) => state.openPageTab);
   const pageTitleDraft = useWorkspaceStore((state) => state.pageTitleDraft);
+  const renamePageRefs = useWorkspaceStore((state) => state.renamePageRefs);
   const selectedPageId = useWorkspaceStore((state) => state.selectedPageId);
   const setActiveTabId = useWorkspaceStore((state) => state.setActiveTabId);
-  const setPageTitleDraft = useWorkspaceStore(
-    (state) => state.setPageTitleDraft
-  );
+  const setPageTitleDraft = useWorkspaceStore((state) => state.setPageTitleDraft);
   const setSelectedPageId = useWorkspaceStore((state) => state.setSelectedPageId);
   const tabs = useWorkspaceStore((state) => state.tabs);
   const toggleSidebar = useWorkspaceStore((state) => state.toggleSidebar);
   const keybindings = useKeybindingStore((state) => state.keybindings);
   const hasOpenedInitialPage = useRef(false);
   const activePageId = routePageId ?? selectedPageId;
-  const { databaseStatusQuery, pageDocumentQuery, pagesQuery, refreshWorkspace } =
-    useWorkspaceQueries(activePageId);
+  const { databaseStatusQuery, pageDocumentQuery, pagesQuery, refreshWorkspace } = useWorkspaceQueries(activePageId);
 
-  const {
-    createBlockMutation,
-    createPageMutation,
-    deleteBlockMutation,
-    moveBlockMutation,
-    updateBlockMutation
-  } = useWorkspaceMutations({
+  const { createBlockMutation, createPageMutation, deleteBlockMutation, moveBlockMutation, movePageMutation, updatePageMutation, updateBlockMutation } = useWorkspaceMutations({
     navigateToPage: async (pageId) => {
       await navigateToPage(navigate, pageId);
     },
@@ -57,23 +50,15 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
   const pages = pagesQuery.data ?? [];
   const selectedDocument = pageDocumentQuery.data ?? null;
   const { setFocusBlockId } = useBlockFocus(selectedDocument);
-  const { focusNextBlock, focusPreviousBlock } = useBlockKeyboardFocus(
-    selectedDocument,
-    setFocusBlockId
-  );
+  const { focusNextBlock, focusPreviousBlock } = useBlockKeyboardFocus(selectedDocument, setFocusBlockId);
   const saveBlockText = useCallback(
     async (block: Block, text: string) => {
       await updateBlockMutation.mutateAsync({ block, text });
     },
     [updateBlockMutation]
   );
-  const {
-    clearPendingText,
-    flushAllTextDrafts,
-    flushQueuedTextDraft,
-    flushTextDraft,
-    queueTextDraft
-  } = useBlockTextSync({ saveText: saveBlockText });
+  const { clearPendingText, flushAllTextDrafts, flushQueuedTextDraft, flushTextDraft, queueTextDraft, status: saveStatus } =
+    useBlockTextSync({ saveText: saveBlockText });
   const { closeActiveTab, closeWorkspaceTab, navigate, selectPage, selectTab } =
     useWorkspaceNavigation({
       activeTabId,
@@ -124,11 +109,14 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
     }
   }
 
-  async function createBlockAfter(block: Block) {
+  async function createBlockAfter(block: Block, draft?: CreateBlockDraft) {
     await flushAllTextDrafts();
     const created = await createBlockMutation.mutateAsync({
       afterBlockId: block.id,
-      pageId: block.pageId
+      pageId: block.pageId,
+      props: draft?.props,
+      text: draft?.text,
+      type: draft?.type
     });
 
     setFocusBlockId(created.id);
@@ -143,6 +131,17 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
     updateBlockMutation.mutate({ block, ...changes });
   }
 
+  function updatePageTitle(page: Page, title: string) {
+    updatePageMutation.mutate(
+      { page, title },
+      {
+        onSuccess: (updatedPage) => {
+          renamePageRefs(updatedPage);
+        }
+      }
+    );
+  }
+
   return (
     <WorkspaceLayout
       activePageId={activePageId}
@@ -151,6 +150,9 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
       onCloseTab={closeWorkspaceTab}
       onCreatePage={handleCreatePage}
       onCreateUntitledPage={() => createPageMutation.mutate("Untitled")}
+      onMovePage={(page, parentPageId, afterPageId) => {
+        movePageMutation.mutate({ afterPageId, page, parentPageId });
+      }}
       onRefreshWorkspace={() => {
         void flushAllTextDrafts().then(refreshWorkspace);
       }}
@@ -158,6 +160,7 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
       onSelectTab={selectTab}
       pages={pages}
       pagesCount={databaseStatusQuery.data?.pagesCount ?? 0}
+      saveStatus={saveStatus}
       sqliteVersion={databaseStatusQuery.data?.sqliteVersion}
     >
       <div className="mx-auto flex h-full w-full max-w-[920px] flex-col px-10 py-8">
@@ -182,6 +185,7 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
             onUpdateBlock={(target, changes) =>
               void updateBlock(target, changes)
             }
+            onUpdatePageTitle={updatePageTitle}
           />
         ) : (
           <EmptyEditorState isLoading={pagesQuery.isLoading} />

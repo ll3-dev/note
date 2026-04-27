@@ -124,6 +124,38 @@ export function useWorkspaceMutations({
     }
   });
 
+  const updatePageMutation = useMutation({
+    mutationFn: ({ page, title }: { page: Page; title: string }) =>
+      noteApi.updatePage({
+        pageId: page.id,
+        title
+      }),
+    onMutate: async ({ page, title }) => {
+      queryClient.setQueryData<PageDocument>(
+        queryKeys.pageDocument(page.id),
+        (document) =>
+          document
+            ? { ...document, page: { ...document.page, title } }
+            : document
+      );
+      queryClient.setQueryData<Page[]>(queryKeys.pages, (pages) =>
+        pages?.map((item) =>
+          item.id === page.id ? { ...item, title } : item
+        )
+      );
+    },
+    onSuccess: async (page) => {
+      queryClient.setQueryData<PageDocument>(
+        queryKeys.pageDocument(page.id),
+        (document) => (document ? { ...document, page } : document)
+      );
+      queryClient.setQueryData<Page[]>(queryKeys.pages, (pages) =>
+        pages?.map((item) => (item.id === page.id ? page : item))
+      );
+      await queryClient.invalidateQueries({ queryKey: queryKeys.pages });
+    }
+  });
+
   const moveBlockMutation = useMutation({
     mutationFn: ({
       afterBlockId,
@@ -141,11 +173,33 @@ export function useWorkspaceMutations({
     }
   });
 
+  const movePageMutation = useMutation({
+    mutationFn: ({
+      afterPageId,
+      page,
+      parentPageId
+    }: {
+      afterPageId?: string | null;
+      page: Page;
+      parentPageId?: string | null;
+    }) =>
+      noteApi.movePage({
+        afterPageId: afterPageId ?? null,
+        pageId: page.id,
+        parentPageId: parentPageId ?? null
+      }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: queryKeys.pages });
+    }
+  });
+
   return {
     createBlockMutation,
     createPageMutation,
     deleteBlockMutation,
     moveBlockMutation,
+    movePageMutation,
+    updatePageMutation,
     updateBlockMutation
   };
 }

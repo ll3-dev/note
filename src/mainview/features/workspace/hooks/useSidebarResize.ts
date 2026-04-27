@@ -2,7 +2,7 @@ import { useState } from "react";
 import type { PointerEvent } from "react";
 
 const SIDEBAR_MIN_WIDTH = 224;
-const SIDEBAR_MAX_WIDTH = 360;
+const SIDEBAR_MAX_WIDTH = 520;
 
 type UseSidebarResizeParams = {
   setSidebarWidth: (width: number) => void;

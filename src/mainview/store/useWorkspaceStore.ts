@@ -14,12 +14,16 @@ export type WorkspaceTab = {
 type WorkspaceState = {
   selectedPageId: string | null;
   activeTabId: string | null;
+  expandedPageIds: string[];
   isSidebarCollapsed: boolean;
   pageTitleDraft: string;
   sidebarWidth: number;
   tabs: WorkspaceTab[];
   closeTab: (tabId: string) => void;
   openPageTab: (page: WorkspacePageRef) => void;
+  reorderTabs: (sourceTabId: string, targetTabId: string) => void;
+  renamePageRefs: (page: WorkspacePageRef) => void;
+  toggleExpandedPage: (pageId: string) => void;
   setSelectedPageId: (pageId: string | null) => void;
   setActiveTabId: (tabId: string) => void;
   setPageTitleDraft: (title: string) => void;
@@ -29,10 +33,11 @@ type WorkspaceState = {
 
 export const useWorkspaceStore = create<WorkspaceState>((set) => ({
   activeTabId: null,
+  expandedPageIds: [],
   isSidebarCollapsed: false,
   pageTitleDraft: "",
   selectedPageId: null,
-  sidebarWidth: 272,
+  sidebarWidth: 320,
   tabs: [],
   closeTab: (tabId) =>
     set((state) => {
@@ -68,6 +73,27 @@ export const useWorkspaceStore = create<WorkspaceState>((set) => ({
         tabs
       };
     }),
+  reorderTabs: (sourceTabId, targetTabId) =>
+    set((state) => {
+      const sourceIndex = state.tabs.findIndex((tab) => tab.id === sourceTabId);
+      const targetIndex = state.tabs.findIndex((tab) => tab.id === targetTabId);
+
+      if (sourceIndex < 0 || targetIndex < 0 || sourceIndex === targetIndex) {
+        return {};
+      }
+
+      const tabs = [...state.tabs];
+      const [sourceTab] = tabs.splice(sourceIndex, 1);
+      tabs.splice(targetIndex, 0, sourceTab);
+
+      return { tabs };
+    }),
+  renamePageRefs: (page) =>
+    set((state) => ({
+      tabs: state.tabs.map((tab) =>
+        tab.pageId === page.id ? { ...tab, title: page.title } : tab
+      )
+    })),
   setActiveTabId: (tabId) =>
     set((state) => {
       const tab = state.tabs.find((item) => item.id === tabId);
@@ -84,6 +110,12 @@ export const useWorkspaceStore = create<WorkspaceState>((set) => ({
   setPageTitleDraft: (title) => set({ pageTitleDraft: title }),
   setSidebarWidth: (width) => set({ sidebarWidth: width }),
   setSelectedPageId: (pageId) => set({ selectedPageId: pageId }),
+  toggleExpandedPage: (pageId) =>
+    set((state) => ({
+      expandedPageIds: state.expandedPageIds.includes(pageId)
+        ? state.expandedPageIds.filter((id) => id !== pageId)
+        : [...state.expandedPageIds, pageId]
+    })),
   toggleSidebar: () =>
     set((state) => ({ isSidebarCollapsed: !state.isSidebarCollapsed }))
 }));
