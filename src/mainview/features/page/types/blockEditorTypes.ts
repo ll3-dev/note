@@ -27,5 +27,7 @@ export type BlockEditorProps = {
   onFocusNext: (block: Block) => void;
   onFocusPrevious: (block: Block) => void;
   onSelect: (block: Block) => void;
+  onTextDraftChange: (block: Block, text: string) => void;
+  onTextDraftFlush: (block: Block, text: string) => Promise<void>;
   onUpdate: (block: Block, changes: BlockEditorUpdate) => void;
 };

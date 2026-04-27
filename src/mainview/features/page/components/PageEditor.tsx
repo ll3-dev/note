@@ -13,6 +13,8 @@ type PageEditorProps = {
   onFocusNextBlock: (block: Block) => void;
   onFocusPreviousBlock: (block: Block) => void;
   onMoveBlock: (block: Block, afterBlockId: string | null) => void;
+  onTextDraftChange: (block: Block, text: string) => void;
+  onTextDraftFlush: (block: Block, text: string) => Promise<void>;
   onUpdateBlock: (block: Block, changes: BlockEditorUpdate) => void;
 };
 
@@ -23,6 +25,8 @@ export function PageEditor({
   onFocusNextBlock,
   onFocusPreviousBlock,
   onMoveBlock,
+  onTextDraftChange,
+  onTextDraftFlush,
   onUpdateBlock
 }: PageEditorProps) {
   useInputMode();
@@ -54,6 +58,7 @@ export function PageEditor({
         <div
           className="grid min-h-full gap-1 pb-20 pl-10"
           onMouseDown={focusLastBlock}
+          role="presentation"
         >
           {document.blocks.map((block, blockIndex) => (
             <BlockEditor
@@ -78,6 +83,8 @@ export function PageEditor({
               onFocusNext={onFocusNextBlock}
               onFocusPrevious={onFocusPreviousBlock}
               onSelect={selectBlock}
+              onTextDraftChange={onTextDraftChange}
+              onTextDraftFlush={onTextDraftFlush}
               onUpdate={onUpdateBlock}
             />
           ))}

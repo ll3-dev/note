@@ -9,6 +9,7 @@ describe("workspace commands", () => {
       activeScopes: ["global", "workspace"],
       commands: WORKSPACE_COMMANDS,
       context: {
+        closeActiveTab: async () => {},
         toggleSidebar: () => {
           calls.push("toggleSidebar");
         }
@@ -24,10 +25,41 @@ describe("workspace commands", () => {
 
     expect(command?.id).toBe("workspace.sidebar.toggle");
     command?.run({
+      closeActiveTab: async () => {},
       toggleSidebar: () => {
         calls.push("toggleSidebar");
       }
     });
     expect(calls).toEqual(["toggleSidebar"]);
+  });
+
+  test("closes the active tab with Mod+W", async () => {
+    const calls: string[] = [];
+    const command = resolveKeybinding({
+      activeScopes: ["global", "workspace"],
+      commands: WORKSPACE_COMMANDS,
+      context: {
+        closeActiveTab: async () => {
+          calls.push("closeActiveTab");
+        },
+        toggleSidebar: () => {}
+      },
+      event: {
+        altKey: false,
+        ctrlKey: false,
+        key: "w",
+        metaKey: true,
+        shiftKey: false
+      }
+    });
+
+    expect(command?.id).toBe("workspace.tab.closeActive");
+    await command?.run({
+      closeActiveTab: async () => {
+        calls.push("closeActiveTab");
+      },
+      toggleSidebar: () => {}
+    });
+    expect(calls).toEqual(["closeActiveTab"]);
   });
 });

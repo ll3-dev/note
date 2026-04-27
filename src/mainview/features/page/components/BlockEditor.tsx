@@ -28,6 +28,8 @@ export function BlockEditor({
   onFocusNext,
   onFocusPrevious,
   onSelect,
+  onTextDraftChange,
+  onTextDraftFlush,
   onUpdate
 }: BlockEditorProps) {
   const editableRef = useRef<HTMLDivElement>(null);
@@ -46,7 +48,14 @@ export function BlockEditor({
     selectPreviousCommand,
     setSelectedCommandIndex,
     visibleCommands
-  } = useBlockTextEditing({ block, checked, editableRef, onUpdate });
+  } = useBlockTextEditing({
+    block,
+    checked,
+    editableRef,
+    onTextDraftChange,
+    onTextDraftFlush,
+    onUpdate
+  });
   const { handleKeyDown } = useKeyboardShortcuts({
     activeScopes: isCommandMenuOpen
       ? ["global", "editor", "block", "commandMenu"]
@@ -64,6 +73,7 @@ export function BlockEditor({
       onDelete,
       onFocusNext,
       onFocusPrevious,
+      onUpdate,
       selectNextCommand,
       selectPreviousCommand
     },

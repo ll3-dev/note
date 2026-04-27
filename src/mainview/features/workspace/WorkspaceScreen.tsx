@@ -1,5 +1,4 @@
-import { useNavigate } from "@tanstack/react-router";
-import { FormEvent, MouseEvent, useEffect, useLayoutEffect, useMemo, useRef } from "react";
+import { FormEvent, useCallback, useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { useGlobalKeyboardShortcuts } from "@/mainview/features/commands/useGlobalKeyboardShortcuts";
 import { useKeybindingStore } from "@/mainview/features/commands/keybindingStore";
 import { useWorkspaceStore } from "@/mainview/store/useWorkspaceStore";
@@ -7,9 +6,12 @@ import type { Block } from "../../../shared/contracts";
 import { PageEditor } from "../page/components/PageEditor";
 import { useBlockFocus } from "../page/hooks/useBlockFocus";
 import { useBlockKeyboardFocus } from "../page/hooks/useBlockKeyboardFocus";
+import type { BlockEditorUpdate } from "../page/types/blockEditorTypes";
 import { EmptyEditorState } from "./components/EmptyEditorState";
 import { WorkspaceLayout } from "./components/WorkspaceLayout";
+import { useBlockTextSync } from "./hooks/useBlockTextSync";
 import { useWorkspaceMutations } from "./hooks/useWorkspaceMutations";
+import { navigateToPage, useWorkspaceNavigation } from "./hooks/useWorkspaceNavigation";
 import { useWorkspaceQueries } from "./hooks/useWorkspaceQueries";
 import { WORKSPACE_COMMANDS } from "./lib/workspaceCommands";
 
@@ -18,7 +20,6 @@ type WorkspaceScreenProps = {
 };
 
 export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
-  const navigate = useNavigate();
   const activeTabId = useWorkspaceStore((state) => state.activeTabId);
   const closeTab = useWorkspaceStore((state) => state.closeTab);
   const openPageTab = useWorkspaceStore((state) => state.openPageTab);
@@ -60,9 +61,31 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
     selectedDocument,
     setFocusBlockId
   );
+  const saveBlockText = useCallback(
+    async (block: Block, text: string) => {
+      await updateBlockMutation.mutateAsync({ block, text });
+    },
+    [updateBlockMutation]
+  );
+  const {
+    clearPendingText,
+    flushAllTextDrafts,
+    flushQueuedTextDraft,
+    flushTextDraft,
+    queueTextDraft
+  } = useBlockTextSync({ saveText: saveBlockText });
+  const { closeActiveTab, closeWorkspaceTab, navigate, selectPage, selectTab } =
+    useWorkspaceNavigation({
+      activeTabId,
+      closeTab,
+      flushBeforeNavigate: flushAllTextDrafts,
+      openPageTab,
+      setActiveTabId,
+      tabs
+    });
   const workspaceCommandContext = useMemo(
-    () => ({ toggleSidebar }),
-    [toggleSidebar]
+    () => ({ closeActiveTab, toggleSidebar }),
+    [closeActiveTab, toggleSidebar]
   );
 
   useGlobalKeyboardShortcuts({
@@ -101,45 +124,23 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
     }
   }
 
-  function selectPage(page: (typeof pages)[number]) {
-    openPageTab(page);
-    void navigateToPage(navigate, page.id);
-  }
-
-  function selectTab(tabId: string) {
-    const tab = tabs.find((item) => item.id === tabId);
-
-    if (!tab) {
-      return;
-    }
-
-    setActiveTabId(tabId);
-    void navigateToPage(navigate, tab.pageId);
-  }
-
-  function closeWorkspaceTab(event: MouseEvent<HTMLButtonElement>, tabId: string) {
-    event.stopPropagation();
-
-    const remainingTabs = tabs.filter((tab) => tab.id !== tabId);
-    const nextTab =
-      activeTabId === tabId ? remainingTabs[remainingTabs.length - 1] : null;
-
-    closeTab(tabId);
-
-    if (nextTab) {
-      void navigateToPage(navigate, nextTab.pageId, true);
-    } else if (activeTabId === tabId) {
-      void navigate({ to: "/", replace: true });
-    }
-  }
-
   async function createBlockAfter(block: Block) {
+    await flushAllTextDrafts();
     const created = await createBlockMutation.mutateAsync({
       afterBlockId: block.id,
       pageId: block.pageId
     });
 
     setFocusBlockId(created.id);
+  }
+
+  async function updateBlock(block: Block, changes: BlockEditorUpdate) {
+    if (changes.text === undefined) {
+      await flushQueuedTextDraft(block.id);
+    }
+
+    clearPendingText(block.id);
+    updateBlockMutation.mutate({ block, ...changes });
   }
 
   return (
@@ -150,7 +151,9 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
       onCloseTab={closeWorkspaceTab}
       onCreatePage={handleCreatePage}
       onCreateUntitledPage={() => createPageMutation.mutate("Untitled")}
-      onRefreshWorkspace={() => void refreshWorkspace()}
+      onRefreshWorkspace={() => {
+        void flushAllTextDrafts().then(refreshWorkspace);
+      }}
       onSelectPage={selectPage}
       onSelectTab={selectTab}
       pages={pages}
@@ -162,14 +165,22 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
           <PageEditor
             document={selectedDocument}
             onCreateBlockAfter={createBlockAfter}
-            onDeleteBlock={(target) => deleteBlockMutation.mutate(target)}
+            onDeleteBlock={(target) => {
+              void flushAllTextDrafts().then(() =>
+                deleteBlockMutation.mutate(target)
+              );
+            }}
             onFocusNextBlock={focusNextBlock}
             onFocusPreviousBlock={focusPreviousBlock}
-            onMoveBlock={(target, afterBlockId) =>
-              moveBlockMutation.mutate({ afterBlockId, block: target })
-            }
+            onMoveBlock={(target, afterBlockId) => {
+              void flushAllTextDrafts().then(() =>
+                moveBlockMutation.mutate({ afterBlockId, block: target })
+              );
+            }}
+            onTextDraftChange={queueTextDraft}
+            onTextDraftFlush={flushTextDraft}
             onUpdateBlock={(target, changes) =>
-              updateBlockMutation.mutate({ block: target, ...changes })
+              void updateBlock(target, changes)
             }
           />
         ) : (
@@ -178,16 +189,4 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
       </div>
     </WorkspaceLayout>
   );
-}
-
-async function navigateToPage(
-  navigate: ReturnType<typeof useNavigate>,
-  pageId: string,
-  replace = false
-) {
-  await navigate({
-    to: "/pages/$pageId",
-    params: { pageId },
-    replace
-  });
 }

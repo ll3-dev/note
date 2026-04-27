@@ -6,6 +6,7 @@ import type {
   Block,
   BlockProps,
   BlockType,
+  PageDocument,
   Page
 } from "../../../../shared/contracts";
 
@@ -76,8 +77,42 @@ export function useWorkspaceMutations({
         text,
         type
       }),
+    onMutate: async ({ block, props, text, type }) => {
+      const changes = { props, text, type };
+
+      queryClient.setQueryData<PageDocument>(
+        queryKeys.pageDocument(block.pageId),
+        (document) => {
+          if (!document) {
+            return document;
+          }
+
+          return {
+            ...document,
+            blocks: document.blocks.map((item) =>
+              item.id === block.id ? { ...item, ...definedValues(changes) } : item
+            )
+          };
+        }
+      );
+    },
     onSuccess: async (block) => {
-      await invalidateDocument(queryClient, block.pageId);
+      await queryClient.invalidateQueries({ queryKey: queryKeys.pages });
+      queryClient.setQueryData<PageDocument>(
+        queryKeys.pageDocument(block.pageId),
+        (document) => {
+          if (!document) {
+            return document;
+          }
+
+          return {
+            ...document,
+            blocks: document.blocks.map((item) =>
+              item.id === block.id ? block : item
+            )
+          };
+        }
+      );
     }
   });
 
@@ -118,4 +153,10 @@ export function useWorkspaceMutations({
 async function invalidateDocument(client: QueryClient, pageId: string) {
   await client.invalidateQueries({ queryKey: queryKeys.pageDocument(pageId) });
   await client.invalidateQueries({ queryKey: queryKeys.pages });
+}
+
+function definedValues<T extends Record<string, unknown>>(values: T) {
+  return Object.fromEntries(
+    Object.entries(values).filter(([, value]) => value !== undefined)
+  ) as Partial<T>;
 }

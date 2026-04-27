@@ -12,6 +12,8 @@ type UseBlockTextEditingOptions = {
   block: Block;
   checked: boolean;
   editableRef: RefObject<HTMLDivElement | null>;
+  onTextDraftChange: (block: Block, text: string) => void;
+  onTextDraftFlush: (block: Block, text: string) => Promise<void>;
   onUpdate: (block: Block, changes: BlockEditorUpdate) => void;
 };
 
@@ -19,6 +21,8 @@ export function useBlockTextEditing({
   block,
   checked,
   editableRef,
+  onTextDraftChange,
+  onTextDraftFlush,
   onUpdate
 }: UseBlockTextEditingOptions) {
   const [draft, setDraft] = useState(block.text);
@@ -56,7 +60,7 @@ export function useBlockTextEditing({
 
   async function commitDraft() {
     if (draft !== block.text) {
-      onUpdate(block, { text: draft });
+      await onTextDraftFlush(block, draft);
     }
   }
 
@@ -96,6 +100,7 @@ export function useBlockTextEditing({
     }
 
     setDraft(nextValue);
+    onTextDraftChange(block, nextValue);
   }
 
   function closeCommandMenu() {

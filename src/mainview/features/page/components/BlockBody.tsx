@@ -10,7 +10,7 @@ type BlockBodyProps = {
   blockIndex: number;
   checked: boolean;
   onApplyCommand: (command: BlockCommand) => void;
-  onBlur: () => void;
+  onBlur: () => Promise<void>;
   onChange: (value: string) => void;
   onKeyDown: (event: KeyboardEvent<HTMLDivElement>) => void;
   onUpdate: (block: Block, changes: BlockEditorUpdate) => void;
@@ -96,7 +96,7 @@ export function BlockBody({
           )}
           contentEditable="plaintext-only"
           data-placeholder="Type '/' for commands"
-          onBlur={onBlur}
+          onBlur={() => void onBlur()}
           onInput={(event) => onChange(event.currentTarget.textContent ?? "")}
           onKeyDown={onKeyDown}
           onPaste={handlePaste}

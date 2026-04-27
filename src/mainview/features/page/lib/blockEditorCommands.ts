@@ -2,13 +2,14 @@ import type { KeyboardEvent } from "react";
 import type { Command } from "@/mainview/features/commands/types";
 import type { Block } from "../../../../shared/contracts";
 import { isCursorAtEnd, isCursorAtStart } from "./domSelection";
+import type { BlockEditorUpdate } from "../types/blockEditorTypes";
 
 export type BlockShortcutContext = {
   block: Block;
   blocksCount: number;
   applySelectedCommand: () => void;
   closeCommandMenu: () => void;
-  commitDraft: () => void;
+  commitDraft: () => Promise<void>;
   draft: string;
   event: KeyboardEvent<HTMLElement>;
   isCommandMenuOpen: boolean;
@@ -16,6 +17,7 @@ export type BlockShortcutContext = {
   onDelete: (block: Block) => void;
   onFocusNext: (block: Block) => void;
   onFocusPrevious: (block: Block) => void;
+  onUpdate: (block: Block, changes: BlockEditorUpdate) => void;
   selectNextCommand: () => void;
   selectPreviousCommand: () => void;
 };
@@ -57,8 +59,22 @@ export const BLOCK_EDITOR_COMMANDS: Command<BlockShortcutContext>[] = [
     scope: "block",
     title: "Create block below",
     run: async ({ block, commitDraft, onCreateAfter }) => {
-      commitDraft();
+      await commitDraft();
       await onCreateAfter(block);
+    }
+  },
+  {
+    canRun: ({ block, event }) =>
+      block.type !== "paragraph" && isCursorAtStart(event.currentTarget),
+    defaultKeybindings: ["Backspace"],
+    id: "editor.block.resetToParagraph",
+    scope: "block",
+    title: "Reset block to paragraph",
+    run: ({ block, onUpdate }) => {
+      onUpdate(block, {
+        props: {},
+        type: "paragraph"
+      });
     }
   },
   {
@@ -78,8 +94,8 @@ export const BLOCK_EDITOR_COMMANDS: Command<BlockShortcutContext>[] = [
     id: "editor.block.focusPrevious",
     scope: "block",
     title: "Focus previous block",
-    run: ({ block, commitDraft, onFocusPrevious }) => {
-      commitDraft();
+    run: async ({ block, commitDraft, onFocusPrevious }) => {
+      await commitDraft();
       onFocusPrevious(block);
     }
   },
@@ -89,10 +105,17 @@ export const BLOCK_EDITOR_COMMANDS: Command<BlockShortcutContext>[] = [
     id: "editor.block.focusNext",
     scope: "block",
     title: "Focus next block",
-    run: ({ block, commitDraft, onFocusNext }) => {
-      commitDraft();
+    run: async ({ block, commitDraft, onFocusNext }) => {
+      await commitDraft();
       onFocusNext(block);
     }
+  },
+  {
+    defaultKeybindings: ["Tab", "Shift+Tab"],
+    id: "editor.block.keepTabInEditor",
+    scope: "block",
+    title: "Keep tab in editor",
+    run: () => {}
   },
   {
     canRun: ({ isCommandMenuOpen }) => isCommandMenuOpen,
