@@ -1,5 +1,10 @@
-import { PanelLeft, Plus, RefreshCw } from "lucide-react";
-import type { FormEvent, MouseEvent, ReactNode } from "react";
+import { PanelLeft, Plus, RefreshCw, Settings } from "lucide-react";
+import {
+  useState,
+  type FormEvent,
+  type MouseEvent,
+  type ReactNode
+} from "react";
 import { Button } from "@/mainview/components/ui/button";
 import { Input } from "@/mainview/components/ui/input";
 import { ScrollArea } from "@/mainview/components/ui/scroll-area";
@@ -8,9 +13,8 @@ import { useWorkspaceStore } from "@/mainview/store/useWorkspaceStore";
 import type { Page } from "../../../../shared/contracts";
 import { useSidebarResize } from "../hooks/useSidebarResize";
 import type { TextSyncStatus } from "../hooks/useBlockTextSync";
-import { SaveStatusIndicator } from "./SaveStatusIndicator";
 import { SidebarPageTree } from "./SidebarPageTree";
-import { StatusFooter } from "./StatusFooter";
+import { WorkspaceSettingsPanel } from "./WorkspaceSettingsPanel";
 import { WorkspaceTitleBar } from "./WorkspaceTitleBar";
 
 type WorkspaceLayoutProps = {
@@ -66,7 +70,10 @@ export function WorkspaceLayout({
   const sidebarWidth = useWorkspaceStore((state) => state.sidebarWidth);
   const tabs = useWorkspaceStore((state) => state.tabs);
   const toggleSidebar = useWorkspaceStore((state) => state.toggleSidebar);
-  const toggleExpandedPage = useWorkspaceStore((state) => state.toggleExpandedPage);
+  const toggleExpandedPage = useWorkspaceStore(
+    (state) => state.toggleExpandedPage
+  );
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const { handleResizeSidebar, isResizingSidebar } = useSidebarResize({
     setSidebarWidth,
     sidebarWidth
@@ -125,6 +132,14 @@ export function WorkspaceLayout({
                   <RefreshCw className="size-3.5" />
                 </Button>
                 <Button
+                  aria-label="설정"
+                  onClick={() => setIsSettingsOpen((isOpen) => !isOpen)}
+                  size="icon-xs"
+                  variant="ghost"
+                >
+                  <Settings className="size-3.5" />
+                </Button>
+                <Button
                   aria-label="사이드바 닫기"
                   onClick={toggleSidebar}
                   size="icon-xs"
@@ -173,11 +188,15 @@ export function WorkspaceLayout({
                 </nav>
               </ScrollArea>
 
-              <StatusFooter
-                blocksCount={blocksCount}
-                pagesCount={pagesCount}
-                sqliteVersion={sqliteVersion}
-              />
+              {isSettingsOpen ? (
+                <WorkspaceSettingsPanel
+                  blocksCount={blocksCount}
+                  onClose={() => setIsSettingsOpen(false)}
+                  pagesCount={pagesCount}
+                  saveStatus={saveStatus}
+                  sqliteVersion={sqliteVersion}
+                />
+              ) : null}
             </>
             <div
               aria-label="사이드바 너비 조절"
@@ -189,9 +208,6 @@ export function WorkspaceLayout({
         </div>
 
         <section className="workspace-content relative min-w-0 flex-1 bg-background pt-8 transition-[padding-top] duration-150">
-          <div className="save-status-position absolute right-6 top-10 z-10 transition-[top] duration-150">
-            <SaveStatusIndicator status={saveStatus} />
-          </div>
           {children}
         </section>
       </div>

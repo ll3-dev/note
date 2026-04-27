@@ -2,11 +2,15 @@ import { AlertCircle, Check, LoaderCircle } from "lucide-react";
 import type { TextSyncStatus } from "../hooks/useBlockTextSync";
 
 type SaveStatusIndicatorProps = {
+  showIdle?: boolean;
   status: TextSyncStatus;
 };
 
-export function SaveStatusIndicator({ status }: SaveStatusIndicatorProps) {
-  if (status === "idle") {
+export function SaveStatusIndicator({
+  showIdle = false,
+  status
+}: SaveStatusIndicatorProps) {
+  if (status === "idle" && !showIdle) {
     return null;
   }
 
@@ -21,6 +25,13 @@ export function SaveStatusIndicator({ status }: SaveStatusIndicatorProps) {
 }
 
 function getStatusContent(status: TextSyncStatus) {
+  if (status === "idle") {
+    return {
+      icon: <Check className="size-3.5" />,
+      label: "변경사항 없음"
+    };
+  }
+
   if (status === "error") {
     return {
       icon: <AlertCircle className="size-3.5 text-destructive" />,
