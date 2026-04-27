@@ -1,4 +1,6 @@
+import { and, count, eq, gte, isNull, sql } from "drizzle-orm";
 import type { DatabaseHandle } from "../database";
+import { blocks } from "../schema";
 import { getBlock } from "./blockReadRepository";
 
 export function getNextSortKey(
@@ -21,18 +23,20 @@ export function getNextSortKey(
     throw new Error("afterBlockId must belong to the same block list");
   }
 
-  handle.db
-    .query(
-      `
-      UPDATE blocks
-      SET sort_key = printf('%08d', CAST(sort_key AS INTEGER) + 1),
-          updated_at = CURRENT_TIMESTAMP
-      WHERE page_id = ?
-        AND parent_block_id IS ?
-        AND CAST(sort_key AS INTEGER) >= ?
-      `
+  handle.orm
+    .update(blocks)
+    .set({
+      sort_key: sql`printf('%08d', CAST(${blocks.sort_key} AS INTEGER) + 1)`,
+      updated_at: sql`CURRENT_TIMESTAMP`
+    })
+    .where(
+      and(
+        eq(blocks.page_id, pageId),
+        getParentBlockCondition(parentBlockId),
+        gte(sql`CAST(${blocks.sort_key} AS INTEGER)`, nextIndex)
+      )
     )
-    .run(pageId, parentBlockId, nextIndex);
+    .run();
 
   return makeSortKey(nextIndex);
 }
@@ -42,20 +46,21 @@ function getTailSortKey(
   pageId: string,
   parentBlockId: string | null
 ) {
-  const row = handle.db
-    .query(
-      `
-      SELECT COUNT(*) AS count
-      FROM blocks
-      WHERE page_id = ?
-        AND parent_block_id IS ?
-      `
-    )
-    .get(pageId, parentBlockId) as { count: number };
+  const row = handle.orm
+    .select({ count: count() })
+    .from(blocks)
+    .where(and(eq(blocks.page_id, pageId), getParentBlockCondition(parentBlockId)))
+    .get();
 
-  return makeSortKey(row.count);
+  return makeSortKey(row!.count);
 }
 
 export function makeSortKey(index: number): string {
   return String(index).padStart(8, "0");
+}
+
+function getParentBlockCondition(parentBlockId: string | null) {
+  return parentBlockId === null
+    ? isNull(blocks.parent_block_id)
+    : eq(blocks.parent_block_id, parentBlockId);
 }

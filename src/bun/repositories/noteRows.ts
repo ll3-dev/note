@@ -1,27 +1,5 @@
+import type { BlockRow, PageRow } from "../schema";
 import type { Block, BlockProps, BlockType, Page } from "../../shared/contracts";
-
-export type PageRow = {
-  id: string;
-  parent_page_id: string | null;
-  title: string;
-  icon: string | null;
-  cover: string | null;
-  archived_at: string | null;
-  created_at: string;
-  updated_at: string;
-};
-
-export type BlockRow = {
-  id: string;
-  page_id: string;
-  parent_block_id: string | null;
-  type: string;
-  sort_key: string;
-  text: string;
-  props_json: string;
-  created_at: string;
-  updated_at: string;
-};
 
 export function mapPage(row: PageRow): Page {
   return {

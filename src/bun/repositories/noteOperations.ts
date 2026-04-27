@@ -1,3 +1,4 @@
+import { blockOperations } from "../schema";
 import type { DatabaseHandle } from "../database";
 
 export function recordOperation(
@@ -7,24 +8,14 @@ export function recordOperation(
   opType: string,
   payload: unknown
 ) {
-  handle.db
-    .query(
-      `
-      INSERT INTO block_operations (
-        id,
-        entity_type,
-        entity_id,
-        op_type,
-        payload_json
-      )
-      VALUES (?, ?, ?, ?, ?)
-      `
-    )
-    .run(
-      crypto.randomUUID(),
-      entityType,
-      entityId,
-      opType,
-      JSON.stringify(payload)
-    );
+  handle.orm
+    .insert(blockOperations)
+    .values({
+      id: crypto.randomUUID(),
+      entity_type: entityType,
+      entity_id: entityId,
+      op_type: opType,
+      payload_json: JSON.stringify(payload)
+    })
+    .run();
 }

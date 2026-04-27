@@ -30,9 +30,11 @@ const rpc = BrowserView.defineRPC<NoteRPC>({
   }
 });
 
+const mainviewUrl = process.env.NOTE_MAINVIEW_URL ?? "views://mainview/index.html";
+
 new BrowserWindow({
   title: "Note",
-  url: "views://mainview/index.html",
+  url: mainviewUrl,
   frame: {
     x: 80,
     y: 80,

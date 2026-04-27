@@ -1,8 +1,10 @@
-import type { DatabaseHandle } from "../database";
+import { desc, eq, isNull, sql } from "drizzle-orm";
+import { runInTransaction, type DatabaseHandle } from "../database";
+import { pages } from "../schema";
 import { DEFAULT_BLOCK_TYPE, insertBlock } from "./blockRepository";
 import { listBlocksForPage } from "./blockReadRepository";
 import { makeSortKey } from "./blockOrdering";
-import { mapPage, type PageRow } from "./noteRows";
+import { mapPage } from "./noteRows";
 import type {
   CreatePageInput,
   Page,
@@ -10,24 +12,12 @@ import type {
 } from "../../shared/contracts";
 
 export function listPages(handle: DatabaseHandle): Page[] {
-  const rows = handle.db
-    .query(
-      `
-      SELECT
-        id,
-        parent_page_id,
-        title,
-        icon,
-        cover,
-        archived_at,
-        created_at,
-        updated_at
-      FROM pages
-      WHERE archived_at IS NULL
-      ORDER BY updated_at DESC, rowid DESC
-      `
-    )
-    .all() as PageRow[];
+  const rows = handle.orm
+    .select()
+    .from(pages)
+    .where(isNull(pages.archived_at))
+    .orderBy(desc(pages.updated_at), desc(sql`rowid`))
+    .all();
 
   return rows.map(mapPage);
 }
@@ -44,15 +34,15 @@ export function createPage(
 
   const pageId = crypto.randomUUID();
 
-  handle.db.transaction(() => {
-    handle.db
-      .query(
-        `
-        INSERT INTO pages (id, parent_page_id, title)
-        VALUES (?, ?, ?)
-        `
-      )
-      .run(pageId, input.parentPageId ?? null, title);
+  runInTransaction(handle, () => {
+    handle.orm
+      .insert(pages)
+      .values({
+        id: pageId,
+        parent_page_id: input.parentPageId ?? null,
+        title
+      })
+      .run();
 
     insertBlock(handle, {
       pageId,
@@ -62,7 +52,7 @@ export function createPage(
       props: {},
       sortKey: makeSortKey(0)
     });
-  })();
+  });
 
   return {
     page: getPage(handle, pageId),
@@ -71,23 +61,11 @@ export function createPage(
 }
 
 export function getPage(handle: DatabaseHandle, pageId: string): Page {
-  const row = handle.db
-    .query(
-      `
-      SELECT
-        id,
-        parent_page_id,
-        title,
-        icon,
-        cover,
-        archived_at,
-        created_at,
-        updated_at
-      FROM pages
-      WHERE id = ?
-      `
-    )
-    .get(pageId) as PageRow | null;
+  const row = handle.orm
+    .select()
+    .from(pages)
+    .where(eq(pages.id, pageId))
+    .get();
 
   if (!row) {
     throw new Error(`page not found: ${pageId}`);

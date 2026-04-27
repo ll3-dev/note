@@ -1,4 +1,6 @@
-import type { DatabaseHandle } from "../database";
+import { eq, sql } from "drizzle-orm";
+import { runInTransaction, type DatabaseHandle } from "../database";
+import { blocks } from "../schema";
 import { getNextSortKey } from "./blockOrdering";
 import { getBlock } from "./blockReadRepository";
 import { recordOperation } from "./noteOperations";
@@ -22,7 +24,7 @@ export function createBlock(
   const parentBlockId = input.parentBlockId ?? null;
   let block: Block | null = null;
 
-  handle.db.transaction(() => {
+  runInTransaction(handle, () => {
     const sortKey = getNextSortKey(
       handle,
       pageId,
@@ -41,7 +43,7 @@ export function createBlock(
 
     touchPage(handle, pageId);
     recordOperation(handle, "block", block.id, "create", block);
-  })();
+  });
 
   if (!block) {
     throw new Error("failed to create block");
@@ -59,15 +61,16 @@ export function updateBlock(
   const nextText = input.text ?? current.text;
   const nextProps = input.props ?? current.props;
 
-  handle.db
-    .query(
-      `
-      UPDATE blocks
-      SET type = ?, text = ?, props_json = ?, updated_at = CURRENT_TIMESTAMP
-      WHERE id = ?
-      `
-    )
-    .run(nextType, nextText, JSON.stringify(nextProps), input.blockId);
+  handle.orm
+    .update(blocks)
+    .set({
+      type: nextType,
+      text: nextText,
+      props_json: JSON.stringify(nextProps),
+      updated_at: sql`CURRENT_TIMESTAMP`
+    })
+    .where(eq(blocks.id, input.blockId))
+    .run();
 
   touchPage(handle, current.pageId);
 
@@ -87,7 +90,7 @@ export function deleteBlock(
 ): { deleted: true } {
   const current = getBlock(handle, input.blockId);
 
-  handle.db.query("DELETE FROM blocks WHERE id = ?").run(input.blockId);
+  handle.orm.delete(blocks).where(eq(blocks.id, input.blockId)).run();
   touchPage(handle, current.pageId);
   recordOperation(handle, "block", input.blockId, "delete", {});
 
@@ -107,30 +110,18 @@ export function insertBlock(
 ): Block {
   const blockId = crypto.randomUUID();
 
-  handle.db
-    .query(
-      `
-      INSERT INTO blocks (
-        id,
-        page_id,
-        parent_block_id,
-        type,
-        sort_key,
-        text,
-        props_json
-      )
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-      `
-    )
-    .run(
-      blockId,
-      input.pageId,
-      input.parentBlockId,
-      input.type,
-      input.sortKey,
-      input.text,
-      JSON.stringify(input.props)
-    );
+  handle.orm
+    .insert(blocks)
+    .values({
+      id: blockId,
+      page_id: input.pageId,
+      parent_block_id: input.parentBlockId,
+      type: input.type,
+      sort_key: input.sortKey,
+      text: input.text,
+      props_json: JSON.stringify(input.props)
+    })
+    .run();
 
   return getBlock(handle, blockId);
 }

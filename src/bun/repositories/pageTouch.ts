@@ -1,7 +1,11 @@
+import { eq, sql } from "drizzle-orm";
 import type { DatabaseHandle } from "../database";
+import { pages } from "../schema";
 
 export function touchPage(handle: DatabaseHandle, pageId: string) {
-  handle.db
-    .query("UPDATE pages SET updated_at = CURRENT_TIMESTAMP WHERE id = ?")
-    .run(pageId);
+  handle.orm
+    .update(pages)
+    .set({ updated_at: sql`CURRENT_TIMESTAMP` })
+    .where(eq(pages.id, pageId))
+    .run();
 }
