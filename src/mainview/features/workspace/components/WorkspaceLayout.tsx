@@ -111,9 +111,9 @@ export function WorkspaceLayout({
               width: sidebarWidth
             }}
           >
-            <header className="flex h-9 items-center justify-between pl-[76px] pr-2.5">
+            <header className="flex h-10 items-center justify-between pl-[88px] pr-2.5">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-semibold">Note</span>
+                <span className="text-sm font-semibold leading-none">Note</span>
               </div>
               <div className="flex items-center gap-1">
                 <Button

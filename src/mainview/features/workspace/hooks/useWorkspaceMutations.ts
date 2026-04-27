@@ -2,22 +2,18 @@ import type { QueryClient } from "@tanstack/react-query";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { noteApi } from "@/mainview/lib/rpc";
 import { queryKeys } from "@/mainview/lib/queryClient";
-import type {
-  Block,
-  BlockProps,
-  BlockType,
-  PageDocument,
-  Page
-} from "../../../../shared/contracts";
+import type { Block, BlockProps, BlockType, Page, PageDocument } from "../../../../shared/contracts";
 
 type UseWorkspaceMutationsOptions = {
   navigateToPage: (pageId: string) => Promise<void>;
   onPageCreated: (page: Page) => void;
+  onPageUpdated: (page: Page) => void;
 };
 
 export function useWorkspaceMutations({
   navigateToPage,
-  onPageCreated
+  onPageCreated,
+  onPageUpdated
 }: UseWorkspaceMutationsOptions) {
   const queryClient = useQueryClient();
 
@@ -79,40 +75,14 @@ export function useWorkspaceMutations({
       }),
     onMutate: async ({ block, props, text, type }) => {
       const changes = { props, text, type };
-
-      queryClient.setQueryData<PageDocument>(
-        queryKeys.pageDocument(block.pageId),
-        (document) => {
-          if (!document) {
-            return document;
-          }
-
-          return {
-            ...document,
-            blocks: document.blocks.map((item) =>
-              item.id === block.id ? { ...item, ...definedValues(changes) } : item
-            )
-          };
-        }
-      );
+      updateBlockInCache(queryClient, block.pageId, block.id, (item) => ({
+        ...item,
+        ...definedValues(changes)
+      }));
     },
     onSuccess: async (block) => {
       await queryClient.invalidateQueries({ queryKey: queryKeys.pages });
-      queryClient.setQueryData<PageDocument>(
-        queryKeys.pageDocument(block.pageId),
-        (document) => {
-          if (!document) {
-            return document;
-          }
-
-          return {
-            ...document,
-            blocks: document.blocks.map((item) =>
-              item.id === block.id ? block : item
-            )
-          };
-        }
-      );
+      updateBlockInCache(queryClient, block.pageId, block.id, () => block);
     }
   });
 
@@ -131,27 +101,14 @@ export function useWorkspaceMutations({
         title
       }),
     onMutate: async ({ page, title }) => {
-      queryClient.setQueryData<PageDocument>(
-        queryKeys.pageDocument(page.id),
-        (document) =>
-          document
-            ? { ...document, page: { ...document.page, title } }
-            : document
-      );
-      queryClient.setQueryData<Page[]>(queryKeys.pages, (pages) =>
-        pages?.map((item) =>
-          item.id === page.id ? { ...item, title } : item
-        )
-      );
+      const updatedPage = { ...page, title };
+
+      updatePageInCache(queryClient, updatedPage);
+      onPageUpdated(updatedPage);
     },
     onSuccess: async (page) => {
-      queryClient.setQueryData<PageDocument>(
-        queryKeys.pageDocument(page.id),
-        (document) => (document ? { ...document, page } : document)
-      );
-      queryClient.setQueryData<Page[]>(queryKeys.pages, (pages) =>
-        pages?.map((item) => (item.id === page.id ? page : item))
-      );
+      updatePageInCache(queryClient, page);
+      onPageUpdated(page);
       await queryClient.invalidateQueries({ queryKey: queryKeys.pages });
     }
   });
@@ -207,6 +164,33 @@ export function useWorkspaceMutations({
 async function invalidateDocument(client: QueryClient, pageId: string) {
   await client.invalidateQueries({ queryKey: queryKeys.pageDocument(pageId) });
   await client.invalidateQueries({ queryKey: queryKeys.pages });
+}
+
+function updateBlockInCache(
+  client: QueryClient,
+  pageId: string,
+  blockId: string,
+  update: (block: Block) => Block
+) {
+  client.setQueryData<PageDocument>(queryKeys.pageDocument(pageId), (document) => {
+    if (!document) {
+      return document;
+    }
+
+    return {
+      ...document,
+      blocks: document.blocks.map((block) =>
+        block.id === blockId ? update(block) : block
+      )
+    };
+  });
+}
+
+function updatePageInCache(client: QueryClient, page: Page) {
+  client.setQueryData<PageDocument>(queryKeys.pageDocument(page.id), (document) => document ? { ...document, page } : document);
+  client.setQueryData<Page[]>(queryKeys.pages, (pages) =>
+    pages?.map((item) => (item.id === page.id ? page : item))
+  );
 }
 
 function definedValues<T extends Record<string, unknown>>(values: T) {
