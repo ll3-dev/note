@@ -29,7 +29,7 @@ export function BlockDragHandle({
   return (
     <div
       aria-label="block 선택 및 이동"
-      className="block-hover-action flex h-9 w-10 cursor-grab items-center justify-center self-center text-muted-foreground opacity-0 transition-opacity hover:opacity-100 group-hover:opacity-100 active:cursor-grabbing"
+      className="block-hover-action absolute -left-7 top-px flex h-7 w-6 cursor-grab items-center justify-center text-muted-foreground opacity-0 transition-opacity hover:opacity-100 group-hover:opacity-100 active:cursor-grabbing"
       draggable
       onClick={() => onSelect(block)}
       onDragEnd={onDragEnd}

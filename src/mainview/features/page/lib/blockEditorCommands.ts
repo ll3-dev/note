@@ -1,6 +1,7 @@
 import type { KeyboardEvent } from "react";
 import type { Command } from "@/mainview/features/commands/types";
 import type { Block } from "../../../../shared/contracts";
+import { getBlockIndentUpdate, getNextBlockDraft } from "./blockEditingBehavior";
 import { isCursorAtEnd, isCursorAtStart } from "./domSelection";
 import type { BlockEditorUpdate } from "../types/blockEditorTypes";
 
@@ -13,7 +14,11 @@ export type BlockShortcutContext = {
   draft: string;
   event: KeyboardEvent<HTMLElement>;
   isCommandMenuOpen: boolean;
-  onCreateAfter: (block: Block) => Promise<void>;
+  maxIndentDepth: number;
+  onCreateAfter: (
+    block: Block,
+    draft?: ReturnType<typeof getNextBlockDraft>
+  ) => Promise<void>;
   onDelete: (block: Block) => void;
   onFocusNext: (block: Block) => void;
   onFocusPrevious: (block: Block) => void;
@@ -60,7 +65,7 @@ export const BLOCK_EDITOR_COMMANDS: Command<BlockShortcutContext>[] = [
     title: "Create block below",
     run: async ({ block, commitDraft, onCreateAfter }) => {
       await commitDraft();
-      await onCreateAfter(block);
+      await onCreateAfter(block, getNextBlockDraft(block));
     }
   },
   {
@@ -111,11 +116,30 @@ export const BLOCK_EDITOR_COMMANDS: Command<BlockShortcutContext>[] = [
     }
   },
   {
-    defaultKeybindings: ["Tab", "Shift+Tab"],
-    id: "editor.block.keepTabInEditor",
+    defaultKeybindings: ["Tab"],
+    id: "editor.block.indent",
     scope: "block",
-    title: "Keep tab in editor",
-    run: () => {}
+    title: "Indent block",
+    run: ({ block, maxIndentDepth, onUpdate }) => {
+      const update = getBlockIndentUpdate(block, "in", maxIndentDepth);
+
+      if (update) {
+        onUpdate(block, update);
+      }
+    }
+  },
+  {
+    defaultKeybindings: ["Shift+Tab"],
+    id: "editor.block.outdent",
+    scope: "block",
+    title: "Outdent block",
+    run: ({ block, onUpdate }) => {
+      const update = getBlockIndentUpdate(block, "out");
+
+      if (update) {
+        onUpdate(block, update);
+      }
+    }
   },
   {
     canRun: ({ isCommandMenuOpen }) => isCommandMenuOpen,

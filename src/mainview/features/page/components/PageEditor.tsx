@@ -1,14 +1,19 @@
+import type { KeyboardEvent } from "react";
 import { ScrollArea } from "@/mainview/components/ui/scroll-area";
-import type { Block, PageDocument } from "../../../../shared/contracts";
+import type { Block, Page, PageDocument } from "../../../../shared/contracts";
 import { BlockEditor } from "./BlockEditor";
 import { useBlockDragState } from "../hooks/useBlockDragState";
 import { useInputMode } from "../hooks/useInputMode";
 import { useLastBlockFocus } from "../hooks/useLastBlockFocus";
+import {
+  getBlockDepth,
+  type CreateBlockDraft
+} from "../lib/blockEditingBehavior";
 import type { BlockEditorUpdate } from "../types/blockEditorTypes";
 
 type PageEditorProps = {
   document: PageDocument;
-  onCreateBlockAfter: (block: Block) => Promise<void>;
+  onCreateBlockAfter: (block: Block, draft?: CreateBlockDraft) => Promise<void>;
   onDeleteBlock: (block: Block) => void;
   onFocusNextBlock: (block: Block) => void;
   onFocusPreviousBlock: (block: Block) => void;
@@ -16,6 +21,7 @@ type PageEditorProps = {
   onTextDraftChange: (block: Block, text: string) => void;
   onTextDraftFlush: (block: Block, text: string) => Promise<void>;
   onUpdateBlock: (block: Block, changes: BlockEditorUpdate) => void;
+  onUpdatePageTitle: (page: Page, title: string) => void;
 };
 
 export function PageEditor({
@@ -27,7 +33,8 @@ export function PageEditor({
   onMoveBlock,
   onTextDraftChange,
   onTextDraftFlush,
-  onUpdateBlock
+  onUpdateBlock,
+  onUpdatePageTitle
 }: PageEditorProps) {
   useInputMode();
 
@@ -46,17 +53,41 @@ export function PageEditor({
     onMoveBlock
   });
 
+  function saveTitle(target: HTMLElement) {
+    const title = (target.textContent ?? "").trim();
+
+    if (title && title !== document.page.title) {
+      onUpdatePageTitle(document.page, title);
+    } else {
+      target.textContent = document.page.title;
+    }
+  }
+
+  function handleTitleKeyDown(event: KeyboardEvent<HTMLHeadingElement>) {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      saveTitle(event.currentTarget);
+      event.currentTarget.blur();
+    }
+  }
+
   return (
     <>
       <header className="mb-7 pl-10">
-        <h1 className="text-[40px] font-bold leading-tight tracking-normal">
+        <h1
+          className="rounded-sm text-[40px] font-bold leading-tight tracking-normal outline-none"
+          contentEditable="plaintext-only"
+          onBlur={(event) => saveTitle(event.currentTarget)}
+          onKeyDown={handleTitleKeyDown}
+          suppressContentEditableWarning
+        >
           {document.page.title}
         </h1>
       </header>
 
       <ScrollArea className="min-h-0 flex-1">
         <div
-          className="grid min-h-full gap-1 pb-20 pl-10"
+          className="grid min-h-full gap-0.5 pb-20 pl-10"
           onMouseDown={focusLastBlock}
           role="presentation"
         >
@@ -74,6 +105,7 @@ export function PageEditor({
               }
               isSelected={selectedBlockId === block.id}
               key={block.id}
+              maxIndentDepth={getMaxIndentDepth(document.blocks, blockIndex)}
               onCreateAfter={onCreateBlockAfter}
               onDelete={onDeleteBlock}
               onDragEnd={clearDragState}
@@ -92,4 +124,12 @@ export function PageEditor({
       </ScrollArea>
     </>
   );
+}
+
+function getMaxIndentDepth(blocks: Block[], index: number) {
+  if (index === 0) {
+    return 0;
+  }
+
+  return getBlockDepth(blocks[index - 1]) + 1;
 }

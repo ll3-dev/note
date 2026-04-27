@@ -31,6 +31,7 @@ function createContext(overrides: Partial<BlockShortcutContext> = {}) {
     draft: "/",
     event: {} as BlockShortcutContext["event"],
     isCommandMenuOpen: true,
+    maxIndentDepth: 1,
     onCreateAfter: async () => {
       calls.push("onCreateAfter");
     },
@@ -59,8 +60,19 @@ function createContext(overrides: Partial<BlockShortcutContext> = {}) {
 }
 
 describe("block editor commands", () => {
-  test("commits the draft before creating a block below", async () => {
-    const { calls, context } = createContext();
+  test("continues list blocks when creating a block below", async () => {
+    const createdDrafts: unknown[] = [];
+    const { calls, context } = createContext({
+      block: {
+        ...block,
+        props: { depth: 1 },
+        type: "bulleted_list"
+      },
+      onCreateAfter: async (_block, draft) => {
+        calls.push("onCreateAfter");
+        createdDrafts.push(draft);
+      }
+    });
     const command = resolveKeybinding({
       activeScopes: ["global", "editor", "block"],
       commands: BLOCK_EDITOR_COMMANDS,
@@ -77,6 +89,46 @@ describe("block editor commands", () => {
     expect(command?.id).toBe("editor.block.createBelow");
     await command?.run(context);
     expect(calls).toEqual(["commitDraft", "onCreateAfter"]);
+    expect(createdDrafts).toEqual([
+      {
+        props: { depth: 1 },
+        type: "bulleted_list"
+      }
+    ]);
+  });
+
+  test("resets heading blocks to paragraph when creating below", async () => {
+    const createdDrafts: unknown[] = [];
+    const { context } = createContext({
+      block: {
+        ...block,
+        props: { depth: 2 },
+        type: "heading_1"
+      },
+      onCreateAfter: async (_block, draft) => {
+        createdDrafts.push(draft);
+      }
+    });
+    const command = resolveKeybinding({
+      activeScopes: ["global", "editor", "block"],
+      commands: BLOCK_EDITOR_COMMANDS,
+      context,
+      event: {
+        altKey: false,
+        ctrlKey: false,
+        key: "Enter",
+        metaKey: false,
+        shiftKey: false
+      }
+    });
+
+    await command?.run(context);
+    expect(createdDrafts).toEqual([
+      {
+        props: { depth: 2 },
+        type: "paragraph"
+      }
+    ]);
   });
 
   test("closes slash command menu with Escape", () => {
@@ -188,9 +240,58 @@ describe("block editor commands", () => {
     expect(calls).toEqual(["onUpdate:paragraph"]);
   });
 
-  test("keeps Tab inside the editor as a no-op command", () => {
+  test("indents and outdents blocks with Tab and Shift+Tab", () => {
     const { calls, context } = createContext({
       isCommandMenuOpen: false
+    });
+    const indentCommand = resolveKeybinding({
+      activeScopes: ["global", "editor", "block"],
+      commands: BLOCK_EDITOR_COMMANDS,
+      context,
+      event: {
+        altKey: false,
+        ctrlKey: false,
+        key: "Tab",
+        metaKey: false,
+        shiftKey: false
+      }
+    });
+
+    expect(indentCommand?.id).toBe("editor.block.indent");
+    indentCommand?.run(context);
+    expect(calls).toEqual(["onUpdate:undefined"]);
+
+    const outdentContext = {
+      ...context,
+      block: {
+        ...block,
+        props: { depth: 1 }
+      }
+    };
+    const outdentCommand = resolveKeybinding({
+      activeScopes: ["global", "editor", "block"],
+      commands: BLOCK_EDITOR_COMMANDS,
+      context: outdentContext,
+      event: {
+        altKey: false,
+        ctrlKey: false,
+        key: "Tab",
+        metaKey: false,
+        shiftKey: true
+      }
+    });
+
+    expect(outdentCommand?.id).toBe("editor.block.outdent");
+  });
+
+  test("does not skip parent depth when indenting", () => {
+    const { calls, context } = createContext({
+      block: {
+        ...block,
+        props: { depth: 1 }
+      },
+      isCommandMenuOpen: false,
+      maxIndentDepth: 1
     });
     const command = resolveKeybinding({
       activeScopes: ["global", "editor", "block"],
@@ -205,7 +306,7 @@ describe("block editor commands", () => {
       }
     });
 
-    expect(command?.id).toBe("editor.block.keepTabInEditor");
+    expect(command?.id).toBe("editor.block.indent");
     command?.run(context);
     expect(calls).toEqual([]);
   });

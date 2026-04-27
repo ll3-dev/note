@@ -49,7 +49,7 @@ export function BlockBody({
   return (
     <div
       className={cn(
-        "flex min-w-0 items-start gap-2",
+        "flex min-w-0 items-start gap-1",
         blockShellClass(block.type),
       )}
     >
@@ -67,12 +67,12 @@ export function BlockBody({
         />
       ) : null}
       {block.type === "bulleted_list" ? (
-        <span className="mt-2.5 w-4 shrink-0 text-center text-muted-foreground">
-          •
+        <span className="flex h-7 w-3 shrink-0 items-center justify-center">
+          <span className="size-1.5 rounded-full bg-foreground/70" />
         </span>
       ) : null}
       {block.type === "numbered_list" ? (
-        <span className="mt-2.5 w-6 shrink-0 text-right text-sm text-muted-foreground">
+        <span className="flex h-7 w-5 shrink-0 items-center justify-end text-sm font-medium text-muted-foreground">
           {blockIndex + 1}.
         </span>
       ) : null}
@@ -88,7 +88,7 @@ export function BlockBody({
         <div
           aria-label={`${block.type} block`}
           className={cn(
-            "block-editable min-h-9 w-full min-w-0 whitespace-pre-wrap wrap-break-word rounded-sm bg-transparent px-1 py-2 outline-none",
+            "block-editable min-h-7 w-full min-w-0 whitespace-pre-wrap wrap-break-word rounded-sm bg-transparent px-1 py-1 outline-none",
             editableClass(block.type),
             checked &&
               block.type === "todo" &&

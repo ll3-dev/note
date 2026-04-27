@@ -3,6 +3,7 @@ import type {
   BlockProps,
   BlockType
 } from "../../../../shared/contracts";
+import type { CreateBlockDraft } from "../lib/blockEditingBehavior";
 
 export type BlockEditorUpdate = {
   props?: BlockProps;
@@ -18,7 +19,8 @@ export type BlockEditorProps = {
   isDropAfter: boolean;
   isDropBefore: boolean;
   isSelected: boolean;
-  onCreateAfter: (block: Block) => Promise<void>;
+  maxIndentDepth: number;
+  onCreateAfter: (block: Block, draft?: CreateBlockDraft) => Promise<void>;
   onDelete: (block: Block) => void;
   onDragEnd: () => void;
   onDragOver: (block: Block, placement: "before" | "after") => void;

@@ -7,6 +7,7 @@ import { BlockCommandMenu } from "./BlockCommandMenu";
 import { BlockDragHandle } from "./BlockDragHandle";
 import { BlockDropIndicator } from "./BlockDropIndicator";
 import { useBlockTextEditing } from "../hooks/useBlockTextEditing";
+import { getBlockDepth } from "../lib/blockEditingBehavior";
 import { getDropPlacement } from "../lib/blockDrag";
 import { BLOCK_EDITOR_COMMANDS } from "../lib/blockEditorCommands";
 import type { BlockEditorProps } from "../types/blockEditorTypes";
@@ -19,6 +20,7 @@ export function BlockEditor({
   isDropAfter,
   isDropBefore,
   isSelected,
+  maxIndentDepth,
   onCreateAfter,
   onDelete,
   onDragEnd,
@@ -56,6 +58,7 @@ export function BlockEditor({
     onTextDraftFlush,
     onUpdate
   });
+  const depth = getBlockDepth(block);
   const { handleKeyDown } = useKeyboardShortcuts({
     activeScopes: isCommandMenuOpen
       ? ["global", "editor", "block", "commandMenu"]
@@ -69,6 +72,7 @@ export function BlockEditor({
       commitDraft,
       draft,
       isCommandMenuOpen,
+      maxIndentDepth,
       onCreateAfter,
       onDelete,
       onFocusNext,
@@ -93,7 +97,7 @@ export function BlockEditor({
   return (
     <div
       className={cn(
-        "block-editor-shell group relative -ml-10 grid grid-cols-[40px_minmax(0,1fr)] rounded-md py-0.5",
+        "block-editor-shell group relative rounded-md py-px",
         block.type === "quote" && "block-editor-quote bg-muted/30",
         isSelected && "bg-muted/50",
         isDragging && "opacity-50"
@@ -101,6 +105,7 @@ export function BlockEditor({
       data-block-id={block.id}
       onDragOver={handleDragOver}
       onDrop={handleDrop}
+      style={{ marginLeft: depth * 24 }}
     >
       <BlockDropIndicator
         isDropAfter={isDropAfter}
