@@ -17,6 +17,9 @@ const block = {
 function createContext(overrides: Partial<BlockShortcutContext> = {}) {
   const calls: string[] = [];
   const context: BlockShortcutContext = {
+    applyInlineFormat: (commandId) => {
+      calls.push(`applyInlineFormat:${commandId}`);
+    },
     applySelectedCommand: () => {
       calls.push("applySelectedCommand");
     },
@@ -50,11 +53,17 @@ function createContext(overrides: Partial<BlockShortcutContext> = {}) {
     onUpdate: (_block, changes) => {
       calls.push(`onUpdate:${changes.type}`);
     },
+    redoTextDraft: () => {
+      calls.push("redoTextDraft");
+    },
     selectNextCommand: () => {
       calls.push("selectNextCommand");
     },
     selectPreviousCommand: () => {
       calls.push("selectPreviousCommand");
+    },
+    undoTextDraft: () => {
+      calls.push("undoTextDraft");
     },
     ...overrides
   } as BlockShortcutContext;
@@ -285,6 +294,42 @@ describe("block editor commands", () => {
     expect(command?.id).toBe("editor.commandMenu.applySelected");
     command?.run(context);
     expect(calls).toEqual(["applySelectedCommand"]);
+  });
+
+  test("maps Mod+Z and Mod+Shift+Z to text history", () => {
+    const { calls, context } = createContext();
+    const undoCommand = resolveKeybinding({
+      activeScopes: ["global", "editor", "block"],
+      commands: BLOCK_EDITOR_COMMANDS,
+      context,
+      event: {
+        altKey: false,
+        ctrlKey: false,
+        key: "z",
+        metaKey: true,
+        shiftKey: false
+      }
+    });
+
+    expect(undoCommand?.id).toBe("editor.history.undoText");
+    undoCommand?.run(context);
+
+    const redoCommand = resolveKeybinding({
+      activeScopes: ["global", "editor", "block"],
+      commands: BLOCK_EDITOR_COMMANDS,
+      context,
+      event: {
+        altKey: false,
+        ctrlKey: false,
+        key: "z",
+        metaKey: true,
+        shiftKey: true
+      }
+    });
+
+    expect(redoCommand?.id).toBe("editor.history.redoText");
+    redoCommand?.run(context);
+    expect(calls).toEqual(["undoTextDraft", "redoTextDraft"]);
   });
 
   test("resets a non-paragraph block before deleting an empty block", () => {

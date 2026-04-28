@@ -32,9 +32,13 @@ export function BlockEditor({
   onDrop,
   onFocusNext,
   onFocusPrevious,
+  onPasteMarkdown,
   onSelect,
   onTextDraftChange,
   onTextDraftFlush,
+  onTextHistoryApply,
+  onTextRedo,
+  onTextUndo,
   onUpdate
 }: BlockEditorProps) {
   const editableRef = useRef<HTMLDivElement>(null);
@@ -42,6 +46,7 @@ export function BlockEditor({
   const checked = Boolean(block.props.checked);
   const {
     applyCommand,
+    applyInlineFormat,
     applySelectedCommand,
     changeDraft,
     closeCommandMenu,
@@ -52,6 +57,9 @@ export function BlockEditor({
     selectNextCommand,
     selectPreviousCommand,
     setSelectedCommandIndex,
+    syncActiveInlineMarksFromSelection,
+    redoTextDraft,
+    undoTextDraft,
     visibleCommands
   } = useBlockTextEditing({
     block,
@@ -59,6 +67,9 @@ export function BlockEditor({
     editableRef,
     onTextDraftChange,
     onTextDraftFlush,
+    onTextHistoryApply,
+    onTextRedo,
+    onTextUndo,
     onUpdate
   });
   const depth = getBlockDepth(block);
@@ -69,6 +80,7 @@ export function BlockEditor({
     commands: BLOCK_EDITOR_COMMANDS,
     context: {
       applySelectedCommand,
+      applyInlineFormat,
       block,
       blocksCount,
       closeCommandMenu,
@@ -84,8 +96,10 @@ export function BlockEditor({
       onFocusNext,
       onFocusPrevious,
       onUpdate,
+      redoTextDraft,
       selectNextCommand,
-      selectPreviousCommand
+      selectPreviousCommand,
+      undoTextDraft
     },
     keybindings
   });
@@ -129,11 +143,14 @@ export function BlockEditor({
           block={block}
           blockIndex={blockIndex}
           checked={checked}
+          draft={draft}
           numberedListMarker={numberedListMarker}
           onApplyCommand={applyCommand}
           onBlur={commitDraft}
           onChange={changeDraft}
           onKeyDown={handleKeyDown}
+          onPasteMarkdown={onPasteMarkdown}
+          onSelectionChange={syncActiveInlineMarksFromSelection}
           onUpdate={onUpdate}
           editableRef={editableRef}
         />

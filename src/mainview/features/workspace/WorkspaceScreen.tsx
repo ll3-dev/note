@@ -1,22 +1,18 @@
-import {
-  useCallback,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  type SyntheticEvent
-} from "react";
+import { useCallback, useMemo, type SyntheticEvent } from "react";
 import { useGlobalKeyboardShortcuts } from "@/mainview/features/commands/useGlobalKeyboardShortcuts";
 import { useKeybindingStore } from "@/mainview/features/commands/keybindingStore";
 import { useWorkspaceStore } from "@/mainview/store/useWorkspaceStore";
 import type { Block, Page } from "../../../shared/contracts";
-import { PageEditor } from "../page/components/PageEditor";
 import { useBlockFocus } from "../page/hooks/useBlockFocus";
 import { useBlockKeyboardFocus } from "../page/hooks/useBlockKeyboardFocus";
 import type { CreateBlockDraft } from "../page/lib/blockEditingBehavior";
 import type { BlockEditorUpdate } from "../page/types/blockEditorTypes";
-import { EmptyEditorState } from "./components/EmptyEditorState";
+import { WorkspaceEditorPane } from "./components/WorkspaceEditorPane";
 import { WorkspaceLayout } from "./components/WorkspaceLayout";
+import { useBlockBatchActions } from "./hooks/useBlockBatchActions";
 import { useBlockTextSync } from "./hooks/useBlockTextSync";
+import { useInitialPageSelection } from "./hooks/useInitialPageSelection";
+import { useMarkdownClipboard } from "./hooks/useMarkdownClipboard";
 import { useWorkspaceMutations } from "./hooks/useWorkspaceMutations";
 import { navigateToPage, useWorkspaceNavigation } from "./hooks/useWorkspaceNavigation";
 import { useWorkspaceQueries } from "./hooks/useWorkspaceQueries";
@@ -39,7 +35,6 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
   const tabs = useWorkspaceStore((state) => state.tabs);
   const toggleSidebar = useWorkspaceStore((state) => state.toggleSidebar);
   const keybindings = useKeybindingStore((state) => state.keybindings);
-  const hasOpenedInitialPage = useRef(false);
   const activePageId = routePageId ?? selectedPageId;
   const { databaseStatusQuery, pageDocumentQuery, pagesQuery, refreshWorkspace } = useWorkspaceQueries(activePageId);
 
@@ -81,6 +76,22 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
     () => ({ closeActiveTab, toggleSidebar }),
     [closeActiveTab, toggleSidebar]
   );
+  const { copyCurrentPageMarkdown, pasteMarkdown } = useMarkdownClipboard({
+    clearPendingText,
+    createBlock: createBlockMutation.mutateAsync,
+    flushAllTextDrafts,
+    refetchDocument: async () => (await pageDocumentQuery.refetch()).data ?? null,
+    selectedDocument,
+    setFocusBlockId,
+    updateBlock: updateBlockMutation.mutateAsync
+  });
+  const { deleteBlocks, duplicateBlocks } = useBlockBatchActions({
+    clearPendingText,
+    createBlock: createBlockMutation.mutateAsync,
+    deleteBlock: deleteBlockMutation.mutateAsync,
+    flushAllTextDrafts,
+    setFocusBlockId
+  });
 
   useGlobalKeyboardShortcuts({
     activeScopes: ["global", "workspace"],
@@ -88,31 +99,18 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
     context: workspaceCommandContext,
     keybindings
   });
-
-  useLayoutEffect(() => {
-    if (routePageId) {
-      hasOpenedInitialPage.current = true;
-      setSelectedPageId(routePageId);
-      const routePage = pages.find((page) => page.id === routePageId);
-
-      if (routePage) {
-        openPageTab(routePage);
-      }
-    }
-  }, [openPageTab, pages, routePageId, setSelectedPageId]);
-
-  useLayoutEffect(() => {
-    if (!activePageId && pages[0] && !hasOpenedInitialPage.current) {
-      hasOpenedInitialPage.current = true;
-      openPageTab(pages[0]);
-      void navigateToPage(navigate, pages[0].id, true);
-    }
-  }, [activePageId, navigate, openPageTab, pages]);
+  useInitialPageSelection({
+    activePageId,
+    navigate,
+    openPageTab,
+    pages,
+    routePageId,
+    setSelectedPageId
+  });
 
   function handleCreatePage(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
     const title = pageTitleDraft.trim();
-
     if (title) {
       createPageMutation.mutate(title);
     }
@@ -127,7 +125,6 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
       text: draft?.text,
       type: draft?.type
     });
-
     setFocusBlockId(created.id);
   }
 
@@ -135,14 +132,12 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
     if (changes.text === undefined) {
       await flushQueuedTextDraft(block.id);
     }
-
     clearPendingText(block.id);
     updateBlockMutation.mutate({ block, ...changes });
   }
 
   function updatePageTitle(page: Page, title: string) {
     const nextTitle = title.trim();
-
     if (nextTitle && nextTitle !== page.title) {
       updatePageMutation.mutate({ page, title: nextTitle });
     }
@@ -150,7 +145,6 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
 
   function focusFirstBlock() {
     const firstBlock = selectedDocument?.blocks[0];
-
     if (firstBlock) {
       setFocusBlockId(firstBlock.id, "start");
     }
@@ -162,6 +156,7 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
       blocksCount={databaseStatusQuery.data?.blocksCount ?? 0}
       isCreatingPage={createPageMutation.isPending}
       onCloseTab={closeWorkspaceTab}
+      onCopyCurrentPageMarkdown={() => void copyCurrentPageMarkdown()}
       onCreatePage={handleCreatePage}
       onCreateUntitledPage={() => createPageMutation.mutate("Untitled")}
       onMovePage={(page, parentPageId, afterPageId) => {
@@ -177,33 +172,29 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
       saveStatus={saveStatus}
       sqliteVersion={databaseStatusQuery.data?.sqliteVersion}
     >
-      <div className="mx-auto flex h-full w-full max-w-230 flex-col px-10 py-8">
-        {selectedDocument ? (
-          <PageEditor
-            document={selectedDocument}
-            onCreateBlockAfter={createBlockAfter}
-            onDeleteBlock={(target) => {
-              void flushAllTextDrafts().then(() =>
-                deleteBlockMutation.mutate(target)
-              );
-            }}
-            onFocusFirstBlock={focusFirstBlock}
-            onFocusNextBlock={focusNextBlock}
-            onFocusPreviousBlock={focusPreviousBlock}
-            onMoveBlock={(target, afterBlockId) => {
-              void flushAllTextDrafts().then(() =>
-                moveBlockMutation.mutate({ afterBlockId, block: target })
-              );
-            }}
-            onTextDraftChange={queueTextDraft}
-            onTextDraftFlush={flushTextDraft}
-            onUpdateBlock={(target, changes) => void updateBlock(target, changes)}
-            onUpdatePageTitle={updatePageTitle}
-          />
-        ) : (
-          <EmptyEditorState isLoading={pagesQuery.isLoading} />
-        )}
-      </div>
+      <WorkspaceEditorPane
+        document={selectedDocument}
+        isLoading={pagesQuery.isLoading}
+        onCreateBlockAfter={createBlockAfter}
+        onDeleteBlock={(target) => {
+          void flushAllTextDrafts().then(() => deleteBlockMutation.mutate(target));
+        }}
+        onDeleteBlocks={(targets) => void deleteBlocks(targets)}
+        onDuplicateBlocks={(targets) => duplicateBlocks(targets)}
+        onFocusFirstBlock={focusFirstBlock}
+        onFocusNextBlock={focusNextBlock}
+        onFocusPreviousBlock={focusPreviousBlock}
+        onMoveBlock={(target, afterBlockId) => {
+          void flushAllTextDrafts().then(() =>
+            moveBlockMutation.mutate({ afterBlockId, block: target })
+          );
+        }}
+        onPasteMarkdown={pasteMarkdown}
+        onTextDraftChange={queueTextDraft}
+        onTextDraftFlush={flushTextDraft}
+        onUpdateBlock={(target, changes) => void updateBlock(target, changes)}
+        onUpdatePageTitle={updatePageTitle}
+      />
     </WorkspaceLayout>
   );
 }

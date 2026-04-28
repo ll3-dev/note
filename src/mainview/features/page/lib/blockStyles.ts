@@ -22,6 +22,8 @@ export function editableClass(type: BlockType) {
       return "font-mono text-[14px]";
     case "quote":
       return "text-[17px] italic";
+    case "page_link":
+      return "font-medium text-primary underline underline-offset-3";
     default:
       return "text-[15px]";
   }

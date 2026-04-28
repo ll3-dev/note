@@ -134,6 +134,41 @@ describe("notes repository", () => {
     expect(document.blocks.map((item) => item.id)).not.toContain(block.id);
   });
 
+  test("normalizes inline marks before storing block props", () => {
+    const handle = openTempDatabase();
+    const page = createPage(handle, { title: "Formatting" }).page;
+
+    const block = createBlock(handle, {
+      pageId: page.id,
+      text: "Hello world",
+      props: {
+        inlineMarks: [
+          { end: 5, start: 0, type: "bold" },
+          { end: 50, start: 6, type: "code" },
+          { end: 2, start: 2, type: "italic" },
+          { end: 4, start: 1, type: "unknown" }
+        ]
+      }
+    });
+
+    expect(block.props).toEqual({
+      inlineMarks: [
+        { end: 5, start: 0, type: "bold" },
+        { end: 11, start: 6, type: "code" }
+      ]
+    });
+
+    const updated = updateBlock(handle, {
+      blockId: block.id,
+      text: "Hello",
+      props: block.props
+    });
+
+    expect(updated.props).toEqual({
+      inlineMarks: [{ end: 5, start: 0, type: "bold" }]
+    });
+  });
+
   test("inserts blocks after an existing block without sort key collisions", () => {
     const handle = openTempDatabase();
     const page = createPage(handle, { title: "Ordered" }).page;

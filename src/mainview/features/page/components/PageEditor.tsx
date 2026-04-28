@@ -1,29 +1,43 @@
-import { useEffect, useLayoutEffect, useRef, type KeyboardEvent } from "react";
+import { useRef } from "react";
 import { ScrollArea } from "@/mainview/components/ui/scroll-area";
 import type { Block, Page, PageDocument } from "../../../../shared/contracts";
 import { BlockEditor } from "./BlockEditor";
+import { BlockSelectionToolbar } from "./BlockSelectionToolbar";
+import {
+  PageTitleEditor,
+  type PageTitleEditorHandle
+} from "./PageTitleEditor";
 import { useBlockDragState } from "../hooks/useBlockDragState";
 import { useInputMode } from "../hooks/useInputMode";
 import { useLastBlockFocus } from "../hooks/useLastBlockFocus";
+import { usePageAutomergeHistory } from "../hooks/usePageAutomergeHistory";
+import type { CreateBlockDraft } from "../lib/blockEditingBehavior";
 import {
-  getBlockDepth,
-  type CreateBlockDraft
-} from "../lib/blockEditingBehavior";
-import {
-  getNumberedListMarkers,
-  getNumberedListStartForDepth
-} from "../lib/blockNumbering";
-import { placeCursorAtEnd } from "../lib/domSelection";
-import type { BlockEditorUpdate } from "../types/blockEditorTypes";
+  getMaxIndentDepth,
+  getNumberedListStartAfterDepthChange
+} from "../lib/blockIndentTargets";
+import { getNumberedListMarkers } from "../lib/blockNumbering";
+import type {
+  BlockEditorUpdate,
+  TextSelectionOffsets
+} from "../types/blockEditorTypes";
 
 type PageEditorProps = {
   document: PageDocument;
   onCreateBlockAfter: (block: Block, draft?: CreateBlockDraft) => Promise<void>;
   onDeleteBlock: (block: Block) => void;
+  onDeleteBlocks: (blocks: Block[]) => void;
+  onDuplicateBlocks: (blocks: Block[]) => Promise<void> | void;
   onFocusNextBlock: (block: Block) => void;
   onFocusFirstBlock: () => void;
   onFocusPreviousBlock: (block: Block) => void;
   onMoveBlock: (block: Block, afterBlockId: string | null) => void;
+  onPasteMarkdown: (
+    block: Block,
+    markdown: string,
+    editableElement: HTMLElement,
+    selection: TextSelectionOffsets
+  ) => Promise<void> | void;
   onTextDraftChange: (block: Block, text: string) => void;
   onTextDraftFlush: (block: Block, text: string) => Promise<void>;
   onUpdateBlock: (block: Block, changes: BlockEditorUpdate) => void;
@@ -34,18 +48,22 @@ export function PageEditor({
   document,
   onCreateBlockAfter,
   onDeleteBlock,
+  onDeleteBlocks,
+  onDuplicateBlocks,
   onFocusFirstBlock,
   onFocusNextBlock,
   onFocusPreviousBlock,
   onMoveBlock,
+  onPasteMarkdown,
   onTextDraftChange,
   onTextDraftFlush,
   onUpdateBlock,
   onUpdatePageTitle
 }: PageEditorProps) {
   useInputMode();
-  const titleRef = useRef<HTMLDivElement>(null);
-  const titleSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const titleRef = useRef<PageTitleEditorHandle>(null);
+  const { recordBlockText, redoBlockText, undoBlockText } =
+    usePageAutomergeHistory(document);
 
   const focusLastBlock = useLastBlockFocus({
     document,
@@ -54,11 +72,12 @@ export function PageEditor({
   const numberedListMarkers = getNumberedListMarkers(document.blocks);
   const {
     clearDragState,
+    clearBlockSelection,
     draggedBlockId,
     dropBlock,
     dropTarget,
     selectBlock,
-    selectedBlockId,
+    selectedBlockIds,
     setDropPlacement,
     startDrag
   } = useBlockDragState({
@@ -66,77 +85,31 @@ export function PageEditor({
     onMoveBlock
   });
 
-  useLayoutEffect(() => {
-    const titleElement = titleRef.current;
-
-    if (titleElement && window.document.activeElement !== titleElement) {
-      titleElement.textContent = document.page.title;
-    }
-  }, [document.page.id, document.page.title]);
-
-  useEffect(() => clearTitleSaveTimer, []);
-
-  function clearTitleSaveTimer() {
-    if (titleSaveTimerRef.current) {
-      clearTimeout(titleSaveTimerRef.current);
-      titleSaveTimerRef.current = null;
-    }
-  }
-
-  function saveTitle(target: HTMLElement) {
-    clearTitleSaveTimer();
-    const title = (target.textContent ?? "").trim();
-
-    if (title && title !== document.page.title) {
-      onUpdatePageTitle(document.page, title);
-    } else {
-      target.textContent = document.page.title;
-    }
-  }
-
-  function queueTitleSave(target: HTMLElement) {
-    clearTitleSaveTimer();
-    titleSaveTimerRef.current = setTimeout(() => {
-      saveTitle(target);
-    }, 700);
-  }
-
-  function handleTitleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
-    if (event.key === "Enter") {
-      event.preventDefault();
-      saveTitle(event.currentTarget);
-      event.currentTarget.blur();
-    }
-
-    if (event.key === "ArrowDown") {
-      event.preventDefault();
-      saveTitle(event.currentTarget);
-      onFocusFirstBlock();
-    }
-  }
-
   function focusTitle() {
-    if (titleRef.current) {
-      placeCursorAtEnd(titleRef.current);
-    }
+    titleRef.current?.focus();
+  }
+
+  const selectedBlocks = document.blocks.filter((block) =>
+    selectedBlockIds.includes(block.id)
+  );
+
+  function handleTextDraftChange(block: Block, text: string) {
+    recordBlockText(block, text);
+    onTextDraftChange(block, text);
+  }
+
+  function handleHistoryTextApply(block: Block, text: string) {
+    onTextDraftChange(block, text);
   }
 
   return (
     <>
-      <header className="mb-7 pl-10">
-        <div
-          aria-level={1}
-          aria-label={document.page.title}
-          className="rounded-sm text-[40px] font-bold leading-tight tracking-normal outline-none"
-          contentEditable="plaintext-only"
-          onBlur={(event) => saveTitle(event.currentTarget)}
-          onInput={(event) => queueTitleSave(event.currentTarget)}
-          onKeyDown={handleTitleKeyDown}
-          ref={titleRef}
-          role="heading"
-          suppressContentEditableWarning
-        />
-      </header>
+      <PageTitleEditor
+        onFocusFirstBlock={onFocusFirstBlock}
+        onUpdatePageTitle={onUpdatePageTitle}
+        page={document.page}
+        ref={titleRef}
+      />
 
       <ScrollArea className="min-h-0 flex-1">
         <div
@@ -144,6 +117,18 @@ export function PageEditor({
           onMouseDown={focusLastBlock}
           role="presentation"
         >
+          <BlockSelectionToolbar
+            count={selectedBlocks.length}
+            onClear={clearBlockSelection}
+            onDelete={() => {
+              onDeleteBlocks(selectedBlocks);
+              clearBlockSelection();
+            }}
+            onDuplicate={() => {
+              void onDuplicateBlocks(selectedBlocks);
+              clearBlockSelection();
+            }}
+          />
           {document.blocks.map((block, blockIndex) => (
             <BlockEditor
               block={block}
@@ -156,7 +141,7 @@ export function PageEditor({
               isDropBefore={
                 dropTarget?.blockId === block.id && dropTarget.placement === "before"
               }
-              isSelected={selectedBlockId === block.id}
+              isSelected={selectedBlockIds.includes(block.id)}
               key={block.id}
               maxIndentDepth={getMaxIndentDepth(document.blocks, blockIndex)}
               numberedListMarker={numberedListMarkers.get(block.id) ?? null}
@@ -182,53 +167,18 @@ export function PageEditor({
               onFocusPrevious={(target) =>
                 blockIndex === 0 ? focusTitle() : onFocusPreviousBlock(target)
               }
+              onPasteMarkdown={onPasteMarkdown}
               onSelect={selectBlock}
-              onTextDraftChange={onTextDraftChange}
+              onTextDraftChange={handleTextDraftChange}
               onTextDraftFlush={onTextDraftFlush}
+              onTextHistoryApply={handleHistoryTextApply}
+              onTextRedo={(target) => redoBlockText(target.id)}
+              onTextUndo={(target) => undoBlockText(target.id)}
               onUpdate={onUpdateBlock}
             />
           ))}
         </div>
       </ScrollArea>
     </>
-  );
-}
-
-function getMaxIndentDepth(blocks: Block[], index: number) {
-  if (index === 0) {
-    return 0;
-  }
-
-  return getBlockDepth(blocks[index - 1]) + 1;
-}
-
-function getNumberedListStartAfterDepthChange(
-  blocks: Block[],
-  index: number,
-  direction: "in" | "out",
-  numberedListMarkers: Map<string, number>
-) {
-  const block = blocks[index];
-
-  if (block.type !== "numbered_list") {
-    return null;
-  }
-
-  const depth = getBlockDepth(block);
-  const maxIndentDepth = getMaxIndentDepth(blocks, index);
-  const targetDepth =
-    direction === "in"
-      ? Math.min(depth + 1, maxIndentDepth)
-      : Math.max(depth - 1, 0);
-
-  if (targetDepth === depth) {
-    return null;
-  }
-
-  return getNumberedListStartForDepth(
-    blocks,
-    index,
-    targetDepth,
-    numberedListMarkers
   );
 }

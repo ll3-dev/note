@@ -19,6 +19,7 @@ const EMPTY_ENTER_RESET_TYPES = new Set<BlockType>([
 export type BlockShortcutContext = {
   block: Block;
   blocksCount: number;
+  applyInlineFormat: (commandId: string) => void;
   applySelectedCommand: () => void;
   closeCommandMenu: () => void;
   commitDraft: () => Promise<void>;
@@ -37,11 +38,58 @@ export type BlockShortcutContext = {
   onFocusNext: (block: Block) => void;
   onFocusPrevious: (block: Block) => void;
   onUpdate: (block: Block, changes: BlockEditorUpdate) => void;
+  redoTextDraft: () => void;
   selectNextCommand: () => void;
   selectPreviousCommand: () => void;
+  undoTextDraft: () => void;
 };
 
 export const BLOCK_EDITOR_COMMANDS: Command<BlockShortcutContext>[] = [
+  {
+    defaultKeybindings: ["Mod+Z"],
+    id: "editor.history.undoText",
+    scope: "block",
+    title: "Undo text edit",
+    run: ({ undoTextDraft }) => {
+      undoTextDraft();
+    }
+  },
+  {
+    defaultKeybindings: ["Mod+Shift+Z"],
+    id: "editor.history.redoText",
+    scope: "block",
+    title: "Redo text edit",
+    run: ({ redoTextDraft }) => {
+      redoTextDraft();
+    }
+  },
+  {
+    defaultKeybindings: ["Mod+B"],
+    id: "editor.inline.bold",
+    scope: "block",
+    title: "Bold selected text",
+    run: ({ applyInlineFormat }) => {
+      applyInlineFormat("format-bold");
+    }
+  },
+  {
+    defaultKeybindings: ["Mod+I"],
+    id: "editor.inline.italic",
+    scope: "block",
+    title: "Italic selected text",
+    run: ({ applyInlineFormat }) => {
+      applyInlineFormat("format-italic");
+    }
+  },
+  {
+    defaultKeybindings: ["Mod+E"],
+    id: "editor.inline.code",
+    scope: "block",
+    title: "Inline code selected text",
+    run: ({ applyInlineFormat }) => {
+      applyInlineFormat("format-inline-code");
+    }
+  },
   {
     canRun: ({ isCommandMenuOpen }) => isCommandMenuOpen,
     defaultKeybindings: ["Enter"],

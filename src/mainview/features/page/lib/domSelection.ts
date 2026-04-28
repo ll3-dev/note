@@ -20,6 +20,18 @@ export function placeCursorAtStart(element: HTMLElement) {
   selection?.addRange(range);
 }
 
+export function placeCursorAtOffset(element: HTMLElement, offset: number) {
+  const range = window.document.createRange();
+  const selection = window.getSelection();
+  const target = findTextPosition(element, offset);
+
+  element.focus();
+  range.setStart(target.node, target.offset);
+  range.collapse(true);
+  selection?.removeAllRanges();
+  selection?.addRange(range);
+}
+
 export function isCursorAtStart(element: HTMLElement) {
   return getCursorOffset(element) === 0;
 }
@@ -28,6 +40,28 @@ export function isCursorAtEnd(element: HTMLElement) {
   const offset = getCursorOffset(element);
 
   return offset !== null && offset === (element.textContent ?? "").length;
+}
+
+export function getTextSelectionOffsets(element: HTMLElement) {
+  const selection = window.getSelection();
+
+  if (!selection?.rangeCount) {
+    return null;
+  }
+
+  const range = selection.getRangeAt(0);
+
+  if (
+    !element.contains(range.startContainer) ||
+    !element.contains(range.endContainer)
+  ) {
+    return null;
+  }
+
+  return {
+    end: getRangeOffset(element, range.endContainer, range.endOffset),
+    start: getRangeOffset(element, range.startContainer, range.startOffset)
+  };
 }
 
 function getCursorOffset(element: HTMLElement) {
@@ -48,4 +82,39 @@ function getCursorOffset(element: HTMLElement) {
   cursorRange.setEnd(range.startContainer, range.startOffset);
 
   return cursorRange.toString().length;
+}
+
+function getRangeOffset(
+  element: HTMLElement,
+  container: Node,
+  offset: number
+) {
+  const range = window.document.createRange();
+
+  range.selectNodeContents(element);
+  range.setEnd(container, offset);
+
+  return range.toString().length;
+}
+
+function findTextPosition(element: HTMLElement, offset: number) {
+  const walker = window.document.createTreeWalker(
+    element,
+    NodeFilter.SHOW_TEXT
+  );
+  let remaining = Math.max(0, offset);
+  let node = walker.nextNode();
+
+  while (node) {
+    const length = node.textContent?.length ?? 0;
+
+    if (remaining <= length) {
+      return { node, offset: remaining };
+    }
+
+    remaining -= length;
+    node = walker.nextNode();
+  }
+
+  return { node: element, offset: element.childNodes.length };
 }

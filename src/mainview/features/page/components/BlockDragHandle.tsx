@@ -6,7 +6,7 @@ type BlockDragHandleProps = {
   block: Block;
   onDragEnd: () => void;
   onDragStart: (block: Block) => void;
-  onSelect: (block: Block) => void;
+  onSelect: (block: Block, event?: MouseEvent) => void;
 };
 
 export function BlockDragHandle({
@@ -15,30 +15,30 @@ export function BlockDragHandle({
   onDragStart,
   onSelect
 }: BlockDragHandleProps) {
-  function handleDragStart(event: DragEvent<HTMLDivElement>) {
+  function handleDragStart(event: DragEvent<HTMLButtonElement>) {
     event.dataTransfer.effectAllowed = "move";
     event.dataTransfer.setData("text/plain", block.id);
     onDragStart(block);
   }
 
-  function handleMouseDown(event: MouseEvent<HTMLDivElement>) {
+  function handleMouseDown(event: MouseEvent<HTMLButtonElement>) {
     event.stopPropagation();
-    onSelect(block);
+    onSelect(block, event);
   }
 
   return (
-    <div
+    <button
       aria-label="block 선택 및 이동"
       className="block-hover-action absolute -left-7 top-px flex h-7 w-6 cursor-grab items-center justify-center text-muted-foreground opacity-0 transition-opacity hover:opacity-100 group-hover:opacity-100 active:cursor-grabbing"
       draggable
-      onClick={() => onSelect(block)}
+      onClick={(event) => onSelect(block, event)}
       onDragEnd={onDragEnd}
       onDragStart={handleDragStart}
       onMouseDown={handleMouseDown}
-      role="button"
       tabIndex={-1}
+      type="button"
     >
       <GripVertical className="size-4" />
-    </div>
+    </button>
   );
 }

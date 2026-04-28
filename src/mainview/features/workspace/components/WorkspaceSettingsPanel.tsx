@@ -1,4 +1,4 @@
-import { Database, Monitor, Moon, Palette, Save, Sun, X } from "lucide-react";
+import { ClipboardCopy, Database, Monitor, Moon, Palette, Save, Sun, X } from "lucide-react";
 import { Button } from "@/mainview/components/ui/button";
 import {
   themeAppearanceLabels,
@@ -15,6 +15,7 @@ import { SaveStatusIndicator } from "./SaveStatusIndicator";
 type WorkspaceSettingsPanelProps = {
   blocksCount: number;
   onClose: () => void;
+  onCopyCurrentPageMarkdown: () => void;
   pagesCount: number;
   saveStatus: TextSyncStatus;
   sqliteVersion?: string;
@@ -23,6 +24,7 @@ type WorkspaceSettingsPanelProps = {
 export function WorkspaceSettingsPanel({
   blocksCount,
   onClose,
+  onCopyCurrentPageMarkdown,
   pagesCount,
   saveStatus,
   sqliteVersion
@@ -127,6 +129,22 @@ export function WorkspaceSettingsPanel({
             <span>저장</span>
           </div>
           <SaveStatusIndicator showIdle status={saveStatus} />
+        </div>
+
+        <div className="grid gap-1.5">
+          <div className="flex items-center gap-2 text-foreground">
+            <ClipboardCopy className="size-3.5" />
+            <span>Markdown</span>
+          </div>
+          <Button
+            className="h-8 justify-start px-2 text-xs"
+            onClick={onCopyCurrentPageMarkdown}
+            size="sm"
+            type="button"
+            variant="outline"
+          >
+            현재 페이지 Markdown 복사
+          </Button>
         </div>
 
         <div className="grid gap-1.5">

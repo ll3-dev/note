@@ -23,6 +23,7 @@ type WorkspaceLayoutProps = {
   children: ReactNode;
   isCreatingPage: boolean;
   onCloseTab: (event: MouseEvent<HTMLButtonElement>, tabId: string) => void;
+  onCopyCurrentPageMarkdown: () => void;
   onCreatePage: (event: SyntheticEvent<HTMLFormElement>) => void;
   onCreateUntitledPage: () => void;
   onMovePage: (
@@ -45,6 +46,7 @@ export function WorkspaceLayout({
   children,
   isCreatingPage,
   onCloseTab,
+  onCopyCurrentPageMarkdown,
   onCreatePage,
   onCreateUntitledPage,
   onMovePage,
@@ -192,6 +194,7 @@ export function WorkspaceLayout({
                 <WorkspaceSettingsPanel
                   blocksCount={blocksCount}
                   onClose={() => setIsSettingsOpen(false)}
+                  onCopyCurrentPageMarkdown={onCopyCurrentPageMarkdown}
                   pagesCount={pagesCount}
                   saveStatus={saveStatus}
                   sqliteVersion={sqliteVersion}

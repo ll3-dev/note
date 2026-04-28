@@ -2,6 +2,7 @@ import { eq, sql } from "drizzle-orm";
 import { runInTransaction, type DatabaseHandle } from "../database";
 import { blocks } from "../schema";
 import { getNextSortKey } from "./blockOrdering";
+import { normalizeBlockProps } from "./blockProps";
 import { getBlock } from "./blockReadRepository";
 import { recordOperation } from "./noteOperations";
 import { touchPage } from "./pageTouch";
@@ -59,7 +60,7 @@ export function updateBlock(
   const current = getBlock(handle, input.blockId);
   const nextType = input.type ?? current.type;
   const nextText = input.text ?? current.text;
-  const nextProps = input.props ?? current.props;
+  const nextProps = normalizeBlockProps(input.props ?? current.props, nextText);
 
   handle.orm
     .update(blocks)
@@ -119,7 +120,7 @@ export function insertBlock(
       type: input.type,
       sort_key: input.sortKey,
       text: input.text,
-      props_json: JSON.stringify(input.props)
+      props_json: JSON.stringify(normalizeBlockProps(input.props, input.text))
     })
     .run();
 
