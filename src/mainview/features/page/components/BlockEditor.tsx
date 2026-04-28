@@ -141,6 +141,7 @@ export function BlockEditor({
         {isCommandMenuOpen ? (
           <BlockCommandMenu
             activeIndex={selectedCommandIndex}
+            anchorRef={editableRef}
             commands={visibleCommands}
             onActiveIndexChange={setSelectedCommandIndex}
             onSelect={applyCommand}
