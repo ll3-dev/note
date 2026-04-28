@@ -26,8 +26,8 @@ type UseBlockTextEditingOptions = {
   onTextDraftChange: (block: Block, text: string) => void;
   onTextDraftFlush: (block: Block, text: string) => Promise<void>;
   onTextHistoryApply: (block: Block, text: string) => void;
-  onTextRedo: (block: Block) => string | null;
-  onTextUndo: (block: Block) => string | null;
+  onTextRedo: (block: Block) => Promise<string | null>;
+  onTextUndo: (block: Block) => Promise<string | null>;
   onUpdate: (block: Block, changes: BlockEditorUpdate) => void;
 };
 
@@ -172,15 +172,15 @@ export function useBlockTextEditing({
     onTextDraftChange(block, nextValue);
   }
 
-  function redoTextDraft() {
-    applyHistoryTextDraft(onTextRedo(block));
+  async function redoTextDraft() {
+    await applyHistoryTextDraft(await onTextRedo(block));
   }
 
-  function undoTextDraft() {
-    applyHistoryTextDraft(onTextUndo(block));
+  async function undoTextDraft() {
+    await applyHistoryTextDraft(await onTextUndo(block));
   }
 
-  function applyHistoryTextDraft(nextText: string | null) {
+  async function applyHistoryTextDraft(nextText: string | null) {
     if (nextText === null) {
       return;
     }

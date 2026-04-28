@@ -296,7 +296,7 @@ describe("block editor commands", () => {
     expect(calls).toEqual(["applySelectedCommand"]);
   });
 
-  test("maps Mod+Z and Mod+Shift+Z to text history", () => {
+  test("maps Mod+Z and Mod+Shift+Z to text history", async () => {
     const { calls, context } = createContext();
     const undoCommand = resolveKeybinding({
       activeScopes: ["global", "editor", "block"],
@@ -312,7 +312,7 @@ describe("block editor commands", () => {
     });
 
     expect(undoCommand?.id).toBe("editor.history.undoText");
-    undoCommand?.run(context);
+    await undoCommand?.run(context);
 
     const redoCommand = resolveKeybinding({
       activeScopes: ["global", "editor", "block"],
@@ -328,8 +328,13 @@ describe("block editor commands", () => {
     });
 
     expect(redoCommand?.id).toBe("editor.history.redoText");
-    redoCommand?.run(context);
-    expect(calls).toEqual(["undoTextDraft", "redoTextDraft"]);
+    await redoCommand?.run(context);
+    expect(calls).toEqual([
+      "commitDraft",
+      "undoTextDraft",
+      "commitDraft",
+      "redoTextDraft"
+    ]);
   });
 
   test("resets a non-paragraph block before deleting an empty block", () => {

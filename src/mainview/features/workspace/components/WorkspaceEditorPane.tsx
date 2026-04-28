@@ -28,6 +28,8 @@ type WorkspaceEditorPaneProps = {
   onTextDraftChange: (block: Block, text: string) => void;
   onTextDraftFlush: (block: Block, text: string) => Promise<void>;
   onTextHistoryApply: (block: Block, text: string) => void;
+  onTextRedo: (block: Block) => Promise<string | null>;
+  onTextUndo: (block: Block) => Promise<string | null>;
   onUpdateBlock: (block: Block, changes: BlockEditorUpdate) => void;
   onUpdatePageTitle: PageEditorTitleHandler;
 };
@@ -49,6 +51,8 @@ export function WorkspaceEditorPane({
   onTextDraftChange,
   onTextDraftFlush,
   onTextHistoryApply,
+  onTextRedo,
+  onTextUndo,
   onUpdateBlock,
   onUpdatePageTitle
 }: WorkspaceEditorPaneProps) {
@@ -69,6 +73,8 @@ export function WorkspaceEditorPane({
           onTextDraftChange={onTextDraftChange}
           onTextDraftFlush={onTextDraftFlush}
           onTextHistoryApply={onTextHistoryApply}
+          onTextRedo={onTextRedo}
+          onTextUndo={onTextUndo}
           onUpdateBlock={onUpdateBlock}
           onUpdatePageTitle={onUpdatePageTitle}
         />

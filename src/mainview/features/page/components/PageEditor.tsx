@@ -10,7 +10,6 @@ import {
 import { useBlockDragState } from "../hooks/useBlockDragState";
 import { useInputMode } from "../hooks/useInputMode";
 import { useLastBlockFocus } from "../hooks/useLastBlockFocus";
-import { usePageAutomergeHistory } from "../hooks/usePageAutomergeHistory";
 import type { CreateBlockDraft } from "../lib/blockEditingBehavior";
 import {
   getMaxIndentDepth,
@@ -41,6 +40,8 @@ type PageEditorProps = {
   onTextDraftChange: (block: Block, text: string) => void;
   onTextDraftFlush: (block: Block, text: string) => Promise<void>;
   onTextHistoryApply: (block: Block, text: string) => void;
+  onTextRedo: (block: Block) => Promise<string | null>;
+  onTextUndo: (block: Block) => Promise<string | null>;
   onUpdateBlock: (block: Block, changes: BlockEditorUpdate) => void;
   onUpdatePageTitle: (page: Page, title: string) => void;
 };
@@ -59,13 +60,13 @@ export function PageEditor({
   onTextDraftChange,
   onTextDraftFlush,
   onTextHistoryApply,
+  onTextRedo,
+  onTextUndo,
   onUpdateBlock,
   onUpdatePageTitle
 }: PageEditorProps) {
   useInputMode();
   const titleRef = useRef<PageTitleEditorHandle>(null);
-  const { recordBlockText, redoBlockText, undoBlockText } =
-    usePageAutomergeHistory(document);
 
   const focusLastBlock = useLastBlockFocus({
     document,
@@ -96,7 +97,6 @@ export function PageEditor({
   );
 
   function handleTextDraftChange(block: Block, text: string) {
-    recordBlockText(block, text);
     onTextDraftChange(block, text);
   }
 
@@ -174,8 +174,8 @@ export function PageEditor({
               onTextDraftChange={handleTextDraftChange}
               onTextDraftFlush={onTextDraftFlush}
               onTextHistoryApply={handleHistoryTextApply}
-              onTextRedo={(target) => redoBlockText(target.id)}
-              onTextUndo={(target) => undoBlockText(target.id)}
+              onTextRedo={onTextRedo}
+              onTextUndo={onTextUndo}
               onUpdate={onUpdateBlock}
             />
           ))}

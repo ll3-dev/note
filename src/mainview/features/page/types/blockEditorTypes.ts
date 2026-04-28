@@ -48,7 +48,7 @@ export type BlockEditorProps = {
   onTextDraftChange: (block: Block, text: string) => void;
   onTextDraftFlush: (block: Block, text: string) => Promise<void>;
   onTextHistoryApply: (block: Block, text: string) => void;
-  onTextRedo: (block: Block) => string | null;
-  onTextUndo: (block: Block) => string | null;
+  onTextRedo: (block: Block) => Promise<string | null>;
+  onTextUndo: (block: Block) => Promise<string | null>;
   onUpdate: (block: Block, changes: BlockEditorUpdate) => void;
 };

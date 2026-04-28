@@ -13,6 +13,7 @@ import { useBlockBatchActions } from "./hooks/useBlockBatchActions";
 import { useBlockTextSync } from "./hooks/useBlockTextSync";
 import { useInitialPageSelection } from "./hooks/useInitialPageSelection";
 import { useMarkdownClipboard } from "./hooks/useMarkdownClipboard";
+import { usePageHistoryActions } from "./hooks/usePageHistoryActions";
 import { useWorkspaceMutations } from "./hooks/useWorkspaceMutations";
 import { navigateToPage, useWorkspaceNavigation } from "./hooks/useWorkspaceNavigation";
 import { useWorkspaceQueries } from "./hooks/useWorkspaceQueries";
@@ -64,14 +65,7 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
   const { clearPendingText, flushAllTextDrafts, flushQueuedTextDraft, flushTextDraft, queueTextDraft, status: saveStatus } =
     useBlockTextSync({ saveText: saveBlockText });
   const { closeActiveTab, closeWorkspaceTab, navigate, selectPage, selectTab } =
-    useWorkspaceNavigation({
-      activeTabId,
-      closeTab,
-      flushBeforeNavigate: flushAllTextDrafts,
-      openPageTab,
-      setActiveTabId,
-      tabs
-    });
+    useWorkspaceNavigation({ activeTabId, closeTab, flushBeforeNavigate: flushAllTextDrafts, openPageTab, setActiveTabId, tabs });
   const workspaceCommandContext = useMemo(
     () => ({ closeActiveTab, toggleSidebar }),
     [closeActiveTab, toggleSidebar]
@@ -92,6 +86,12 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
     flushAllTextDrafts,
     setFocusBlockId
   });
+  const { redoBlockText, undoBlockText } = usePageHistoryActions({
+    clearPendingText,
+    refetchDocument: () => {
+      void pageDocumentQuery.refetch();
+    }
+  });
 
   useGlobalKeyboardShortcuts({
     activeScopes: ["global", "workspace"],
@@ -99,14 +99,7 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
     context: workspaceCommandContext,
     keybindings
   });
-  useInitialPageSelection({
-    activePageId,
-    navigate,
-    openPageTab,
-    pages,
-    routePageId,
-    setSelectedPageId
-  });
+  useInitialPageSelection({ activePageId, navigate, openPageTab, pages, routePageId, setSelectedPageId });
 
   function handleCreatePage(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -192,7 +185,9 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
         onPasteMarkdown={pasteMarkdown}
         onTextDraftChange={queueTextDraft}
         onTextDraftFlush={flushTextDraft}
-        onTextHistoryApply={queueTextDraft}
+        onTextHistoryApply={(block) => clearPendingText(block.id)}
+        onTextRedo={redoBlockText}
+        onTextUndo={undoBlockText}
         onUpdateBlock={(target, changes) => void updateBlock(target, changes)}
         onUpdatePageTitle={updatePageTitle}
       />

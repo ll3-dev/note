@@ -50,8 +50,9 @@ export const BLOCK_EDITOR_COMMANDS: Command<BlockShortcutContext>[] = [
     id: "editor.history.undoText",
     scope: "block",
     title: "Undo text edit",
-    run: ({ undoTextDraft }) => {
-      undoTextDraft();
+    run: async ({ commitDraft, undoTextDraft }) => {
+      await commitDraft();
+      await undoTextDraft();
     }
   },
   {
@@ -59,8 +60,9 @@ export const BLOCK_EDITOR_COMMANDS: Command<BlockShortcutContext>[] = [
     id: "editor.history.redoText",
     scope: "block",
     title: "Redo text edit",
-    run: ({ redoTextDraft }) => {
-      redoTextDraft();
+    run: async ({ commitDraft, redoTextDraft }) => {
+      await commitDraft();
+      await redoTextDraft();
     }
   },
   {
