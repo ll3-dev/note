@@ -149,3 +149,63 @@
 - inline mark 저장 형식: `text + marks[]`로 둘지, rich tree 형태로 둘지 결정이 필요하다.
 - HTML paste 범위: Notion 호환을 우선할지, Markdown 호환을 우선할지 선택해야 한다.
 - 블록 선택 UX: Notion처럼 왼쪽 핸들 중심으로 갈지, 문서 편집기처럼 Shift selection 중심으로 갈지 정해야 한다.
+
+## 2026-04-28 구현 메모
+
+이번 구현은 Notion처럼 보이는 텍스트 편집 흐름을 만들기 위한 1차 작업이다. 중요한 결정은 inline formatting을 Markdown 문자열(`**bold**`, `_italic_`, `` `code` ``)로 저장하지 않고, block의 `props.inlineMarks`에 범위 기반 mark로 저장하는 것이다.
+
+### 반영한 것
+
+- 구조 보존 paste 초안
+  - 여러 줄 plain text/Markdown-like paste를 block draft로 변환한다.
+  - heading, bullet, numbered list, todo, quote, code fence, divider를 block type으로 매핑한다.
+  - Markdown 복사 기능은 settings panel의 "현재 페이지 Markdown 복사" 액션으로 연결한다.
+
+- slash command 정리
+  - `/` command plate는 block type 전환 중심으로 유지한다.
+  - duplicate, delete, bold, italic, inline code는 `/` plate에서 제외한다.
+  - duplicate/delete는 block selection plate 쪽 액션으로 둔다.
+  - bold/italic/inline code는 text editing shortcut으로 둔다.
+
+- block selection plate
+  - block drag handle을 눌러 block을 선택할 수 있다.
+  - 선택된 block에 대해 duplicate/delete 액션을 제공한다.
+  - multi-select는 Shift/Cmd 클릭 모델로 확장할 수 있는 상태 구조를 갖춘다.
+
+- inline formatting 저장 모델
+  - `Cmd+B`, `Cmd+I`, `Cmd+E`는 각각 bold, italic, inline code를 적용한다.
+  - 선택 영역이 있으면 해당 범위에 즉시 mark를 적용한다.
+  - 선택 영역 없이 caret만 있을 때는 active inline mode를 토글한다.
+  - active inline mode가 켜진 상태로 입력한 텍스트에는 자동으로 mark가 붙는다.
+  - 다른 위치를 클릭하거나 화살표로 이동하면 그 위치의 `inlineMarks`를 읽어 active mode를 동기화한다.
+
+- inline formatting 렌더링
+  - 텍스트 원문은 그대로 유지한다.
+  - `props.inlineMarks`를 기준으로 segment를 나누고, bold/italic/code 스타일을 렌더링한다.
+  - Markdown marker를 viewer overlay로 숨기는 방식은 폐기했다.
+
+- SQLite 저장 경계 정규화
+  - `createBlock`/`updateBlock` 저장 전에 `inlineMarks`를 정규화한다.
+  - 허용 타입은 `bold`, `italic`, `code`다.
+  - text 길이를 넘는 mark 범위는 clamp한다.
+  - 빈 범위, 잘못된 타입, 잘못된 shape은 제거한다.
+  - 유효 mark가 없으면 `inlineMarks` prop 자체를 제거한다.
+
+### 구현 경계
+
+- inline formatting은 page editor의 text editing 책임이다.
+- SQLite 정규화는 block repository 저장 경계에서 수행한다.
+- history/sync/Automerge 또는 page text history 쪽 변경은 별도 작업 영역으로 둔다. 이번 문서의 inline formatting 작업은 그 영역을 전제로 하지 않는다.
+
+### 검증한 것
+
+- `bun test src/mainview/features/page/lib/inlineFormatting.test.ts src/bun/notes.test.ts`
+- `bun run typecheck`
+
+### 남은 작업
+
+- 현재 active inline mode를 사용자에게 보여주는 floating toolbar 또는 작은 상태 UI가 필요하다.
+- inline mark 범위가 텍스트 중간 삽입/삭제에 따라 자연스럽게 이동하는 정책이 더 필요하다.
+- overlapping mark를 merge/split하는 정교한 정규화는 아직 단순하다.
+- link mark는 아직 제외했다. link는 URL payload가 필요하므로 `inlineMarks` shape 확장 후 추가하는 것이 좋다.
+- HTML paste에서 inline style까지 가져오는 것은 아직 하지 않았다.
