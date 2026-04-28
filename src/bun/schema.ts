@@ -1,6 +1,6 @@
 import type { InferSelectModel } from "drizzle-orm";
 import { sql } from "drizzle-orm";
-import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { blob, index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 export const schemaMigrations = sqliteTable("schema_migrations", {
   version: integer("version").primaryKey(),
@@ -61,7 +61,14 @@ export const blockOperations = sqliteTable(
   ]
 );
 
+export const automergeRepoChunks = sqliteTable("automerge_repo_chunks", {
+  storage_key: text("storage_key").primaryKey(),
+  data: blob("data", { mode: "buffer" }).notNull(),
+  updated_at: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`)
+});
+
 export const schema = {
+  automergeRepoChunks,
   blockOperations,
   blocks,
   pages,
@@ -72,4 +79,7 @@ export type PageRow = InferSelectModel<typeof pages>;
 export type BlockRow = InferSelectModel<typeof blocks>;
 
 export type BlockOperationRow = InferSelectModel<typeof blockOperations>;
+export type AutomergeRepoChunkRow = InferSelectModel<
+  typeof automergeRepoChunks
+>;
 export type SchemaMigrationRow = InferSelectModel<typeof schemaMigrations>;

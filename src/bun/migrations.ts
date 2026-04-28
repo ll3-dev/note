@@ -2,7 +2,7 @@ import { sql } from "drizzle-orm";
 import type { BunSQLiteDatabase } from "drizzle-orm/bun-sqlite";
 import { schema, schemaMigrations } from "./schema";
 
-const CURRENT_SCHEMA_VERSION = 2;
+const CURRENT_SCHEMA_VERSION = 3;
 
 const migrationTableSql = `
 CREATE TABLE IF NOT EXISTS schema_migrations (
@@ -43,8 +43,7 @@ const migrations = [
       )
       `,
       `
-      CREATE INDEX IF NOT EXISTS idx_blocks_page_parent_sort
-      ON blocks(page_id, parent_block_id, sort_key)
+      CREATE INDEX IF NOT EXISTS idx_blocks_page_parent_sort ON blocks(page_id, parent_block_id, sort_key)
       `,
       `
       CREATE TABLE IF NOT EXISTS assets (
@@ -57,8 +56,7 @@ const migrations = [
       )
       `,
       `
-      CREATE INDEX IF NOT EXISTS idx_assets_sha256
-      ON assets(sha256)
+      CREATE INDEX IF NOT EXISTS idx_assets_sha256 ON assets(sha256)
       `,
       `
       CREATE TABLE IF NOT EXISTS block_assets (
@@ -69,8 +67,7 @@ const migrations = [
       )
       `,
       `
-      CREATE INDEX IF NOT EXISTS idx_block_assets_asset
-      ON block_assets(asset_id)
+      CREATE INDEX IF NOT EXISTS idx_block_assets_asset ON block_assets(asset_id)
       `,
       `
       CREATE VIRTUAL TABLE IF NOT EXISTS blocks_fts
@@ -91,8 +88,7 @@ const migrations = [
       )
       `,
       `
-      CREATE INDEX IF NOT EXISTS idx_block_operations_entity
-      ON block_operations(entity_type, entity_id, created_at)
+      CREATE INDEX IF NOT EXISTS idx_block_operations_entity ON block_operations(entity_type, entity_id, created_at)
       `,
       `
       CREATE TABLE IF NOT EXISTS sync_documents (
@@ -118,8 +114,7 @@ const migrations = [
       )
       `,
       `
-      CREATE INDEX IF NOT EXISTS idx_sync_changes_document_sequence
-      ON sync_changes(document_id, sequence)
+      CREATE INDEX IF NOT EXISTS idx_sync_changes_document_sequence ON sync_changes(document_id, sequence)
       `,
       `
       CREATE TABLE IF NOT EXISTS sync_peer_states (
@@ -144,8 +139,18 @@ const migrations = [
       SET sort_key = printf('%08d', rowid - 1)
       `,
       `
-      CREATE INDEX IF NOT EXISTS idx_pages_parent_sort
-      ON pages(parent_page_id, sort_key)
+      CREATE INDEX IF NOT EXISTS idx_pages_parent_sort ON pages(parent_page_id, sort_key)
+      `
+    ]
+  },
+  {
+    version: 3,
+    name: "add automerge repo chunk storage",
+    statements: [
+      `
+      CREATE TABLE IF NOT EXISTS automerge_repo_chunks (
+        storage_key TEXT PRIMARY KEY, data BLOB NOT NULL,
+        updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)
       `
     ]
   }
