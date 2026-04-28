@@ -47,7 +47,10 @@ export function PageEditor({
   const titleRef = useRef<HTMLDivElement>(null);
   const titleSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const focusLastBlock = useLastBlockFocus(document);
+  const focusLastBlock = useLastBlockFocus({
+    document,
+    onCreateBlockAfter
+  });
   const numberedListMarkers = getNumberedListMarkers(document.blocks);
   const {
     clearDragState,

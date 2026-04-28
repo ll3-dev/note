@@ -1,8 +1,20 @@
 import type { MouseEvent } from "react";
 import type { PageDocument } from "../../../../shared/contracts";
+import type { CreateBlockDraft } from "../lib/blockEditingBehavior";
 import { placeCursorAtEnd } from "../lib/domSelection";
 
-export function useLastBlockFocus(document: PageDocument) {
+type UseLastBlockFocusOptions = {
+  document: PageDocument;
+  onCreateBlockAfter: (
+    block: PageDocument["blocks"][number],
+    draft?: CreateBlockDraft
+  ) => Promise<void>;
+};
+
+export function useLastBlockFocus({
+  document,
+  onCreateBlockAfter
+}: UseLastBlockFocusOptions) {
   return function focusLastBlock(event: MouseEvent<HTMLDivElement>) {
     if (!(event.target instanceof Element)) {
       return;
@@ -24,6 +36,13 @@ export function useLastBlockFocus(document: PageDocument) {
 
     if (editable) {
       placeCursorAtEnd(editable);
+      return;
     }
+
+    void onCreateBlockAfter(lastBlock, {
+      props: {},
+      text: "",
+      type: "paragraph"
+    });
   };
 }
