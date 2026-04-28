@@ -27,3 +27,26 @@ export function getNumberedListMarkers(blocks: Block[]) {
 
   return markers;
 }
+
+export function getNumberedListStartForDepth(
+  blocks: Block[],
+  index: number,
+  targetDepth: number,
+  markers = getNumberedListMarkers(blocks)
+) {
+  for (let previousIndex = index - 1; previousIndex >= 0; previousIndex -= 1) {
+    const previousBlock = blocks[previousIndex];
+
+    if (previousBlock.type !== "numbered_list") {
+      break;
+    }
+
+    if (getBlockDepth(previousBlock) === targetDepth) {
+      const marker = markers.get(previousBlock.id);
+
+      return (marker ?? getNumberedListStart(previousBlock)) + 1;
+    }
+  }
+
+  return 1;
+}

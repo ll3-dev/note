@@ -9,7 +9,10 @@ import {
   getBlockDepth,
   type CreateBlockDraft
 } from "../lib/blockEditingBehavior";
-import { getNumberedListMarkers } from "../lib/blockNumbering";
+import {
+  getNumberedListMarkers,
+  getNumberedListStartForDepth
+} from "../lib/blockNumbering";
 import { placeCursorAtEnd } from "../lib/domSelection";
 import type { BlockEditorUpdate } from "../types/blockEditorTypes";
 
@@ -154,6 +157,18 @@ export function PageEditor({
               key={block.id}
               maxIndentDepth={getMaxIndentDepth(document.blocks, blockIndex)}
               numberedListMarker={numberedListMarkers.get(block.id) ?? null}
+              numberedListStartAfterIndent={getNumberedListStartAfterDepthChange(
+                document.blocks,
+                blockIndex,
+                "in",
+                numberedListMarkers
+              )}
+              numberedListStartAfterOutdent={getNumberedListStartAfterDepthChange(
+                document.blocks,
+                blockIndex,
+                "out",
+                numberedListMarkers
+              )}
               onCreateAfter={onCreateBlockAfter}
               onDelete={onDeleteBlock}
               onDragEnd={clearDragState}
@@ -182,4 +197,35 @@ function getMaxIndentDepth(blocks: Block[], index: number) {
   }
 
   return getBlockDepth(blocks[index - 1]) + 1;
+}
+
+function getNumberedListStartAfterDepthChange(
+  blocks: Block[],
+  index: number,
+  direction: "in" | "out",
+  numberedListMarkers: Map<string, number>
+) {
+  const block = blocks[index];
+
+  if (block.type !== "numbered_list") {
+    return null;
+  }
+
+  const depth = getBlockDepth(block);
+  const maxIndentDepth = getMaxIndentDepth(blocks, index);
+  const targetDepth =
+    direction === "in"
+      ? Math.min(depth + 1, maxIndentDepth)
+      : Math.max(depth - 1, 0);
+
+  if (targetDepth === depth) {
+    return null;
+  }
+
+  return getNumberedListStartForDepth(
+    blocks,
+    index,
+    targetDepth,
+    numberedListMarkers
+  );
 }

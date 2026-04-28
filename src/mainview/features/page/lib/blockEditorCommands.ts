@@ -27,6 +27,8 @@ export type BlockShortcutContext = {
   isCommandMenuOpen: boolean;
   maxIndentDepth: number;
   numberedListMarker: number | null;
+  numberedListStartAfterIndent: number | null;
+  numberedListStartAfterOutdent: number | null;
   onCreateAfter: (
     block: Block,
     draft?: ReturnType<typeof getNextBlockDraft>
@@ -152,10 +154,11 @@ export const BLOCK_EDITOR_COMMANDS: Command<BlockShortcutContext>[] = [
     id: "editor.block.indent",
     scope: "block",
     title: "Indent block",
-    run: ({ block, maxIndentDepth, onUpdate }) => {
+    run: ({ block, maxIndentDepth, numberedListStartAfterIndent, onUpdate }) => {
       const update = getBlockIndentUpdate(block, "in", maxIndentDepth);
 
       if (update) {
+        updateNumberedListStart(block, update, numberedListStartAfterIndent);
         onUpdate(block, update);
       }
     }
@@ -165,10 +168,11 @@ export const BLOCK_EDITOR_COMMANDS: Command<BlockShortcutContext>[] = [
     id: "editor.block.outdent",
     scope: "block",
     title: "Outdent block",
-    run: ({ block, onUpdate }) => {
+    run: ({ block, numberedListStartAfterOutdent, onUpdate }) => {
       const update = getBlockIndentUpdate(block, "out");
 
       if (update) {
+        updateNumberedListStart(block, update, numberedListStartAfterOutdent);
         onUpdate(block, update);
       }
     }
@@ -184,3 +188,15 @@ export const BLOCK_EDITOR_COMMANDS: Command<BlockShortcutContext>[] = [
     }
   }
 ];
+
+function updateNumberedListStart(
+  block: Block,
+  update: { props: Record<string, unknown> },
+  start: number | null
+) {
+  if (block.type !== "numbered_list" || start === null) {
+    return;
+  }
+
+  update.props.start = start;
+}

@@ -1,6 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import type { Block } from "../../../../shared/contracts";
-import { getNumberedListMarkers } from "./blockNumbering";
+import {
+  getNumberedListMarkers,
+  getNumberedListStartForDepth
+} from "./blockNumbering";
 
 const baseBlock = {
   createdAt: "2026-04-28T00:00:00.000Z",
@@ -58,5 +61,24 @@ describe("block numbering", () => {
 
     expect(markers.get("one")).toBe(1);
     expect(markers.get("reset")).toBe(1);
+  });
+
+  test("finds the next marker for an outdented numbered block", () => {
+    const blocks = [
+      block("parent", { start: 1 }),
+      block("nested-one", { depth: 1, start: 1 }),
+      block("nested-two", { depth: 1, start: 2 })
+    ];
+
+    expect(getNumberedListStartForDepth(blocks, 2, 0)).toBe(2);
+  });
+
+  test("starts a new depth sequence when there is no previous peer", () => {
+    const blocks = [
+      block("parent", { start: 1 }),
+      block("second-parent", { start: 2 })
+    ];
+
+    expect(getNumberedListStartForDepth(blocks, 1, 1)).toBe(1);
   });
 });

@@ -33,6 +33,8 @@ function createContext(overrides: Partial<BlockShortcutContext> = {}) {
     isCommandMenuOpen: true,
     maxIndentDepth: 1,
     numberedListMarker: null,
+    numberedListStartAfterIndent: null,
+    numberedListStartAfterOutdent: null,
     onCreateAfter: async () => {
       calls.push("onCreateAfter");
     },
@@ -386,6 +388,38 @@ describe("block editor commands", () => {
     expect(command?.id).toBe("editor.block.indent");
     command?.run(context);
     expect(calls).toEqual([]);
+  });
+
+  test("renumbers numbered lists when changing depth", () => {
+    const updates: unknown[] = [];
+    const { context } = createContext({
+      block: {
+        ...block,
+        props: { depth: 1, start: 1 },
+        type: "numbered_list"
+      },
+      isCommandMenuOpen: false,
+      numberedListStartAfterOutdent: 2,
+      onUpdate: (_block, changes) => {
+        updates.push(changes);
+      }
+    });
+    const command = resolveKeybinding({
+      activeScopes: ["global", "editor", "block"],
+      commands: BLOCK_EDITOR_COMMANDS,
+      context,
+      event: {
+        altKey: false,
+        ctrlKey: false,
+        key: "Tab",
+        metaKey: false,
+        shiftKey: true
+      }
+    });
+
+    expect(command?.id).toBe("editor.block.outdent");
+    command?.run(context);
+    expect(updates).toEqual([{ props: { start: 2 } }]);
   });
 });
 

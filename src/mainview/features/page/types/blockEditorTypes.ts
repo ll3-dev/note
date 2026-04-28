@@ -21,6 +21,8 @@ export type BlockEditorProps = {
   isSelected: boolean;
   maxIndentDepth: number;
   numberedListMarker: number | null;
+  numberedListStartAfterIndent: number | null;
+  numberedListStartAfterOutdent: number | null;
   onCreateAfter: (block: Block, draft?: CreateBlockDraft) => Promise<void>;
   onDelete: (block: Block) => void;
   onDragEnd: () => void;
