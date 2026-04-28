@@ -1,9 +1,9 @@
 import { PanelLeft, Plus, RefreshCw, Settings } from "lucide-react";
 import {
   useState,
-  type FormEvent,
   type MouseEvent,
-  type ReactNode
+  type ReactNode,
+  type SyntheticEvent
 } from "react";
 import { Button } from "@/mainview/components/ui/button";
 import { Input } from "@/mainview/components/ui/input";
@@ -23,7 +23,7 @@ type WorkspaceLayoutProps = {
   children: ReactNode;
   isCreatingPage: boolean;
   onCloseTab: (event: MouseEvent<HTMLButtonElement>, tabId: string) => void;
-  onCreatePage: (event: FormEvent<HTMLFormElement>) => void;
+  onCreatePage: (event: SyntheticEvent<HTMLFormElement>) => void;
   onCreateUntitledPage: () => void;
   onMovePage: (
     page: Page,

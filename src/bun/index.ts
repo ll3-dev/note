@@ -9,8 +9,8 @@ import {
   listPages,
   moveBlock,
   movePage,
+  updateBlock,
   updatePage,
-  updateBlock
 } from "./notes";
 
 const databaseHandle = openDatabase(Utils.paths.userData);
@@ -28,13 +28,14 @@ const rpc = BrowserView.defineRPC<NoteRPC>({
       updateBlock: (input) => updateBlock(databaseHandle, input),
       deleteBlock: (input) => deleteBlock(databaseHandle, input),
       moveBlock: (input) => moveBlock(databaseHandle, input),
-      movePage: (input) => movePage(databaseHandle, input)
+      movePage: (input) => movePage(databaseHandle, input),
     },
-    messages: {}
-  }
+    messages: {},
+  },
 });
 
-const mainviewUrl = process.env.NOTE_MAINVIEW_URL ?? "views://mainview/index.html";
+const mainviewUrl = process.env.NOTE_MAINVIEW_URL ??
+  "views://mainview/index.html";
 
 new BrowserWindow({
   title: "Note",
@@ -43,9 +44,9 @@ new BrowserWindow({
     x: 80,
     y: 80,
     width: 1180,
-    height: 760
+    height: 760,
   },
   titleBarStyle: "hiddenInset",
   renderer: "native",
-  rpc
+  rpc,
 });

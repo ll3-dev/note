@@ -1,4 +1,10 @@
-import { FormEvent, useCallback, useEffect, useLayoutEffect, useMemo, useRef } from "react";
+import {
+  useCallback,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  type SyntheticEvent
+} from "react";
 import { useGlobalKeyboardShortcuts } from "@/mainview/features/commands/useGlobalKeyboardShortcuts";
 import { useKeybindingStore } from "@/mainview/features/commands/keybindingStore";
 import { useWorkspaceStore } from "@/mainview/store/useWorkspaceStore";
@@ -95,7 +101,7 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
     }
   }, [openPageTab, pages, routePageId, setSelectedPageId]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!activePageId && pages[0] && !hasOpenedInitialPage.current) {
       hasOpenedInitialPage.current = true;
       openPageTab(pages[0]);
@@ -103,7 +109,7 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
     }
   }, [activePageId, navigate, openPageTab, pages]);
 
-  function handleCreatePage(event: FormEvent<HTMLFormElement>) {
+  function handleCreatePage(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
     const title = pageTitleDraft.trim();
 

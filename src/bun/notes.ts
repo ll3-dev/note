@@ -2,7 +2,7 @@ import type { DatabaseHandle } from "./database";
 import {
   createBlock,
   deleteBlock,
-  updateBlock
+  updateBlock,
 } from "./repositories/blockRepository";
 import { moveBlock } from "./repositories/blockMoveRepository";
 import { listBlocksForPage } from "./repositories/blockReadRepository";
@@ -10,7 +10,7 @@ import {
   createPage,
   getPage,
   listPages,
-  updatePage
+  updatePage,
 } from "./repositories/pageRepository";
 import { movePage } from "./repositories/pageMoveRepository";
 import type { GetPageDocumentInput, PageDocument } from "../shared/contracts";
@@ -22,16 +22,16 @@ export {
   listPages,
   moveBlock,
   movePage,
+  updateBlock,
   updatePage,
-  updateBlock
 };
 
 export function getPageDocument(
   handle: DatabaseHandle,
-  input: GetPageDocumentInput
+  input: GetPageDocumentInput,
 ): PageDocument {
   return {
     page: getPage(handle, input.pageId),
-    blocks: listBlocksForPage(handle, input.pageId)
+    blocks: listBlocksForPage(handle, input.pageId),
   };
 }
