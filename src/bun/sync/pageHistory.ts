@@ -1,183 +1,120 @@
-import { eq, inArray } from "drizzle-orm";
-import type * as Automerge from "@automerge/automerge";
-import {
-  createAutomergePageDocument,
-  toPageDocument,
-  type AutomergePageDocument
-} from "../../shared/automerge/pageDocument";
+import { eq } from "drizzle-orm";
+import { createAutomergePageDocument, toPageDocument } from "../../shared/automerge/pageDocument";
+import type { AutomergeChangeOrigin } from "../../shared/automerge/pageDocument";
 import type { PageDocument, PageHistoryInput } from "../../shared/contracts";
-import { runInTransaction, type DatabaseHandle } from "../database";
-import { blocks, pages } from "../schema";
+import type { DatabaseHandle } from "../database";
+import { pages } from "../schema";
 import { listBlocksForPage } from "../repositories/blockReadRepository";
 import { mapPage } from "../repositories/noteRows";
+import { applySelectivePageHistory } from "./pageHistoryPatch";
+import {
+  discardRedoEntries,
+  getRedoEntry,
+  getUndoEntry,
+  LOCAL_ACTOR_ID,
+  markEntryRedone,
+  markEntryUndone,
+  persistPageHistoryEntry
+} from "./pageHistoryStore";
 
-type PageDoc = Automerge.Doc<AutomergePageDocument>;
-
-type PageHistoryState = {
-  current: PageDoc;
-  redoStack: PageDoc[];
-  undoStack: PageDoc[];
+type PageHistoryCaptureOptions = {
+  actorId?: string;
+  origin?: AutomergeChangeOrigin;
 };
 
-const histories = new Map<string, PageHistoryState>();
+type PendingCapture = {
+  actorId: string;
+  before: PageDocument;
+  origin: AutomergeChangeOrigin;
+};
+
+const pendingCaptures = new Map<string, PendingCapture>();
 
 export function capturePageHistoryBeforeChange(
   handle: DatabaseHandle,
-  pageId: string
+  pageId: string,
+  options: PageHistoryCaptureOptions = {}
 ) {
-  const state = getHistoryState(handle, pageId);
-  histories.set(pageId, {
-    ...state,
-    redoStack: [],
-    undoStack: [...state.undoStack, state.current]
+  if (pendingCaptures.has(pageId)) {
+    return;
+  }
+
+  pendingCaptures.set(pageId, {
+    actorId: options.actorId ?? LOCAL_ACTOR_ID,
+    before: getPageDocumentSnapshot(handle, pageId),
+    origin: options.origin ?? "local"
   });
 }
 
 export function syncPageHistoryAfterChange(
   handle: DatabaseHandle,
-  pageId: string
+  pageId: string,
+  options: PageHistoryCaptureOptions = {}
 ) {
-  const state = getHistoryState(handle, pageId);
-  histories.set(pageId, {
-    ...state,
-    current: createAutomergePageDocument(getPageDocumentSnapshot(handle, pageId))
-  });
+  const pending = pendingCaptures.get(pageId);
+
+  if (!pending) {
+    return;
+  }
+
+  pendingCaptures.delete(pageId);
+  const before = pending.before;
+  const after = getPageDocumentSnapshot(handle, pageId);
+
+  if (isSamePageDocument(before, after)) {
+    return;
+  }
+
+  const actorId = options.actorId ?? pending.actorId;
+  const origin = options.origin ?? pending.origin;
+
+  if (origin === "local" && actorId === LOCAL_ACTOR_ID) {
+    discardRedoEntries(handle, pageId);
+  }
+
+  persistPageHistoryEntry(handle, { actorId, after, before, origin, pageId });
 }
 
 export function undoPageHistory(
   handle: DatabaseHandle,
   input: PageHistoryInput
 ): PageDocument | null {
-  const state = getHistoryState(handle, input.pageId);
-  const previous = state.undoStack.at(-1);
+  const entry = getUndoEntry(handle, input.pageId);
 
-  if (!previous) {
+  if (!entry) {
     return null;
   }
 
-  const current = snapshot(handle, input.pageId);
-  histories.set(input.pageId, {
-    current: previous,
-    redoStack: [...state.redoStack, current],
-    undoStack: state.undoStack.slice(0, -1)
-  });
-
-  return applyPageDocumentSnapshot(handle, toPageDocument(previous));
+  applySelectivePageHistory(handle, entry.before, entry.after, "undo");
+  markEntryUndone(handle, entry.id);
+  return getPageDocumentSnapshot(handle, input.pageId);
 }
 
 export function redoPageHistory(
   handle: DatabaseHandle,
   input: PageHistoryInput
 ): PageDocument | null {
-  const state = getHistoryState(handle, input.pageId);
-  const next = state.redoStack.at(-1);
+  const entry = getRedoEntry(handle, input.pageId);
 
-  if (!next) {
+  if (!entry) {
     return null;
   }
 
-  const current = snapshot(handle, input.pageId);
-  histories.set(input.pageId, {
-    current: next,
-    redoStack: state.redoStack.slice(0, -1),
-    undoStack: [...state.undoStack, current]
-  });
-
-  return applyPageDocumentSnapshot(handle, toPageDocument(next));
+  applySelectivePageHistory(handle, entry.before, entry.after, "redo");
+  markEntryRedone(handle, entry.id);
+  return getPageDocumentSnapshot(handle, input.pageId);
 }
 
-function getHistoryState(handle: DatabaseHandle, pageId: string) {
-  const state = histories.get(pageId);
-
-  if (state) {
-    return state;
-  }
-
-  const nextState = {
-    current: snapshot(handle, pageId),
-    redoStack: [],
-    undoStack: []
-  };
-  histories.set(pageId, nextState);
-  return nextState;
+export function clearPageHistoryMemoryForTests() {
+  pendingCaptures.clear();
 }
 
-function snapshot(handle: DatabaseHandle, pageId: string) {
-  return createAutomergePageDocument(getPageDocumentSnapshot(handle, pageId));
+function encodeDocument(document: PageDocument) {
+  return JSON.stringify(toPageDocument(createAutomergePageDocument(document)));
 }
 
-function applyPageDocumentSnapshot(
-  handle: DatabaseHandle,
-  document: PageDocument
-) {
-  runInTransaction(handle, () => {
-    restorePage(handle, document);
-    restoreBlocks(handle, document);
-  });
-
-  return getPageDocumentSnapshot(handle, document.page.id);
-}
-
-function restorePage(handle: DatabaseHandle, document: PageDocument) {
-  handle.orm
-    .update(pages)
-    .set({
-      archived_at: document.page.archivedAt,
-      cover: document.page.cover,
-      icon: document.page.icon,
-      parent_page_id: document.page.parentPageId,
-      sort_key: document.page.sortKey,
-      title: document.page.title,
-      updated_at: document.page.updatedAt
-    })
-    .where(eq(pages.id, document.page.id))
-    .run();
-}
-
-function restoreBlocks(handle: DatabaseHandle, document: PageDocument) {
-  const removedIds = removedBlockIds(handle, document);
-
-  if (removedIds.length > 0) {
-    handle.orm
-      .delete(blocks)
-      .where(inArray(blocks.id, removedIds))
-      .run();
-  }
-
-  for (const block of document.blocks) {
-    handle.orm
-      .insert(blocks)
-      .values({
-        created_at: block.createdAt,
-        id: block.id,
-        page_id: block.pageId,
-        parent_block_id: block.parentBlockId,
-        props_json: JSON.stringify(block.props),
-        sort_key: block.sortKey,
-        text: block.text,
-        type: block.type,
-        updated_at: block.updatedAt
-      })
-      .onConflictDoUpdate({
-        set: {
-          parent_block_id: block.parentBlockId,
-          props_json: JSON.stringify(block.props),
-          sort_key: block.sortKey,
-          text: block.text,
-          type: block.type,
-          updated_at: block.updatedAt
-        },
-        target: blocks.id
-      })
-      .run();
-  }
-}
-
-function removedBlockIds(handle: DatabaseHandle, document: PageDocument) {
-  const nextBlockIds = new Set(document.blocks.map((block) => block.id));
-  return listBlocksForPage(handle, document.page.id)
-    .filter((block) => !nextBlockIds.has(block.id))
-    .map((block) => block.id);
+function isSamePageDocument(left: PageDocument, right: PageDocument) {
+  return encodeDocument(left) === encodeDocument(right);
 }
 
 function getPageDocumentSnapshot(

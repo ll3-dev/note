@@ -67,10 +67,36 @@ export const automergeRepoChunks = sqliteTable("automerge_repo_chunks", {
   updated_at: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`)
 });
 
+export const pageHistoryEntries = sqliteTable(
+  "page_history_entries",
+  {
+    id: text("id").primaryKey(),
+    page_id: text("page_id").notNull(),
+    origin: text("origin").notNull(),
+    actor_id: text("actor_id").notNull(),
+    before_json: text("before_json").notNull(),
+    after_json: text("after_json").notNull(),
+    undone_at: text("undone_at"),
+    discarded_at: text("discarded_at"),
+    created_at: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`)
+  },
+  (table) => [
+    index("idx_page_history_page_local_undo").on(
+      table.page_id,
+      table.origin,
+      table.actor_id,
+      table.undone_at,
+      table.discarded_at,
+      table.created_at
+    )
+  ]
+);
+
 export const schema = {
   automergeRepoChunks,
   blockOperations,
   blocks,
+  pageHistoryEntries,
   pages,
   schemaMigrations
 };
@@ -82,4 +108,5 @@ export type BlockOperationRow = InferSelectModel<typeof blockOperations>;
 export type AutomergeRepoChunkRow = InferSelectModel<
   typeof automergeRepoChunks
 >;
+export type PageHistoryEntryRow = InferSelectModel<typeof pageHistoryEntries>;
 export type SchemaMigrationRow = InferSelectModel<typeof schemaMigrations>;

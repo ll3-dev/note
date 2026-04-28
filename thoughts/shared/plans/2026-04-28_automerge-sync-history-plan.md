@@ -37,7 +37,9 @@ history capture는 origin으로 나눈다.
 - slash command가 text shortcut과 block type 변경을 같이 만든 경우 하나의 transaction으로 묶는다.
 - remote 변경이 들어와도 local undo stack은 사라지지 않아야 한다. undo는 “이 사용자의 이전 local change를 반전하는 새 Automerge change”로 적용한다.
 - 같은 block에 local/remote 변경이 동시에 있으면 Automerge merge 결과를 먼저 확정한 뒤, undo 반전 change를 다시 적용한다.
-- 1차 구현은 Bun 프로세스 메모리의 page snapshot stack으로 text/create/delete/move를 되돌린다. 이후 모바일 sync가 붙으면 이 stack item을 local origin metadata와 함께 Automerge change 단위로 전환한다.
+- 현재 구현은 SQLite `page_history_entries`에 `before/after` 문서 entry와 `origin/actor` metadata를 저장한다. Bun 프로세스 메모리에는 아직 commit 전 pending capture만 남긴다.
+- undo/redo 때 전체 snapshot을 덮어쓰지 않는다. 현재 DB 위에 local actor entry의 inverse/forward patch만 조건부 적용해서 외부 block insert나 외부 text edit을 보존한다.
+- remote entry는 기록할 수 있지만 local undo stack의 대상에서 제외한다.
 
 ## 5. Yjs vs Automerge 스파이크 기준
 
@@ -52,6 +54,6 @@ Automerge를 우선 적용한다.
 - `@automerge/automerge`, `@automerge/automerge-repo` 의존성을 추가한다.
 - `src/shared/automerge/pageDocument.ts`에 page document 변환, field 변경, block insert, merge helper, origin capture 정책을 둔다.
 - `src/bun/sync/automergeStorageAdapter.ts`에 SQLite-backed Automerge Repo storage adapter를 둔다.
-- `src/bun/sync/pageHistory.ts`에 page 전체 snapshot 기반 undo/redo를 둔다. `mainview`는 Automerge를 import하지 않고 RPC만 호출한다.
-- `automerge_repo_chunks` 테이블을 schema migration v3로 추가한다.
+- `src/bun/sync/pageHistory.ts`에 merge-aware selective undo/redo orchestration을 두고, `src/bun/sync/pageHistoryPatch.ts`와 `src/bun/sync/pageHistoryStore.ts`로 patch/store 책임을 분리한다. `mainview`는 Automerge를 import하지 않고 RPC만 호출한다.
+- `automerge_repo_chunks` 테이블을 schema migration v3로 추가하고, `page_history_entries` 테이블을 schema migration v4로 추가한다.
 - mDNS는 구현하지 않고, 나중에 NetworkAdapter를 붙일 수 있다는 경계만 이 문서에 고정한다.

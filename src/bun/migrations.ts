@@ -2,15 +2,11 @@ import { sql } from "drizzle-orm";
 import type { BunSQLiteDatabase } from "drizzle-orm/bun-sqlite";
 import { schema, schemaMigrations } from "./schema";
 
-const CURRENT_SCHEMA_VERSION = 3;
+const CURRENT_SCHEMA_VERSION = 4;
 
-const migrationTableSql = `
-CREATE TABLE IF NOT EXISTS schema_migrations (
-  version INTEGER PRIMARY KEY,
-  name TEXT NOT NULL,
-  applied_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-)
-`;
+const migrationTableSql = `CREATE TABLE IF NOT EXISTS schema_migrations (
+  version INTEGER PRIMARY KEY, name TEXT NOT NULL,
+  applied_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`;
 
 const migrations = [
   {
@@ -130,28 +126,31 @@ const migrations = [
     version: 2,
     name: "add page tree sort key",
     statements: [
-      `
-      ALTER TABLE pages
-      ADD COLUMN sort_key TEXT NOT NULL DEFAULT '00000000'
-      `,
-      `
-      UPDATE pages
-      SET sort_key = printf('%08d', rowid - 1)
-      `,
-      `
-      CREATE INDEX IF NOT EXISTS idx_pages_parent_sort ON pages(parent_page_id, sort_key)
-      `
+      `ALTER TABLE pages ADD COLUMN sort_key TEXT NOT NULL DEFAULT '00000000'`,
+      `UPDATE pages SET sort_key = printf('%08d', rowid - 1)`,
+      `CREATE INDEX IF NOT EXISTS idx_pages_parent_sort ON pages(parent_page_id, sort_key)`
     ]
   },
   {
     version: 3,
     name: "add automerge repo chunk storage",
     statements: [
-      `
-      CREATE TABLE IF NOT EXISTS automerge_repo_chunks (
+      `CREATE TABLE IF NOT EXISTS automerge_repo_chunks (
         storage_key TEXT PRIMARY KEY, data BLOB NOT NULL,
-        updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)
-      `
+        updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`
+    ]
+  },
+  {
+    version: 4,
+    name: "add page history entries",
+    statements: [
+      `CREATE TABLE IF NOT EXISTS page_history_entries (
+        id TEXT PRIMARY KEY, page_id TEXT NOT NULL, origin TEXT NOT NULL,
+        actor_id TEXT NOT NULL, before_json TEXT NOT NULL, after_json TEXT NOT NULL,
+        undone_at TEXT NULL, discarded_at TEXT NULL,
+        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
+      `CREATE INDEX IF NOT EXISTS idx_page_history_page_local_undo
+      ON page_history_entries(page_id, origin, actor_id, undone_at, discarded_at, created_at)`
     ]
   }
 ] as const;
