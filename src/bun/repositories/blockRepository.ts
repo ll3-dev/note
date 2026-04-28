@@ -6,6 +6,10 @@ import { normalizeBlockProps } from "./blockProps";
 import { getBlock } from "./blockReadRepository";
 import { recordOperation } from "./noteOperations";
 import { touchPage } from "./pageTouch";
+import {
+  capturePageHistoryBeforeChange,
+  syncPageHistoryAfterChange
+} from "../sync/pageHistory";
 import type {
   Block,
   BlockProps,
@@ -26,6 +30,7 @@ export function createBlock(
   let block: Block | null = null;
 
   runInTransaction(handle, () => {
+    capturePageHistoryBeforeChange(handle, pageId);
     const sortKey = getNextSortKey(
       handle,
       pageId,
@@ -43,6 +48,7 @@ export function createBlock(
     });
 
     touchPage(handle, pageId);
+    syncPageHistoryAfterChange(handle, pageId);
     recordOperation(handle, "block", block.id, "create", block);
   });
 
@@ -58,6 +64,7 @@ export function updateBlock(
   input: UpdateBlockInput
 ): Block {
   const current = getBlock(handle, input.blockId);
+  capturePageHistoryBeforeChange(handle, current.pageId);
   const nextType = input.type ?? current.type;
   const nextText = input.text ?? current.text;
   const nextProps = normalizeBlockProps(input.props ?? current.props, nextText);
@@ -76,6 +83,7 @@ export function updateBlock(
   touchPage(handle, current.pageId);
 
   const block = getBlock(handle, input.blockId);
+  syncPageHistoryAfterChange(handle, current.pageId);
   recordOperation(handle, "block", block.id, "update", {
     type: nextType,
     text: nextText,
@@ -91,8 +99,10 @@ export function deleteBlock(
 ): { deleted: true } {
   const current = getBlock(handle, input.blockId);
 
+  capturePageHistoryBeforeChange(handle, current.pageId);
   handle.orm.delete(blocks).where(eq(blocks.id, input.blockId)).run();
   touchPage(handle, current.pageId);
+  syncPageHistoryAfterChange(handle, current.pageId);
   recordOperation(handle, "block", input.blockId, "delete", {});
 
   return { deleted: true };

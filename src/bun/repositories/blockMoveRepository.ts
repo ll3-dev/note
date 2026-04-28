@@ -4,6 +4,10 @@ import { blocks } from "../schema";
 import { getBlock } from "./blockReadRepository";
 import { recordOperation } from "./noteOperations";
 import { touchPage } from "./pageTouch";
+import {
+  capturePageHistoryBeforeChange,
+  syncPageHistoryAfterChange
+} from "../sync/pageHistory";
 import type { Block, MoveBlockInput } from "../../shared/contracts";
 
 export function moveBlock(
@@ -23,6 +27,7 @@ export function moveBlock(
   }
 
   runInTransaction(handle, () => {
+    capturePageHistoryBeforeChange(handle, movingBlock.pageId);
     const nextIds = getSiblingBlockIds(handle, movingBlock);
     const afterIndex = afterBlock ? nextIds.indexOf(afterBlock.id) : -1;
     const insertIndex = afterBlock ? afterIndex + 1 : 0;
@@ -35,6 +40,7 @@ export function moveBlock(
     rewriteSortKeys(handle, nextIds, movingBlock.id);
 
     touchPage(handle, movingBlock.pageId);
+    syncPageHistoryAfterChange(handle, movingBlock.pageId);
     recordOperation(handle, "block", movingBlock.id, "move", {
       afterBlockId: afterBlock?.id ?? null
     });

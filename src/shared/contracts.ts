@@ -96,6 +96,10 @@ export type MovePageInput = {
   afterPageId?: string | null;
 };
 
+export type PageHistoryInput = {
+  pageId: string;
+};
+
 export type NoteRPC = {
   bun: RPCSchema<{
     requests: {
@@ -138,6 +142,14 @@ export type NoteRPC = {
       movePage: {
         params: MovePageInput;
         response: Page;
+      };
+      redoPageHistory: {
+        params: PageHistoryInput;
+        response: PageDocument | null;
+      };
+      undoPageHistory: {
+        params: PageHistoryInput;
+        response: PageDocument | null;
       };
     };
   }>;

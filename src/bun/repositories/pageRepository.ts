@@ -5,6 +5,10 @@ import { DEFAULT_BLOCK_TYPE, insertBlock } from "./blockRepository";
 import { listBlocksForPage } from "./blockReadRepository";
 import { makeSortKey } from "./blockOrdering";
 import { mapPage } from "./noteRows";
+import {
+  capturePageHistoryBeforeChange,
+  syncPageHistoryAfterChange
+} from "../sync/pageHistory";
 import type {
   CreatePageInput,
   Page,
@@ -81,6 +85,7 @@ export function updatePage(
   input: UpdatePageInput
 ): Page {
   if (input.title !== undefined) {
+    capturePageHistoryBeforeChange(handle, input.pageId);
     const title = input.title.trim();
 
     if (!title) {
@@ -95,6 +100,7 @@ export function updatePage(
       })
       .where(eq(pages.id, input.pageId))
       .run();
+    syncPageHistoryAfterChange(handle, input.pageId);
   }
 
   return getPage(handle, input.pageId);
