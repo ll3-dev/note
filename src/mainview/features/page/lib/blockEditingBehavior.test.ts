@@ -3,7 +3,8 @@ import type { Block } from "../../../../shared/contracts";
 import {
   getBlockDepth,
   getBlockIndentUpdate,
-  getNextBlockDraft
+  getNextBlockDraft,
+  getNumberedListStart
 } from "./blockEditingBehavior";
 
 const block = {
@@ -45,11 +46,11 @@ describe("block editing behavior", () => {
     expect(
       getNextBlockDraft({
         ...block,
-        props: { depth: 2 },
+        props: { depth: 2, start: 5 },
         type: "numbered_list"
       })
     ).toEqual({
-      props: { depth: 2 },
+      props: { depth: 2, start: 6 },
       type: "numbered_list"
     });
     expect(
@@ -66,5 +67,11 @@ describe("block editing behavior", () => {
       props: {},
       type: "paragraph"
     });
+  });
+
+  test("normalizes numbered list starts", () => {
+    expect(getNumberedListStart({ ...block, props: { start: 5 } })).toBe(5);
+    expect(getNumberedListStart({ ...block, props: { start: "5" } })).toBe(1);
+    expect(getNumberedListStart({ ...block, props: { start: 0 } })).toBe(1);
   });
 });

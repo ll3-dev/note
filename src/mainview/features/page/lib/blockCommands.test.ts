@@ -21,6 +21,11 @@ describe("block command shortcuts", () => {
       text: "",
       type: "bulleted_list"
     });
+    expect(getMarkdownShortcut("5. ")).toEqual({
+      props: { start: 5 },
+      text: "",
+      type: "numbered_list"
+    });
     expect(getMarkdownShortcut("[] ")).toEqual({
       props: { checked: false },
       text: "",

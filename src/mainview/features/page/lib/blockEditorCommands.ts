@@ -26,6 +26,7 @@ export type BlockShortcutContext = {
   event: KeyboardEvent<HTMLElement>;
   isCommandMenuOpen: boolean;
   maxIndentDepth: number;
+  numberedListMarker: number | null;
   onCreateAfter: (
     block: Block,
     draft?: ReturnType<typeof getNextBlockDraft>
@@ -91,9 +92,12 @@ export const BLOCK_EDITOR_COMMANDS: Command<BlockShortcutContext>[] = [
     id: "editor.block.createBelow",
     scope: "block",
     title: "Create block below",
-    run: async ({ block, commitDraft, onCreateAfter }) => {
+    run: async ({ block, commitDraft, numberedListMarker, onCreateAfter }) => {
       await commitDraft();
-      await onCreateAfter(block, getNextBlockDraft(block));
+      await onCreateAfter(
+        block,
+        getNextBlockDraft(block, numberedListMarker ?? undefined)
+      );
     }
   },
   {

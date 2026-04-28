@@ -80,11 +80,20 @@ export const BLOCK_COMMANDS: BlockCommand[] = [
 export function getMarkdownShortcut(value: string):
   | { props: BlockProps; text: string; type: BlockType }
   | null {
+  const numberedListMatch = /^(\d+)\.\s$/.exec(value);
+
+  if (numberedListMatch) {
+    return {
+      props: { start: Number(numberedListMatch[1]) },
+      text: "",
+      type: "numbered_list"
+    };
+  }
+
   const shortcuts: Array<[RegExp, BlockType, BlockProps?]> = [
     [/^#\s$/, "heading_1"],
     [/^##\s$/, "heading_2"],
     [/^-\s$/, "bulleted_list"],
-    [/^1\.\s$/, "numbered_list"],
     [/^>\s$/, "quote"],
     [/^```\s?$/, "code"],
     [/^\[\]\s$|^\[ \]\s$/, "todo", { checked: false }],

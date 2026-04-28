@@ -9,6 +9,7 @@ import {
   getBlockDepth,
   type CreateBlockDraft
 } from "../lib/blockEditingBehavior";
+import { getNumberedListMarkers } from "../lib/blockNumbering";
 import { placeCursorAtEnd } from "../lib/domSelection";
 import type { BlockEditorUpdate } from "../types/blockEditorTypes";
 
@@ -44,6 +45,7 @@ export function PageEditor({
   const titleSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const focusLastBlock = useLastBlockFocus(document);
+  const numberedListMarkers = getNumberedListMarkers(document.blocks);
   const {
     clearDragState,
     draggedBlockId,
@@ -151,6 +153,7 @@ export function PageEditor({
               isSelected={selectedBlockId === block.id}
               key={block.id}
               maxIndentDepth={getMaxIndentDepth(document.blocks, blockIndex)}
+              numberedListMarker={numberedListMarkers.get(block.id) ?? null}
               onCreateAfter={onCreateBlockAfter}
               onDelete={onDeleteBlock}
               onDragEnd={clearDragState}

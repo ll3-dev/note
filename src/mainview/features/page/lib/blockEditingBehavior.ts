@@ -11,6 +11,7 @@ export type CreateBlockDraft = {
 };
 
 const MAX_BLOCK_DEPTH = 6;
+const DEFAULT_NUMBERED_LIST_START = 1;
 const CONTINUING_BLOCK_TYPES = new Set<BlockType>([
   "bulleted_list",
   "numbered_list",
@@ -25,6 +26,14 @@ export function getBlockDepth(block: Block) {
   return typeof depth === "number" && Number.isInteger(depth) && depth > 0
     ? Math.min(depth, MAX_BLOCK_DEPTH)
     : 0;
+}
+
+export function getNumberedListStart(block: Block) {
+  const start = block.props.start;
+
+  return typeof start === "number" && Number.isInteger(start) && start > 0
+    ? start
+    : DEFAULT_NUMBERED_LIST_START;
 }
 
 export function getBlockIndentUpdate(
@@ -54,7 +63,10 @@ export function getBlockIndentUpdate(
   return { props };
 }
 
-export function getNextBlockDraft(block: Block): CreateBlockDraft {
+export function getNextBlockDraft(
+  block: Block,
+  numberedListMarker?: number
+): CreateBlockDraft {
   if (!CONTINUING_BLOCK_TYPES.has(block.type)) {
     return {
       props: pickDepthProps(block),
@@ -66,6 +78,16 @@ export function getNextBlockDraft(block: Block): CreateBlockDraft {
     return {
       props: { ...pickDepthProps(block), checked: false },
       type: "todo"
+    };
+  }
+
+  if (block.type === "numbered_list") {
+    return {
+      props: {
+        ...pickDepthProps(block),
+        start: (numberedListMarker ?? getNumberedListStart(block)) + 1
+      },
+      type: "numbered_list"
     };
   }
 

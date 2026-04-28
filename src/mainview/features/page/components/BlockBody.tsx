@@ -10,6 +10,7 @@ type BlockBodyProps = {
   block: Block;
   blockIndex: number;
   checked: boolean;
+  numberedListMarker: number | null;
   onApplyCommand: (command: BlockCommand) => void;
   onBlur: () => Promise<void>;
   onChange: (value: string) => void;
@@ -22,6 +23,7 @@ export function BlockBody({
   block,
   blockIndex,
   checked,
+  numberedListMarker,
   onApplyCommand,
   onBlur,
   onChange,
@@ -76,7 +78,7 @@ export function BlockBody({
       ) : null}
       {block.type === "numbered_list" ? (
         <span className="flex h-7 w-5 shrink-0 items-center justify-end text-sm font-medium text-muted-foreground">
-          {blockIndex + 1}.
+          {numberedListMarker ?? blockIndex + 1}.
         </span>
       ) : null}
       {block.type === "divider" ? (

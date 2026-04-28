@@ -21,6 +21,7 @@ export function BlockEditor({
   isDropBefore,
   isSelected,
   maxIndentDepth,
+  numberedListMarker,
   onCreateAfter,
   onDelete,
   onDragEnd,
@@ -73,6 +74,7 @@ export function BlockEditor({
       draft,
       isCommandMenuOpen,
       maxIndentDepth,
+      numberedListMarker,
       onCreateAfter,
       onDelete,
       onFocusNext,
@@ -123,6 +125,7 @@ export function BlockEditor({
           block={block}
           blockIndex={blockIndex}
           checked={checked}
+          numberedListMarker={numberedListMarker}
           onApplyCommand={applyCommand}
           onBlur={commitDraft}
           onChange={changeDraft}

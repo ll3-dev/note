@@ -20,6 +20,7 @@ export type BlockEditorProps = {
   isDropBefore: boolean;
   isSelected: boolean;
   maxIndentDepth: number;
+  numberedListMarker: number | null;
   onCreateAfter: (block: Block, draft?: CreateBlockDraft) => Promise<void>;
   onDelete: (block: Block) => void;
   onDragEnd: () => void;

@@ -32,6 +32,7 @@ function createContext(overrides: Partial<BlockShortcutContext> = {}) {
     event: {} as BlockShortcutContext["event"],
     isCommandMenuOpen: true,
     maxIndentDepth: 1,
+    numberedListMarker: null,
     onCreateAfter: async () => {
       calls.push("onCreateAfter");
     },
@@ -93,6 +94,44 @@ describe("block editor commands", () => {
       {
         props: { depth: 1 },
         type: "bulleted_list"
+      }
+    ]);
+  });
+
+  test("continues numbered list blocks from the displayed marker", async () => {
+    const createdDrafts: unknown[] = [];
+    const { calls, context } = createContext({
+      block: {
+        ...block,
+        props: { start: 5 },
+        type: "numbered_list"
+      },
+      numberedListMarker: 7,
+      onCreateAfter: async (_block, draft) => {
+        calls.push("onCreateAfter");
+        createdDrafts.push(draft);
+      }
+    });
+    const command = resolveKeybinding({
+      activeScopes: ["global", "editor", "block"],
+      commands: BLOCK_EDITOR_COMMANDS,
+      context,
+      event: {
+        altKey: false,
+        ctrlKey: false,
+        key: "Enter",
+        metaKey: false,
+        shiftKey: false
+      }
+    });
+
+    expect(command?.id).toBe("editor.block.createBelow");
+    await command?.run(context);
+    expect(calls).toEqual(["commitDraft", "onCreateAfter"]);
+    expect(createdDrafts).toEqual([
+      {
+        props: { start: 8 },
+        type: "numbered_list"
       }
     ]);
   });
