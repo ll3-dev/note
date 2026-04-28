@@ -40,6 +40,7 @@ type PageEditorProps = {
   ) => Promise<void> | void;
   onTextDraftChange: (block: Block, text: string) => void;
   onTextDraftFlush: (block: Block, text: string) => Promise<void>;
+  onTextHistoryApply: (block: Block, text: string) => void;
   onUpdateBlock: (block: Block, changes: BlockEditorUpdate) => void;
   onUpdatePageTitle: (page: Page, title: string) => void;
 };
@@ -57,6 +58,7 @@ export function PageEditor({
   onPasteMarkdown,
   onTextDraftChange,
   onTextDraftFlush,
+  onTextHistoryApply,
   onUpdateBlock,
   onUpdatePageTitle
 }: PageEditorProps) {
@@ -99,7 +101,7 @@ export function PageEditor({
   }
 
   function handleHistoryTextApply(block: Block, text: string) {
-    onTextDraftChange(block, text);
+    onTextHistoryApply(block, text);
   }
 
   return (

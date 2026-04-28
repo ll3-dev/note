@@ -27,6 +27,7 @@ type WorkspaceEditorPaneProps = {
   ) => Promise<void> | void;
   onTextDraftChange: (block: Block, text: string) => void;
   onTextDraftFlush: (block: Block, text: string) => Promise<void>;
+  onTextHistoryApply: (block: Block, text: string) => void;
   onUpdateBlock: (block: Block, changes: BlockEditorUpdate) => void;
   onUpdatePageTitle: PageEditorTitleHandler;
 };
@@ -47,6 +48,7 @@ export function WorkspaceEditorPane({
   onPasteMarkdown,
   onTextDraftChange,
   onTextDraftFlush,
+  onTextHistoryApply,
   onUpdateBlock,
   onUpdatePageTitle
 }: WorkspaceEditorPaneProps) {
@@ -66,6 +68,7 @@ export function WorkspaceEditorPane({
           onPasteMarkdown={onPasteMarkdown}
           onTextDraftChange={onTextDraftChange}
           onTextDraftFlush={onTextDraftFlush}
+          onTextHistoryApply={onTextHistoryApply}
           onUpdateBlock={onUpdateBlock}
           onUpdatePageTitle={onUpdatePageTitle}
         />

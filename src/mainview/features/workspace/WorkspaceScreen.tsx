@@ -192,6 +192,7 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
         onPasteMarkdown={pasteMarkdown}
         onTextDraftChange={queueTextDraft}
         onTextDraftFlush={flushTextDraft}
+        onTextHistoryApply={queueTextDraft}
         onUpdateBlock={(target, changes) => void updateBlock(target, changes)}
         onUpdatePageTitle={updatePageTitle}
       />
