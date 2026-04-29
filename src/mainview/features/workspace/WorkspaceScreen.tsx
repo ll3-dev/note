@@ -2,7 +2,7 @@ import { useCallback, useMemo, type SyntheticEvent } from "react";
 import { useGlobalKeyboardShortcuts } from "@/mainview/features/commands/useGlobalKeyboardShortcuts";
 import { useKeybindingStore } from "@/mainview/features/commands/keybindingStore";
 import { useWorkspaceStore } from "@/mainview/store/useWorkspaceStore";
-import type { Block, Page } from "../../../shared/contracts";
+import type { Block, BlockProps, Page } from "../../../shared/contracts";
 import { useBlockFocus } from "../page/hooks/useBlockFocus";
 import { useBlockKeyboardFocus } from "../page/hooks/useBlockKeyboardFocus";
 import type { CreateBlockDraft } from "../page/lib/blockEditingBehavior";
@@ -57,8 +57,8 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
   const { setFocusBlockId } = useBlockFocus(selectedDocument);
   const { focusNextBlock, focusPreviousBlock } = useBlockKeyboardFocus(selectedDocument, setFocusBlockId);
   const saveBlockText = useCallback(
-    async (block: Block, text: string) => {
-      await updateBlockMutation.mutateAsync({ block, text });
+    async (block: Block, text: string, props?: BlockProps) => {
+      await updateBlockMutation.mutateAsync({ block, props, text });
     },
     [updateBlockMutation]
   );
@@ -79,7 +79,7 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
     setFocusBlockId,
     updateBlock: updateBlockMutation.mutateAsync
   });
-  const { deleteBlocks, duplicateBlocks } = useBlockBatchActions({
+  const { deleteBlocks } = useBlockBatchActions({
     clearPendingText,
     createBlock: createBlockMutation.mutateAsync,
     deleteBlock: deleteBlockMutation.mutateAsync,
@@ -173,14 +173,12 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
           void flushAllTextDrafts().then(() => deleteBlockMutation.mutate(target));
         }}
         onDeleteBlocks={(targets) => void deleteBlocks(targets)}
-        onDuplicateBlocks={(targets) => duplicateBlocks(targets)}
         onFocusFirstBlock={focusFirstBlock}
         onFocusNextBlock={focusNextBlock}
         onFocusPreviousBlock={focusPreviousBlock}
-        onMoveBlock={(target, afterBlockId) => {
-          void flushAllTextDrafts().then(() =>
-            moveBlockMutation.mutate({ afterBlockId, block: target })
-          );
+        onMoveBlock={async (target, afterBlockId) => {
+          await flushAllTextDrafts();
+          await moveBlockMutation.mutateAsync({ afterBlockId, block: target });
         }}
         onPasteMarkdown={pasteMarkdown}
         onTextDraftChange={queueTextDraft}

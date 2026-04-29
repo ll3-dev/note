@@ -1,39 +1,142 @@
-import { useState, type MouseEvent } from "react";
+import {
+  useCallback,
+  useRef,
+  useState,
+  type DragEvent as ReactDragEvent,
+  type MouseEvent as ReactMouseEvent,
+  type PointerEvent as ReactPointerEvent
+} from "react";
 import type { Block } from "../../../../shared/contracts";
 import {
-  getAfterBlockId,
-  type BlockDropPlacement,
-  type BlockDropTarget
+  getAfterBlockIdForMovingBlocks,
+  type BlockDropPlacement
 } from "../lib/blockDrag";
+import {
+  getDragDropTarget,
+  getDragPreview,
+  getDraggingBlockId,
+  transitionBlockDrag,
+  type BlockDragMachineState
+} from "../lib/blockDragMachine";
+import {
+  getBlockRangeSelection,
+  getToggledBlockSelection
+} from "../lib/blockSelection";
+import { useBlockRangeSelection } from "./useBlockRangeSelection";
+import { usePointerBlockDrag } from "./usePointerBlockDrag";
 
 type UseBlockDragStateOptions = {
   blocks: Block[];
-  onMoveBlock: (block: Block, afterBlockId: string | null) => void;
+  onMoveBlock: (block: Block, afterBlockId: string | null) => Promise<void> | void;
 };
 
 export function useBlockDragState({
   blocks,
   onMoveBlock
 }: UseBlockDragStateOptions) {
-  const [draggedBlockId, setDraggedBlockId] = useState<string | null>(null);
-  const [dropTarget, setDropTarget] = useState<BlockDropTarget | null>(null);
+  const [dragState, setDragState] = useState<BlockDragMachineState>({
+    status: "idle"
+  });
   const [selectedBlockIds, setSelectedBlockIds] = useState<string[]>([]);
+  const blocksRef = useRef(blocks);
+  const dragStateRef = useRef(dragState);
+  const { beginBlockRangeSelection, isBlockRangeSelecting, selectionBox } =
+    useBlockRangeSelection({ blocks, onSelectBlockIds: setSelectedBlockIds });
 
-  function startDrag(block: Block) {
-    setDraggedBlockId(block.id);
-    setSelectedBlockIds((current) =>
-      current.includes(block.id) ? current : [block.id]
+  blocksRef.current = blocks;
+  dragStateRef.current = dragState;
+
+  const dropBlock = useCallback(
+    (target: Block, placement: BlockDropPlacement) => {
+      const draggedBlockId = getDraggingBlockId(dragStateRef.current);
+
+      if (!draggedBlockId || draggedBlockId === target.id) {
+        clearDragState();
+        return;
+      }
+
+      const draggedBlock = blocksRef.current.find(
+        (block) => block.id === draggedBlockId
+      );
+
+      if (!draggedBlock) {
+        clearDragState();
+        return;
+      }
+
+      const movingBlocks = getMovingBlocks(draggedBlock);
+
+      if (movingBlocks.some((block) => block.id === target.id)) {
+        clearDragState();
+        return;
+      }
+
+      const afterBlockId = getAfterBlockIdForMovingBlocks(
+        blocksRef.current,
+        movingBlocks.map((block) => block.id),
+        target.id,
+        placement
+      );
+
+      void moveBlocks(movingBlocks, afterBlockId);
+
+      clearDragState();
+    },
+    [selectedBlockIds]
+  );
+
+  usePointerBlockDrag({
+    blocksRef,
+    dragState,
+    dragStateRef,
+    onDropBlock: dropBlock,
+    setDragState
+  });
+
+  function startDrag(_block: Block, event?: ReactDragEvent<HTMLElement>) {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+  }
+
+  function pressBlockDragHandle(
+    block: Block,
+    event: ReactPointerEvent<HTMLElement>
+  ) {
+    if (event.button !== 0) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    const nextSelectedBlockIds = selectedBlockIds.includes(block.id)
+      ? selectedBlockIds
+      : [block.id];
+
+    setSelectedBlockIds(nextSelectedBlockIds);
+    setDragState(
+      transitionBlockDrag(dragStateRef.current, {
+        blockId: block.id,
+        clientX: event.clientX,
+        clientY: event.clientY,
+        selectedBlockIds: nextSelectedBlockIds,
+        type: "press"
+      })
     );
   }
 
-  function selectBlock(block: Block, event?: MouseEvent) {
+  function selectBlock(block: Block, event?: ReactMouseEvent) {
     if (event?.shiftKey && selectedBlockIds.length > 0) {
-      selectBlockRange(block);
+      setSelectedBlockIds(
+        getBlockRangeSelection(blocks, selectedBlockIds, block.id)
+      );
       return;
     }
 
     if (event?.metaKey || event?.ctrlKey) {
-      toggleBlockSelection(block);
+      setSelectedBlockIds(getToggledBlockSelection(selectedBlockIds, block.id));
       return;
     }
 
@@ -45,76 +148,50 @@ export function useBlockDragState({
   }
 
   function setDropPlacement(block: Block, placement: BlockDropPlacement) {
-    setDropTarget({ blockId: block.id, placement });
-  }
-
-  function dropBlock(target: Block, placement: BlockDropPlacement) {
-    if (!draggedBlockId || draggedBlockId === target.id) {
-      clearDragState();
-      return;
-    }
-
-    const draggedBlock = blocks.find((block) => block.id === draggedBlockId);
-
-    if (!draggedBlock) {
-      clearDragState();
-      return;
-    }
-
-    const afterBlockId = getAfterBlockId(
-      blocks,
-      draggedBlock.id,
-      target.id,
-      placement
+    setDragState((state) =>
+      transitionBlockDrag(state, {
+        dropTarget: { blockId: block.id, placement },
+        type: "target"
+      })
     );
-
-    if (afterBlockId !== draggedBlock.id) {
-      onMoveBlock(draggedBlock, afterBlockId);
-      setSelectedBlockIds([draggedBlock.id]);
-    }
-
-    clearDragState();
   }
 
   function clearDragState() {
-    setDraggedBlockId(null);
-    setDropTarget(null);
+    setDragState(transitionBlockDrag(dragStateRef.current, { type: "cancel" }));
   }
 
-  function selectBlockRange(block: Block) {
-    const anchorId = selectedBlockIds[selectedBlockIds.length - 1];
-    const anchorIndex = blocks.findIndex((item) => item.id === anchorId);
-    const targetIndex = blocks.findIndex((item) => item.id === block.id);
-
-    if (anchorIndex === -1 || targetIndex === -1) {
-      setSelectedBlockIds([block.id]);
-      return;
+  function getMovingBlocks(draggedBlock: Block) {
+    if (!selectedBlockIds.includes(draggedBlock.id)) {
+      return [draggedBlock];
     }
 
-    const [start, end] =
-      anchorIndex < targetIndex
-        ? [anchorIndex, targetIndex]
-        : [targetIndex, anchorIndex];
-
-    setSelectedBlockIds(blocks.slice(start, end + 1).map((item) => item.id));
+    return blocksRef.current.filter((block) => selectedBlockIds.includes(block.id));
   }
 
-  function toggleBlockSelection(block: Block) {
-    setSelectedBlockIds((current) =>
-      current.includes(block.id)
-        ? current.filter((blockId) => blockId !== block.id)
-        : [...current, block.id]
-    );
+  async function moveBlocks(movingBlocks: Block[], afterBlockId: string | null) {
+    let currentAfterBlockId = afterBlockId;
+
+    for (const block of movingBlocks) {
+      await onMoveBlock(block, currentAfterBlockId);
+      currentAfterBlockId = block.id;
+    }
+
+    setSelectedBlockIds(movingBlocks.map((block) => block.id));
   }
 
   return {
+    beginBlockSelectionDrag: beginBlockRangeSelection,
     clearBlockSelection,
     clearDragState,
-    draggedBlockId,
+    draggedBlockId: getDraggingBlockId(dragState),
+    dragPreview: getDragPreview(dragState),
     dropBlock,
-    dropTarget,
+    dropTarget: getDragDropTarget(dragState),
+    isBlockRangeSelecting,
+    pressBlockDragHandle,
     selectBlock,
     selectedBlockIds,
+    selectionBox,
     setDropPlacement,
     startDrag
   };

@@ -22,7 +22,22 @@ export function getAfterBlockId(
   targetBlockId: string,
   placement: BlockDropPlacement
 ): string | null {
-  const orderedBlocks = blocks.filter((block) => block.id !== draggedBlockId);
+  return getAfterBlockIdForMovingBlocks(
+    blocks,
+    [draggedBlockId],
+    targetBlockId,
+    placement
+  );
+}
+
+export function getAfterBlockIdForMovingBlocks(
+  blocks: Block[],
+  movingBlockIds: string[],
+  targetBlockId: string,
+  placement: BlockDropPlacement
+): string | null {
+  const movingBlockIdSet = new Set(movingBlockIds);
+  const orderedBlocks = blocks.filter((block) => !movingBlockIdSet.has(block.id));
   const targetIndex = orderedBlocks.findIndex((block) => block.id === targetBlockId);
 
   if (targetIndex < 0) {

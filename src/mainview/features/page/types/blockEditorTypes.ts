@@ -1,4 +1,4 @@
-import type { MouseEvent } from "react";
+import type { MouseEvent, PointerEvent } from "react";
 import type {
   Block,
   BlockProps,
@@ -24,6 +24,7 @@ export type BlockEditorProps = {
   isDragging: boolean;
   isDropAfter: boolean;
   isDropBefore: boolean;
+  isBlockRangeSelecting: boolean;
   isSelected: boolean;
   maxIndentDepth: number;
   numberedListMarker: number | null;
@@ -33,7 +34,8 @@ export type BlockEditorProps = {
   onDelete: (block: Block) => void;
   onDragEnd: () => void;
   onDragOver: (block: Block, placement: "before" | "after") => void;
-  onDragStart: (block: Block) => void;
+  onDragPointerDown: (block: Block, event: PointerEvent<HTMLElement>) => void;
+  onDragStart: (block: Block, event?: React.DragEvent<HTMLElement>) => void;
   onDrop: (block: Block, placement: "before" | "after") => void;
   onFocusNext: (block: Block) => void;
   onFocusPrevious: (block: Block) => void;
@@ -45,10 +47,14 @@ export type BlockEditorProps = {
   ) => Promise<void> | void;
   onSelect: (block: Block, event?: MouseEvent) => void;
   onSelectionChange?: () => void;
-  onTextDraftChange: (block: Block, text: string) => void;
-  onTextDraftFlush: (block: Block, text: string) => Promise<void>;
+  onTextDraftChange: (block: Block, text: string, props?: BlockProps) => void;
+  onTextDraftFlush: (
+    block: Block,
+    text: string,
+    props?: BlockProps
+  ) => Promise<void>;
   onTextHistoryApply: (block: Block, text: string) => void;
-  onTextRedo: (block: Block) => Promise<string | null>;
-  onTextUndo: (block: Block) => Promise<string | null>;
+  onTextRedo: (block: Block) => Promise<Block | null>;
+  onTextUndo: (block: Block) => Promise<Block | null>;
   onUpdate: (block: Block, changes: BlockEditorUpdate) => void;
 };

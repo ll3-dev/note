@@ -19,6 +19,7 @@ export function BlockEditor({
   isDragging,
   isDropAfter,
   isDropBefore,
+  isBlockRangeSelecting,
   isSelected,
   maxIndentDepth,
   numberedListMarker,
@@ -28,6 +29,7 @@ export function BlockEditor({
   onDelete,
   onDragEnd,
   onDragOver,
+  onDragPointerDown,
   onDragStart,
   onDrop,
   onFocusNext,
@@ -67,6 +69,7 @@ export function BlockEditor({
     editableRef,
     onTextDraftChange,
     onTextDraftFlush,
+    onCreateBlockAfter: onCreateAfter,
     onTextHistoryApply,
     onTextRedo,
     onTextUndo,
@@ -114,16 +117,28 @@ export function BlockEditor({
     onDrop(block, getDropPlacement(event.clientY, event.currentTarget));
   }
 
+  function handleShellDragStart(event: DragEvent<HTMLDivElement>) {
+    if (!isSelected) {
+      event.preventDefault();
+      return;
+    }
+
+    onDragStart(block, event);
+  }
+
   return (
     <div
       className={cn(
         "block-editor-shell group relative rounded-md py-px",
         block.type === "quote" && "block-editor-quote bg-muted/30",
-        isSelected && "bg-muted/50",
+        isBlockRangeSelecting && "select-none",
         isDragging && "opacity-50"
       )}
       data-block-id={block.id}
+      draggable={isSelected && !isDragging}
       onDragOver={handleDragOver}
+      onDragStart={handleShellDragStart}
+      onDragEnd={onDragEnd}
       onDrop={handleDrop}
       style={{ marginLeft: depth * 24 }}
     >
@@ -134,6 +149,7 @@ export function BlockEditor({
       <BlockDragHandle
         block={block}
         onDragEnd={onDragEnd}
+        onDragPointerDown={onDragPointerDown}
         onDragStart={onDragStart}
         onSelect={onSelect}
       />
@@ -144,10 +160,12 @@ export function BlockEditor({
           blockIndex={blockIndex}
           checked={checked}
           draft={draft}
+          isSelected={isSelected}
           numberedListMarker={numberedListMarker}
           onApplyCommand={applyCommand}
           onBlur={commitDraft}
           onChange={changeDraft}
+          onDragStart={handleShellDragStart}
           onKeyDown={handleKeyDown}
           onPasteMarkdown={onPasteMarkdown}
           onSelectionChange={syncActiveInlineMarksFromSelection}

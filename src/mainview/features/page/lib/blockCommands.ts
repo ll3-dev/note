@@ -11,6 +11,7 @@ import {
   Text
 } from "lucide-react";
 import type { BlockProps, BlockType } from "../../../../shared/contracts";
+import type { CreateBlockDraft } from "./blockEditingBehavior";
 
 export type BlockCommand = {
   aliases: string[];
@@ -120,9 +121,14 @@ export function filterBlockCommands(query: string) {
   );
 }
 
-export function getMarkdownShortcut(value: string):
-  | { props: BlockProps; text: string; type: BlockType }
-  | null {
+export type MarkdownShortcut = {
+  createBlockAfter?: CreateBlockDraft;
+  props: BlockProps;
+  text: string;
+  type: BlockType;
+};
+
+export function getMarkdownShortcut(value: string): MarkdownShortcut | null {
   const numberedListMatch = /^(\d+)\.\s$/.exec(value);
 
   if (numberedListMatch) {
@@ -133,23 +139,27 @@ export function getMarkdownShortcut(value: string):
     };
   }
 
-  const shortcuts: Array<[RegExp, BlockType, BlockProps?]> = [
-    [/^#\s$/, "heading_1"],
-    [/^##\s$/, "heading_2"],
-    [/^-\s$/, "bulleted_list"],
-    [/^>\s$/, "quote"],
-    [/^```\s?$/, "code"],
-    [/^\[\]\s$|^\[ \]\s$/, "todo", { checked: false }],
-    [/^---$/, "divider"]
+  const shortcuts: Array<[RegExp, MarkdownShortcut]> = [
+    [/^#\s$/, { props: {}, text: "", type: "heading_1" }],
+    [/^##\s$/, { props: {}, text: "", type: "heading_2" }],
+    [/^-\s$/, { props: {}, text: "", type: "bulleted_list" }],
+    [/^>\s$/, { props: {}, text: "", type: "quote" }],
+    [/^```\s?$/, { props: {}, text: "", type: "code" }],
+    [/^\[\]\s$|^\[ \]\s$/, { props: { checked: false }, text: "", type: "todo" }],
+    [
+      /^---$/,
+      {
+        createBlockAfter: { props: {}, text: "", type: "paragraph" },
+        props: {},
+        text: "",
+        type: "divider"
+      }
+    ]
   ];
 
-  for (const [pattern, type, props] of shortcuts) {
+  for (const [pattern, shortcut] of shortcuts) {
     if (pattern.test(value)) {
-      return {
-        props: props ?? {},
-        text: "",
-        type
-      };
+      return shortcut;
     }
   }
 

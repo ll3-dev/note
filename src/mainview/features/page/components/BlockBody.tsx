@@ -1,11 +1,14 @@
-import type { ClipboardEvent, KeyboardEvent, RefObject } from "react";
+import type {
+  DragEvent,
+  KeyboardEvent,
+  RefObject
+} from "react";
 import { cn } from "@/mainview/lib/utils";
 import type { Block } from "../../../../shared/contracts";
 import { BLOCK_COMMANDS, type BlockCommand } from "../lib/blockCommands";
 import { getBlockDepth } from "../lib/blockEditingBehavior";
 import { blockShellClass, editableClass } from "../lib/blockStyles";
-import { getTextSelectionOffsets } from "../lib/domSelection";
-import { shouldHandleMarkdownPaste } from "../lib/markdownBlocks";
+import { useBlockClipboardEditing } from "../hooks/useBlockClipboardEditing";
 import { InlineMarksViewer } from "./InlineMarksViewer";
 import type {
   BlockEditorUpdate,
@@ -18,10 +21,12 @@ type BlockBodyProps = {
   checked: boolean;
   draft: string;
   numberedListMarker: number | null;
+  isSelected: boolean;
   onApplyCommand: (command: BlockCommand) => Promise<void> | void;
   onBlur: () => Promise<void>;
   onChange: (value: string) => void;
   onKeyDown: (event: KeyboardEvent<HTMLDivElement>) => void;
+  onDragStart: (event: DragEvent<HTMLDivElement>) => void;
   onPasteMarkdown: (
     block: Block,
     markdown: string,
@@ -39,46 +44,24 @@ export function BlockBody({
   checked,
   draft,
   numberedListMarker,
+  isSelected,
   onApplyCommand,
   onBlur,
   onChange,
   onKeyDown,
+  onDragStart,
   onPasteMarkdown,
   onSelectionChange,
   onUpdate,
   editableRef
 }: BlockBodyProps) {
   const blockDepth = getBlockDepth(block);
-
-  function handlePaste(event: ClipboardEvent<HTMLDivElement>) {
-    const text = event.clipboardData.getData("text/plain");
-
-    if (shouldHandleMarkdownPaste(text)) {
-      const selection = getTextSelectionOffsets(event.currentTarget) ?? {
-        end: event.currentTarget.textContent?.length ?? 0,
-        start: event.currentTarget.textContent?.length ?? 0
-      };
-
-      event.preventDefault();
-      void onPasteMarkdown(block, text, event.currentTarget, selection);
-      return;
-    }
-
-    event.preventDefault();
-    const selection = window.getSelection();
-
-    if (!selection?.rangeCount) {
-      return;
-    }
-
-    const range = selection.getRangeAt(0);
-    range.deleteContents();
-    range.insertNode(window.document.createTextNode(text));
-    range.collapse(false);
-    selection.removeAllRanges();
-    selection.addRange(range);
-    onChange(event.currentTarget.textContent ?? "");
-  }
+  const { handleEditableKeyDown, handlePaste } = useBlockClipboardEditing({
+    block,
+    onChange,
+    onKeyDown,
+    onPasteMarkdown
+  });
 
   return (
     <div
@@ -143,10 +126,16 @@ export function BlockBody({
             contentEditable="plaintext-only"
             data-has-inline-marks={hasInlineMarks(block.props) ? "true" : undefined}
             data-placeholder="Type '/' for commands"
+            draggable={isSelected}
             onBlur={() => void onBlur()}
+            onDragStart={(event) => {
+              if (isSelected) {
+                onDragStart(event);
+              }
+            }}
             onFocus={onSelectionChange}
             onInput={(event) => onChange(event.currentTarget.textContent ?? "")}
-            onKeyDown={onKeyDown}
+            onKeyDown={handleEditableKeyDown}
             onKeyUp={(event) => {
               if (shouldSyncSelectionAfterKey(event.key)) {
                 onSelectionChange();

@@ -64,6 +64,30 @@ export function getTextSelectionOffsets(element: HTMLElement) {
   };
 }
 
+export function insertPlainTextAtSelection(element: HTMLElement, text: string) {
+  const selection = window.getSelection();
+
+  if (!selection?.rangeCount) {
+    return false;
+  }
+
+  const range = selection.getRangeAt(0);
+
+  if (
+    !element.contains(range.startContainer) ||
+    !element.contains(range.endContainer)
+  ) {
+    return false;
+  }
+
+  range.deleteContents();
+  range.insertNode(window.document.createTextNode(text));
+  range.collapse(false);
+  selection.removeAllRanges();
+  selection.addRange(range);
+  return true;
+}
+
 function getCursorOffset(element: HTMLElement) {
   const selection = window.getSelection();
 

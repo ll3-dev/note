@@ -33,6 +33,19 @@ describe("block command shortcuts", () => {
     });
   });
 
+  test("converts divider shortcut and requests a following text block", () => {
+    expect(getMarkdownShortcut("---")).toEqual({
+      createBlockAfter: {
+        props: {},
+        text: "",
+        type: "paragraph"
+      },
+      props: {},
+      text: "",
+      type: "divider"
+    });
+  });
+
   test("ignores regular paragraph text", () => {
     expect(getMarkdownShortcut("plain text")).toBeNull();
   });

@@ -10,10 +10,10 @@ export function BlockDropIndicator({
   return (
     <>
       {isDropBefore ? (
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-0.5 rounded-full bg-foreground" />
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-0.5 rounded-full bg-blue-500" />
       ) : null}
       {isDropAfter ? (
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-0.5 rounded-full bg-foreground" />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-0.5 rounded-full bg-blue-500" />
       ) : null}
     </>
   );

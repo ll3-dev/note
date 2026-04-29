@@ -14,22 +14,29 @@ type WorkspaceEditorPaneProps = {
   onCreateBlockAfter: (block: Block, draft?: CreateBlockDraft) => Promise<void>;
   onDeleteBlock: (block: Block) => void;
   onDeleteBlocks: (blocks: Block[]) => void;
-  onDuplicateBlocks: (blocks: Block[]) => Promise<void> | void;
   onFocusFirstBlock: () => void;
   onFocusNextBlock: (block: Block) => void;
   onFocusPreviousBlock: (block: Block) => void;
-  onMoveBlock: (block: Block, afterBlockId: string | null) => void;
+  onMoveBlock: (block: Block, afterBlockId: string | null) => Promise<void> | void;
   onPasteMarkdown: (
     block: Block,
     markdown: string,
     editableElement: HTMLElement,
     selection: TextSelectionOffsets
   ) => Promise<void> | void;
-  onTextDraftChange: (block: Block, text: string) => void;
-  onTextDraftFlush: (block: Block, text: string) => Promise<void>;
+  onTextDraftChange: (
+    block: Block,
+    text: string,
+    props?: Block["props"]
+  ) => void;
+  onTextDraftFlush: (
+    block: Block,
+    text: string,
+    props?: Block["props"]
+  ) => Promise<void>;
   onTextHistoryApply: (block: Block, text: string) => void;
-  onTextRedo: (block: Block) => Promise<string | null>;
-  onTextUndo: (block: Block) => Promise<string | null>;
+  onTextRedo: (block: Block) => Promise<Block | null>;
+  onTextUndo: (block: Block) => Promise<Block | null>;
   onUpdateBlock: (block: Block, changes: BlockEditorUpdate) => void;
   onUpdatePageTitle: PageEditorTitleHandler;
 };
@@ -42,7 +49,6 @@ export function WorkspaceEditorPane({
   onCreateBlockAfter,
   onDeleteBlock,
   onDeleteBlocks,
-  onDuplicateBlocks,
   onFocusFirstBlock,
   onFocusNextBlock,
   onFocusPreviousBlock,
@@ -57,14 +63,13 @@ export function WorkspaceEditorPane({
   onUpdatePageTitle
 }: WorkspaceEditorPaneProps) {
   return (
-    <div className="mx-auto flex h-full w-full max-w-230 flex-col px-10 py-8">
+    <div className="flex h-full w-full flex-col">
       {document ? (
         <PageEditor
           document={document}
           onCreateBlockAfter={onCreateBlockAfter}
           onDeleteBlock={onDeleteBlock}
           onDeleteBlocks={onDeleteBlocks}
-          onDuplicateBlocks={onDuplicateBlocks}
           onFocusFirstBlock={onFocusFirstBlock}
           onFocusNextBlock={onFocusNextBlock}
           onFocusPreviousBlock={onFocusPreviousBlock}

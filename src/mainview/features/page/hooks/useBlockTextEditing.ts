@@ -1,33 +1,31 @@
-import { RefObject, useEffect, useMemo, useState } from "react";
+import { RefObject, useCallback, useState } from "react";
 import type { Block, BlockProps } from "../../../../shared/contracts";
+import { type BlockCommand, getMarkdownShortcut } from "../lib/blockCommands";
 import {
-  type BlockCommand,
-  filterBlockCommands,
-  getMarkdownShortcut
-} from "../lib/blockCommands";
-import {
-  getTextSelectionOffsets,
   placeCursorAtEnd,
   placeCursorAtOffset
 } from "../lib/domSelection";
-import {
-  addInlineMarksToProps,
-  getInlineFormatProps,
-  getInlineMarksAtOffset,
-  getInlineMarkType,
-  type InlineMarkType
-} from "../lib/inlineFormatting";
+import { areBlockPropsEqual } from "../lib/blockProps";
 import type { BlockEditorUpdate } from "../types/blockEditorTypes";
+import type { CreateBlockDraft } from "../lib/blockEditingBehavior";
+import { useBlockCommandMenu } from "./useBlockCommandMenu";
+import { useBlockDraftSync } from "./useBlockDraftSync";
+import { useInlineMarkEditing } from "./useInlineMarkEditing";
 
 type UseBlockTextEditingOptions = {
   block: Block;
   checked: boolean;
   editableRef: RefObject<HTMLDivElement | null>;
-  onTextDraftChange: (block: Block, text: string) => void;
-  onTextDraftFlush: (block: Block, text: string) => Promise<void>;
+  onTextDraftChange: (block: Block, text: string, props?: BlockProps) => void;
+  onTextDraftFlush: (
+    block: Block,
+    text: string,
+    props?: BlockProps
+  ) => Promise<void>;
+  onCreateBlockAfter: (block: Block, draft?: CreateBlockDraft) => Promise<void>;
   onTextHistoryApply: (block: Block, text: string) => void;
-  onTextRedo: (block: Block) => Promise<string | null>;
-  onTextUndo: (block: Block) => Promise<string | null>;
+  onTextRedo: (block: Block) => Promise<Block | null>;
+  onTextUndo: (block: Block) => Promise<Block | null>;
   onUpdate: (block: Block, changes: BlockEditorUpdate) => void;
 };
 
@@ -37,6 +35,7 @@ export function useBlockTextEditing({
   editableRef,
   onTextDraftChange,
   onTextDraftFlush,
+  onCreateBlockAfter,
   onTextHistoryApply,
   onTextRedo,
   onTextUndo,
@@ -44,44 +43,48 @@ export function useBlockTextEditing({
 }: UseBlockTextEditingOptions) {
   const [draft, setDraft] = useState(block.text);
   const [draftProps, setDraftProps] = useState<BlockProps>(block.props);
-  const [activeInlineMarks, setActiveInlineMarks] = useState<InlineMarkType[]>([]);
-  const [isCommandMenuOpen, setIsCommandMenuOpen] = useState(false);
-  const [selectedCommandIndex, setSelectedCommandIndex] = useState(0);
-  const commandQuery = draft.startsWith("/") ? draft.slice(1).toLowerCase() : "";
-  const visibleCommands = useMemo(
-    () => filterBlockCommands(commandQuery),
-    [commandQuery]
+  const commandMenu = useBlockCommandMenu({ draft });
+
+  const syncEditableText = useCallback(
+    (nextText: string, cursorOffset?: number) => {
+      const editable = editableRef.current;
+
+      if (editable && editable.textContent !== nextText) {
+        editable.textContent = nextText;
+        if (cursorOffset === undefined) {
+          placeCursorAtEnd(editable);
+        } else {
+          placeCursorAtOffset(editable, cursorOffset);
+        }
+      }
+    },
+    [editableRef]
   );
 
-  useEffect(() => {
-    setDraft(block.text);
-    setDraftProps(block.props);
-    syncEditableText(block.text);
-  }, [block.id, block.props, block.text]);
+  useBlockDraftSync({
+    block,
+    draft,
+    draftProps,
+    setDraft,
+    setDraftProps,
+    syncEditableText
+  });
 
-  useEffect(() => {
-    setActiveInlineMarks([]);
-  }, [block.id]);
-
-  useEffect(() => {
-    setIsCommandMenuOpen(draft.startsWith("/"));
-  }, [draft]);
-
-  useEffect(() => {
-    setSelectedCommandIndex(0);
-  }, [commandQuery]);
-
-  useEffect(() => {
-    setSelectedCommandIndex((current) =>
-      visibleCommands.length === 0
-        ? 0
-        : Math.min(current, visibleCommands.length - 1)
-    );
-  }, [visibleCommands.length]);
+  const {
+    applyInlineFormat,
+    applyMarksToInsertedText,
+    syncActiveInlineMarksFromSelection
+  } = useInlineMarkEditing({
+    block,
+    draftProps,
+    editableRef,
+    onUpdate,
+    setDraftProps
+  });
 
   async function commitDraft() {
-    if (draft !== block.text) {
-      await onTextDraftFlush(block, draft);
+    if (draft !== block.text || !areBlockPropsEqual(draftProps, block.props)) {
+      await onTextDraftFlush(block, draft, draftProps);
     }
   }
 
@@ -92,7 +95,7 @@ export function useBlockTextEditing({
     setDraft(nextText);
     setDraftProps(nextProps);
     syncEditableText(nextText);
-    setIsCommandMenuOpen(false);
+    commandMenu.setIsCommandMenuOpen(false);
     onUpdate(block, {
       props: nextProps,
       text: nextText,
@@ -102,7 +105,7 @@ export function useBlockTextEditing({
   }
 
   function applySelectedCommand() {
-    const command = visibleCommands[selectedCommandIndex];
+    const command = commandMenu.getSelectedCommand();
 
     if (command) {
       void applyCommand(command);
@@ -116,60 +119,29 @@ export function useBlockTextEditing({
       setDraft(shortcut.text);
       setDraftProps(shortcut.props);
       syncEditableText(shortcut.text);
-      setIsCommandMenuOpen(false);
+      commandMenu.setIsCommandMenuOpen(false);
       onUpdate(block, shortcut);
+      if (shortcut.createBlockAfter) {
+        void onCreateBlockAfter(block, shortcut.createBlockAfter);
+      }
       return;
     }
 
     applyTextDraftChange(nextValue);
   }
 
-  function applyInlineFormat(commandId: string) {
-    const editable = editableRef.current;
-    const selection = editable ? getTextSelectionOffsets(editable) : null;
-
-    if (!selection || selection.start === selection.end) {
-      toggleActiveInlineMark(commandId);
-      return;
-    }
-
-    const props = getInlineFormatProps(commandId, draftProps, selection);
-
-    if (!props) {
-      return;
-    }
-
-    setDraftProps(props);
-    onUpdate(block, { props });
-  }
-
   function applyTextDraftChange(nextValue: string) {
-    const selection = editableRef.current
-      ? getTextSelectionOffsets(editableRef.current)
-      : null;
-    const insertedLength = nextValue.length - draft.length;
+    const nextProps = applyMarksToInsertedText(nextValue, draft);
 
     setDraft(nextValue);
 
-    if (
-      activeInlineMarks.length > 0 &&
-      insertedLength > 0 &&
-      selection &&
-      selection.start === selection.end
-    ) {
-      const end = selection.end;
-      const start = Math.max(0, end - insertedLength);
-      const props = addInlineMarksToProps(draftProps, activeInlineMarks, {
-        end,
-        start
-      });
-
-      setDraftProps(props);
-      onUpdate(block, { props, text: nextValue });
+    if (nextProps) {
+      setDraftProps(nextProps);
+      onTextDraftChange(block, nextValue, nextProps);
       return;
     }
 
-    onTextDraftChange(block, nextValue);
+    onTextDraftChange(block, nextValue, draftProps);
   }
 
   async function redoTextDraft() {
@@ -180,77 +152,15 @@ export function useBlockTextEditing({
     await applyHistoryTextDraft(await onTextUndo(block));
   }
 
-  async function applyHistoryTextDraft(nextText: string | null) {
-    if (nextText === null) {
+  async function applyHistoryTextDraft(nextBlock: Block | null) {
+    if (nextBlock === null) {
       return;
     }
 
-    setDraft(nextText);
-    syncEditableText(nextText);
-    onTextHistoryApply(block, nextText);
-  }
-
-  function syncActiveInlineMarksFromSelection() {
-    const editable = editableRef.current;
-    const selection = editable ? getTextSelectionOffsets(editable) : null;
-
-    if (!selection || selection.start !== selection.end) {
-      return;
-    }
-
-    setActiveInlineMarks(getInlineMarksAtOffset(draftProps, selection.start));
-  }
-
-  function toggleActiveInlineMark(commandId: string) {
-    const type = getInlineMarkType(commandId);
-
-    if (!type) {
-      return;
-    }
-
-    setActiveInlineMarks((current) =>
-      current.includes(type)
-        ? current.filter((item) => item !== type)
-        : [...current, type]
-    );
-  }
-
-  function closeCommandMenu() {
-    setIsCommandMenuOpen(false);
-  }
-
-  function selectNextCommand() {
-    if (visibleCommands.length === 0) {
-      return;
-    }
-
-    setSelectedCommandIndex(
-      (current) => (current + 1) % visibleCommands.length
-    );
-  }
-
-  function selectPreviousCommand() {
-    if (visibleCommands.length === 0) {
-      return;
-    }
-
-    setSelectedCommandIndex(
-      (current) =>
-        (current - 1 + visibleCommands.length) % visibleCommands.length
-    );
-  }
-
-  function syncEditableText(nextText: string, cursorOffset?: number) {
-    const editable = editableRef.current;
-
-    if (editable && editable.textContent !== nextText) {
-      editable.textContent = nextText;
-      if (cursorOffset === undefined) {
-        placeCursorAtEnd(editable);
-      } else {
-        placeCursorAtOffset(editable, cursorOffset);
-      }
-    }
+    setDraft(nextBlock.text);
+    setDraftProps(nextBlock.props);
+    syncEditableText(nextBlock.text);
+    onTextHistoryApply(nextBlock, nextBlock.text);
   }
 
   return {
@@ -258,18 +168,18 @@ export function useBlockTextEditing({
     applyInlineFormat,
     applySelectedCommand,
     changeDraft,
-    closeCommandMenu,
+    closeCommandMenu: commandMenu.closeCommandMenu,
     commitDraft,
     draft,
     draftProps,
-    isCommandMenuOpen,
-    selectedCommandIndex,
-    selectNextCommand,
-    selectPreviousCommand,
-    setSelectedCommandIndex,
+    isCommandMenuOpen: commandMenu.isCommandMenuOpen,
+    selectedCommandIndex: commandMenu.selectedCommandIndex,
+    selectNextCommand: commandMenu.selectNextCommand,
+    selectPreviousCommand: commandMenu.selectPreviousCommand,
+    setSelectedCommandIndex: commandMenu.setSelectedCommandIndex,
     syncActiveInlineMarksFromSelection,
     redoTextDraft,
     undoTextDraft,
-    visibleCommands
+    visibleCommands: commandMenu.visibleCommands
   };
 }

@@ -24,6 +24,10 @@ export function useLastBlockFocus({
       return;
     }
 
+    if (event.target.closest("[contenteditable],button,input,textarea,select,a")) {
+      return;
+    }
+
     const lastBlock = document.blocks.at(-1);
 
     if (!lastBlock) {
@@ -34,7 +38,7 @@ export function useLastBlockFocus({
       `[data-block-id="${lastBlock.id}"] [contenteditable]`
     );
 
-    if (editable) {
+    if (editable && !shouldCreateBlockAfterBlankClick(lastBlock)) {
       placeCursorAtEnd(editable);
       return;
     }
@@ -45,4 +49,10 @@ export function useLastBlockFocus({
       type: "paragraph"
     });
   };
+}
+
+export function shouldCreateBlockAfterBlankClick(
+  block: PageDocument["blocks"][number]
+) {
+  return block.type === "divider" || block.text.length > 0;
 }
