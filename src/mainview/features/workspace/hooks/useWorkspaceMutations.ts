@@ -9,6 +9,10 @@ import type {
   Page,
   PageDocument
 } from "../../../../shared/contracts";
+import {
+  getBlockMutationSyncState,
+  shouldApplyBlockMutationResponse
+} from "../lib/blockMutationSyncMachine";
 
 type UseWorkspaceMutationsOptions = {
   navigateToPage: (pageId: string) => Promise<void>;
@@ -86,8 +90,17 @@ export function useWorkspaceMutations({
         ...definedValues(changes)
       }));
     },
-    onSuccess: async (block) => {
+    onSuccess: async (block, variables) => {
       await queryClient.invalidateQueries({ queryKey: queryKeys.pages });
+      const syncState = getBlockMutationSyncState(
+        getCachedBlock(queryClient, block.pageId, block.id),
+        variables
+      );
+
+      if (!shouldApplyBlockMutationResponse(syncState)) {
+        return;
+      }
+
       updateBlockInCache(queryClient, block.pageId, block.id, () => block);
     }
   });
@@ -214,6 +227,12 @@ function updatePageInCache(client: QueryClient, page: Page) {
 function getCachedPageTitle(client: QueryClient, pageId: string) {
   return client.getQueryData<PageDocument>(queryKeys.pageDocument(pageId))?.page
     .title;
+}
+
+function getCachedBlock(client: QueryClient, pageId: string, blockId: string) {
+  return client
+    .getQueryData<PageDocument>(queryKeys.pageDocument(pageId))
+    ?.blocks.find((block) => block.id === blockId) ?? null;
 }
 
 function definedValues<T extends Record<string, unknown>>(values: T) {

@@ -26,7 +26,7 @@ export function usePageHistoryActions({
         : await noteApi.redoPageHistory({ pageId: block.pageId });
 
     refetchDocument();
-    return restored?.blocks.find((item) => item.id === block.id)?.text ?? null;
+    return restored?.blocks.find((item) => item.id === block.id) ?? null;
   }
 
   return { redoBlockText, undoBlockText };

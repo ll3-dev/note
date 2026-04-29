@@ -2,9 +2,9 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { eq, sql } from "drizzle-orm";
+import { count, eq, sql } from "drizzle-orm";
 import { openDatabase, type DatabaseHandle } from "../database";
-import { blocks } from "../schema";
+import { blocks, pageHistoryEntries } from "../schema";
 import {
   createBlock,
   createPage,
@@ -73,6 +73,27 @@ describe("page history", () => {
     deleteBlock(handle, { blockId: second.id });
     expect(getPageDocument(handle, { pageId: first.pageId }).blocks).toHaveLength(1);
     expect(undoPageHistory(handle, { pageId: first.pageId })?.blocks).toHaveLength(2);
+  });
+
+  test("undoes and redoes inline mark props", () => {
+    const handle = openTempDatabase();
+    const document = createPage(handle, { title: "Inline history" });
+    const block = document.blocks[0];
+
+    updateBlock(handle, {
+      blockId: block.id,
+      props: { inlineMarks: [{ end: 5, start: 0, type: "bold" }] },
+      text: "hello"
+    });
+
+    expect(undoPageHistory(handle, { pageId: block.pageId })?.blocks[0].props).toEqual(
+      {}
+    );
+    expect(redoPageHistory(handle, { pageId: block.pageId })?.blocks[0].props).toEqual(
+      {
+        inlineMarks: [{ end: 5, start: 0, type: "bold" }]
+      }
+    );
   });
 
   test("keeps external block inserts when undoing a local text edit", () => {
@@ -155,6 +176,24 @@ describe("page history", () => {
     const undone = undoPageHistory(handle, { pageId: first.pageId });
 
     expect(undone?.blocks[0].text).toBe("remote");
+  });
+
+  test("keeps at most 1000 history entries per page", () => {
+    const handle = openTempDatabase();
+    const document = createPage(handle, { title: "History cap" });
+    const block = document.blocks[0];
+
+    for (let index = 0; index < 1005; index += 1) {
+      updateBlock(handle, { blockId: block.id, text: `value-${index}` });
+    }
+
+    const row = handle.orm
+      .select({ count: count() })
+      .from(pageHistoryEntries)
+      .where(eq(pageHistoryEntries.page_id, block.pageId))
+      .get();
+
+    expect(row?.count).toBe(1000);
   });
 });
 

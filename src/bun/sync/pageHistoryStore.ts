@@ -1,10 +1,11 @@
-import { and, desc, eq, isNotNull, isNull } from "drizzle-orm";
+import { and, desc, eq, isNotNull, isNull, sql } from "drizzle-orm";
 import type { AutomergeChangeOrigin } from "../../shared/automerge/pageDocument";
 import type { PageDocument } from "../../shared/contracts";
 import type { DatabaseHandle } from "../database";
 import { pageHistoryEntries } from "../schema";
 
 export const LOCAL_ACTOR_ID = "local";
+export const PAGE_HISTORY_ENTRY_LIMIT = 1000;
 
 export type PersistedPageHistoryEntry = {
   after: PageDocument;
@@ -34,10 +35,25 @@ export function persistPageHistoryEntry(
       page_id: input.pageId
     })
     .run();
+  trimPageHistoryEntries(handle, input.pageId);
 }
 
 export function getUndoEntry(handle: DatabaseHandle, pageId: string) {
   return getEntry(handle, pageId, "undo");
+}
+
+function trimPageHistoryEntries(handle: DatabaseHandle, pageId: string) {
+  handle.orm.run(sql`
+    DELETE FROM page_history_entries
+    WHERE page_id = ${pageId}
+      AND id NOT IN (
+        SELECT id
+        FROM page_history_entries
+        WHERE page_id = ${pageId}
+        ORDER BY created_at DESC, id DESC
+        LIMIT ${PAGE_HISTORY_ENTRY_LIMIT}
+      )
+  `);
 }
 
 export function getRedoEntry(handle: DatabaseHandle, pageId: string) {

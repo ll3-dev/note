@@ -1,17 +1,19 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { Block } from "../../../../shared/contracts";
+import type { Block, BlockProps } from "../../../../shared/contracts";
+import { areBlockPropsEqual } from "../../page/lib/blockProps";
 
 const TEXT_SYNC_DEBOUNCE_MS = 700;
 const SAVED_STATUS_VISIBLE_MS = 1200;
 
 type PendingTextSave = {
   block: Block;
+  props?: BlockProps;
   text: string;
   timer: ReturnType<typeof setTimeout> | null;
 };
 
 type UseBlockTextSyncOptions = {
-  saveText: (block: Block, text: string) => Promise<void>;
+  saveText: (block: Block, text: string, props?: BlockProps) => Promise<void>;
 };
 
 export type TextSyncStatus = "idle" | "pending" | "saving" | "saved" | "error";
@@ -52,17 +54,17 @@ export function useBlockTextSync({ saveText }: UseBlockTextSyncOptions) {
   }, [setSyncStatus]);
 
   const flushTextDraft = useCallback(
-    async (block: Block, text: string) => {
+    async (block: Block, text: string, props?: BlockProps) => {
       clearPendingText(block.id);
 
-      if (text === block.text) {
+      if (text === block.text && areBlockPropsEqual(props, block.props)) {
         return;
       }
 
       setSyncStatus("saving");
 
       try {
-        await saveText(block, text);
+        await saveText(block, text, props);
         setSyncStatus("saved");
       } catch (error) {
         setSyncStatus("error");
@@ -80,7 +82,7 @@ export function useBlockTextSync({ saveText }: UseBlockTextSyncOptions) {
         return;
       }
 
-      await flushTextDraft(pending.block, pending.text);
+      await flushTextDraft(pending.block, pending.text, pending.props);
     },
     [flushTextDraft]
   );
@@ -99,9 +101,12 @@ export function useBlockTextSync({ saveText }: UseBlockTextSyncOptions) {
           clearTimeout(pending.timer);
         }
 
-        if (pending.text !== pending.block.text) {
+        if (
+          pending.text !== pending.block.text ||
+          !areBlockPropsEqual(pending.props, pending.block.props)
+        ) {
           setSyncStatus("saving");
-          await saveText(pending.block, pending.text);
+          await saveText(pending.block, pending.text, pending.props);
         }
       }
 
@@ -113,19 +118,19 @@ export function useBlockTextSync({ saveText }: UseBlockTextSyncOptions) {
   }, [saveText, setSyncStatus]);
 
   const queueTextDraft = useCallback(
-    (block: Block, text: string) => {
+    (block: Block, text: string, props?: BlockProps) => {
       clearPendingText(block.id);
 
-      if (text === block.text) {
+      if (text === block.text && areBlockPropsEqual(props, block.props)) {
         return;
       }
 
       const timer = setTimeout(() => {
-        void flushTextDraft(block, text);
+        void flushTextDraft(block, text, props);
       }, TEXT_SYNC_DEBOUNCE_MS);
 
       setSyncStatus("pending");
-      pendingSavesRef.current.set(block.id, { block, text, timer });
+      pendingSavesRef.current.set(block.id, { block, props, text, timer });
     },
     [clearPendingText, flushTextDraft, setSyncStatus]
   );
