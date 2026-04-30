@@ -59,6 +59,14 @@ export default defineConfig(({ command }) => ({
   ],
   resolve: {
     alias: {
+      ...(process.env.NOTE_E2E_MOCK_RPC === "1"
+        ? {
+            "@/mainview/lib/rpc": path.resolve(
+              import.meta.dirname,
+              "src/mainview/lib/rpc.e2e.ts"
+            )
+          }
+        : {}),
       "@": path.resolve(import.meta.dirname, "src")
     }
   },
