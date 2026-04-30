@@ -2,17 +2,17 @@ import { useCallback, useMemo, type SyntheticEvent } from "react";
 import { useGlobalKeyboardShortcuts } from "@/mainview/features/commands/useGlobalKeyboardShortcuts";
 import { useKeybindingStore } from "@/mainview/features/commands/keybindingStore";
 import { useWorkspaceStore } from "@/mainview/store/useWorkspaceStore";
-import type { Block, BlockProps, Page } from "../../../shared/contracts";
-import { useBlockFocus } from "../page/hooks/useBlockFocus";
-import { useBlockKeyboardFocus } from "../page/hooks/useBlockKeyboardFocus";
+import type { Block, BlockProps, Page } from "@/shared/contracts";
+import { useBlockFocus } from "@/mainview/features/page/hooks/useBlockFocus";
+import { useBlockKeyboardFocus } from "@/mainview/features/page/hooks/useBlockKeyboardFocus";
 import {
   getMergedBlockUpdate,
   type CreateBlockDraft
-} from "../page/lib/blockEditingBehavior";
+} from "@/mainview/features/page/lib/blockEditingBehavior";
 import type {
   BlockEditorUpdate,
   CreateBlockOptions
-} from "../page/types/blockEditorTypes";
+} from "@/mainview/features/page/types/blockEditorTypes";
 import { WorkspaceEditorPane } from "./components/WorkspaceEditorPane";
 import { WorkspaceLayout } from "./components/WorkspaceLayout";
 import { useBlockBatchActions } from "./hooks/useBlockBatchActions";
@@ -85,7 +85,7 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
     setFocusBlockId,
     updateBlock: updateBlockMutation.mutateAsync
   });
-  const { deleteBlocks, duplicateBlocks } = useBlockBatchActions({
+  const { deleteBlocks, duplicateBlocks, pasteBlocksAfter } = useBlockBatchActions({
     clearPendingText,
     createBlock: createBlockMutation.mutateAsync,
     deleteBlock: deleteBlockMutation.mutateAsync,
@@ -201,6 +201,7 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
         }}
         onDeleteBlocks={(targets) => void deleteBlocks(targets)}
         onDuplicateBlocks={(targets) => void duplicateBlocks(targets)}
+        onPasteBlocks={(target) => pasteBlocksAfter(target)}
         onFocusFirstBlock={focusFirstBlock}
         onFocusNextBlock={focusNextBlock}
         onFocusPreviousBlock={focusPreviousBlock}

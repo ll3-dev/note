@@ -1,6 +1,6 @@
 import { type RefObject, useLayoutEffect, useRef } from "react";
-import type { BlockCommand } from "../lib/blockCommands";
-import { useFloatingCommandMenuStyle } from "../hooks/useFloatingCommandMenuStyle";
+import type { BlockCommand } from "@/mainview/features/page/lib/blockCommands";
+import { useFloatingCommandMenuStyle } from "@/mainview/features/page/hooks/useFloatingCommandMenuStyle";
 
 type BlockCommandMenuProps = {
   activeIndex: number;

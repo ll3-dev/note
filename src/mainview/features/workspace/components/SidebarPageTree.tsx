@@ -1,4 +1,9 @@
-import type { Page } from "../../../../shared/contracts";
+import type { Page } from "@/shared/contracts";
+import {
+  getPagesById,
+  getPagesForParent,
+  groupPagesByParent
+} from "@/mainview/features/workspace/lib/pageTree";
 import { SidebarPageItem } from "./SidebarPageItem";
 
 type SidebarPageTreeProps = {
@@ -23,7 +28,7 @@ export function SidebarPageTree({
   pages
 }: SidebarPageTreeProps) {
   const pagesByParent = groupPagesByParent(pages);
-  const pagesById = new Map(pages.map((page) => [page.id, page]));
+  const pagesById = getPagesById(pages);
 
   if (pages.length === 0) {
     return (
@@ -35,22 +40,22 @@ export function SidebarPageTree({
 
   return (
     <div className="grid w-full min-w-0 gap-0.5">
-      {renderPageItems({
-        activePageId,
-        expandedPageIds,
-        onMovePage,
-        onSelectPage,
-        onToggleExpanded,
-        pagesByParent,
-        pagesById,
-        parentPageId: null,
-        depth: 0
-      })}
+      <SidebarPageTreeItems
+        activePageId={activePageId}
+        depth={0}
+        expandedPageIds={expandedPageIds}
+        onMovePage={onMovePage}
+        onSelectPage={onSelectPage}
+        onToggleExpanded={onToggleExpanded}
+        pagesById={pagesById}
+        pagesByParent={pagesByParent}
+        parentPageId={null}
+      />
     </div>
   );
 }
 
-function renderPageItems({
+function SidebarPageTreeItems({
   activePageId,
   depth,
   expandedPageIds,
@@ -60,21 +65,11 @@ function renderPageItems({
   pagesByParent,
   pagesById,
   parentPageId
-}: {
-  activePageId: string | null;
-  depth: number;
-  expandedPageIds: Set<string>;
-  onMovePage: SidebarPageTreeProps["onMovePage"];
-  onSelectPage: (page: Page) => void;
-  onToggleExpanded: (pageId: string) => void;
-  pagesByParent: Map<string, Page[]>;
-  pagesById: Map<string, Page>;
-  parentPageId: string | null;
-}) {
-  const pages = pagesByParent.get(parentPageId ?? "root") ?? [];
+}: SidebarPageTreeItemsProps) {
+  const pages = getPagesForParent(pagesByParent, parentPageId);
 
   return pages.map((page, index) => {
-    const childPages = pagesByParent.get(page.id) ?? [];
+    const childPages = getPagesForParent(pagesByParent, page.id);
     const isExpanded = expandedPageIds.has(page.id);
     const previousSibling = pages[index - 1] ?? null;
 
@@ -92,33 +87,32 @@ function renderPageItems({
           pagesById={pagesById}
           previousSiblingId={previousSibling?.id ?? null}
         />
-        {isExpanded
-          ? renderPageItems({
-              activePageId,
-              depth: depth + 1,
-              expandedPageIds,
-              onMovePage,
-              onSelectPage,
-              onToggleExpanded,
-              pagesByParent,
-              pagesById,
-              parentPageId: page.id
-            })
-          : null}
+        {isExpanded ? (
+          <SidebarPageTreeItems
+            activePageId={activePageId}
+            depth={depth + 1}
+            expandedPageIds={expandedPageIds}
+            onMovePage={onMovePage}
+            onSelectPage={onSelectPage}
+            onToggleExpanded={onToggleExpanded}
+            pagesById={pagesById}
+            pagesByParent={pagesByParent}
+            parentPageId={page.id}
+          />
+        ) : null}
       </div>
     );
   });
 }
 
-function groupPagesByParent(pages: Page[]) {
-  const pagesByParent = new Map<string, Page[]>();
-
-  for (const page of pages) {
-    const key = page.parentPageId ?? "root";
-    const siblings = pagesByParent.get(key) ?? [];
-    siblings.push(page);
-    pagesByParent.set(key, siblings);
-  }
-
-  return pagesByParent;
-}
+type SidebarPageTreeItemsProps = {
+  activePageId: string | null;
+  depth: number;
+  expandedPageIds: Set<string>;
+  onMovePage: SidebarPageTreeProps["onMovePage"];
+  onSelectPage: (page: Page) => void;
+  onToggleExpanded: (pageId: string) => void;
+  pagesByParent: Map<string, Page[]>;
+  pagesById: Map<string, Page>;
+  parentPageId: string | null;
+};

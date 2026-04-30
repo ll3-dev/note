@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import type { PageDocument } from "../../../../shared/contracts";
-import { placeCursorAtEnd, placeCursorAtStart } from "../lib/domSelection";
+import type { PageDocument } from "@/shared/contracts";
+import { placeCursorAtEnd, placeCursorAtStart } from "@/mainview/features/page/web/domSelection";
 
 type FocusPlacement = "start" | "end";
 

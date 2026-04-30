@@ -1,15 +1,20 @@
-import type { BlockProps } from "../../../../shared/contracts";
+import type { BlockProps } from "@/shared/contracts";
 
 export type InlineMarkType = "bold" | "italic" | "code";
+export type TextStyleInlineMarkType = InlineMarkType;
+export type LinkInlineMarkType = "link";
+export type AnyInlineMarkType = InlineMarkType | LinkInlineMarkType;
 
 export type InlineMark = {
   end: number;
+  href?: string;
   start: number;
-  type: InlineMarkType;
+  type: AnyInlineMarkType;
 };
 
 export type InlineTextSegment = {
   marks: InlineMarkType[];
+  href?: string;
   text: string;
 };
 
@@ -98,9 +103,14 @@ export function getInlineTextSegments(text: string, props: BlockProps) {
     }
 
     segments.push({
+      href: marks
+        .find(
+          (mark) => mark.type === "link" && mark.start <= start && mark.end >= end
+        )
+        ?.href,
       marks: marks
         .filter((mark) => mark.start <= start && mark.end >= end)
-        .map((mark) => mark.type),
+        .flatMap((mark) => (mark.type === "link" ? [] : [mark.type])),
       text: segmentText
     });
   }
@@ -108,10 +118,16 @@ export function getInlineTextSegments(text: string, props: BlockProps) {
   return segments;
 }
 
-export function getInlineMarksAtOffset(props: BlockProps, offset: number) {
+export function getInlineMarksAtOffset(
+  props: BlockProps,
+  offset: number
+): TextStyleInlineMarkType[] {
   return getInlineMarks(props)
-    .filter((mark) => mark.start < offset && mark.end >= offset)
-    .map((mark) => mark.type);
+    .flatMap((mark) =>
+      mark.type !== "link" && mark.start < offset && mark.end >= offset
+        ? [mark.type]
+        : []
+    );
 }
 
 export function getInlineMarks(props: BlockProps): InlineMark[] {
@@ -134,7 +150,10 @@ function isInlineMark(value: unknown): value is InlineMark {
   return (
     typeof mark.start === "number" &&
     typeof mark.end === "number" &&
-    (mark.type === "bold" || mark.type === "italic" || mark.type === "code")
+    (mark.type === "bold" ||
+      mark.type === "italic" ||
+      mark.type === "code" ||
+      (mark.type === "link" && typeof mark.href === "string"))
   );
 }
 

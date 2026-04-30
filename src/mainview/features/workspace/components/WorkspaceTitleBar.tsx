@@ -3,8 +3,12 @@ import { useCallback, type MouseEvent } from "react";
 import { Button } from "@/mainview/components/ui/button";
 import { cn } from "@/mainview/lib/utils";
 import type { WorkspaceTab } from "@/mainview/store/useWorkspaceStore";
-import { useTabDrag } from "../hooks/useTabDrag";
-import type { TabDropPlacement, TabDropTarget } from "../lib/tabDrag";
+import { useTabDrag } from "@/mainview/features/workspace/hooks/useTabDrag";
+import {
+  getDropPlacementForTab,
+  type TabDropPlacement,
+  type TabDropTarget
+} from "@/mainview/features/workspace/lib/tabDrag";
 import { TabDragGhost } from "./TabDragGhost";
 import { WorkspaceTabButton } from "./WorkspaceTabButton";
 
@@ -112,11 +116,4 @@ export function WorkspaceTitleBar({
       {preview ? <TabDragGhost preview={preview} /> : null}
     </>
   );
-}
-
-function getDropPlacementForTab(
-  dropTarget: TabDropTarget | null,
-  tabId: string
-) {
-  return dropTarget?.tabId === tabId ? dropTarget.placement : null;
 }

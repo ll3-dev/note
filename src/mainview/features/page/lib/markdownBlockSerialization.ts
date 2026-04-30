@@ -1,4 +1,5 @@
-import type { Block, BlockProps, PageDocument } from "../../../../shared/contracts";
+import type { Block, BlockProps, PageDocument } from "@/shared/contracts";
+import { serializeInlineLinks } from "./markdownInlineLinks";
 
 const MAX_MARKDOWN_DEPTH = 6;
 
@@ -17,7 +18,7 @@ export function serializePageToMarkdown(document: PageDocument) {
 }
 
 function serializeBlock(block: Block) {
-  const text = block.text;
+  const text = serializeInlineLinks(block.text, block.props);
   const depthPrefix = "  ".repeat(getDepth(block.props));
 
   switch (block.type) {

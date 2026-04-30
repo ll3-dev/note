@@ -1,9 +1,9 @@
 import { useEffect, useRef } from "react";
-import type { Block, BlockProps } from "../../../../shared/contracts";
+import type { Block, BlockProps } from "@/shared/contracts";
 import {
   getDraftSyncState,
   shouldAdoptIncomingServerDraft
-} from "../lib/blockDraftSyncMachine";
+} from "@/mainview/features/page/lib/blockDraftSyncMachine";
 
 type UseBlockDraftSyncOptions = {
   block: Block;

@@ -1,4 +1,5 @@
-import type { Block } from "../../../../shared/contracts";
+import type { Block } from "@/shared/contracts";
+import { readBlockClipboardPaste } from "@/mainview/features/page/lib/blockClipboard";
 
 type CreateBlockInput = {
   afterBlockId?: string | null;
@@ -50,6 +51,35 @@ export function useBlockBatchActions({
     }
   }
 
+  async function pasteBlocksAfter(block: Block) {
+    const paste = await readBlockClipboardPaste();
+
+    if (!paste || paste.drafts.length === 0) {
+      return;
+    }
+
+    await flushAllTextDrafts();
+    let afterBlockId = block.id;
+    let lastCreatedId: string | null = null;
+
+    for (const draft of paste.drafts) {
+      const created = await createBlock({
+        afterBlockId,
+        pageId: block.pageId,
+        props: draft.props,
+        text: draft.text,
+        type: draft.type
+      });
+
+      afterBlockId = created.id;
+      lastCreatedId = created.id;
+    }
+
+    if (lastCreatedId) {
+      setFocusBlockId(lastCreatedId, "end");
+    }
+  }
+
   async function deleteBlocks(blocks: Block[]) {
     await flushAllTextDrafts();
 
@@ -59,5 +89,5 @@ export function useBlockBatchActions({
     }
   }
 
-  return { deleteBlocks, duplicateBlocks };
+  return { deleteBlocks, duplicateBlocks, pasteBlocksAfter };
 }

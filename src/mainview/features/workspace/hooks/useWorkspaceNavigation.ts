@@ -1,6 +1,6 @@
 import { useNavigate } from "@tanstack/react-router";
 import type { MouseEvent } from "react";
-import type { Page } from "../../../../shared/contracts";
+import type { Page } from "@/shared/contracts";
 import type { WorkspaceTab } from "@/mainview/store/useWorkspaceStore";
 
 type UseWorkspaceNavigationOptions = {

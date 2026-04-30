@@ -1,6 +1,6 @@
 import { GripVertical } from "lucide-react";
 import type { DragEvent, PointerEvent } from "react";
-import type { Block } from "../../../../shared/contracts";
+import type { Block } from "@/shared/contracts";
 
 type BlockDragHandleProps = {
   block: Block;

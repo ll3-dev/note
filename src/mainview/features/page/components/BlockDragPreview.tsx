@@ -1,11 +1,10 @@
-import type { Block } from "../../../../shared/contracts";
+import type { Block } from "@/shared/contracts";
 import { cn } from "@/mainview/lib/utils";
-
-type BlockDragPreviewState = {
-  selectedBlockIds: string[];
-  x: number;
-  y: number;
-};
+import {
+  getBlockDragPreviewBlocks,
+  getBlockDragPreviewMarker,
+  type BlockDragPreviewState
+} from "@/mainview/features/page/lib/blockDragPreview";
 
 type BlockDragPreviewProps = {
   blocks: Block[];
@@ -17,9 +16,7 @@ export function BlockDragPreview({ blocks, preview }: BlockDragPreviewProps) {
     return null;
   }
 
-  const previewBlocks = blocks
-    .filter((block) => preview.selectedBlockIds.includes(block.id))
-    .slice(0, 3);
+  const previewBlocks = getBlockDragPreviewBlocks(blocks, preview);
 
   return (
     <div
@@ -56,7 +53,7 @@ function PreviewBlock({ block }: { block: Block }) {
   return (
     <div className="flex min-w-0 items-center gap-2 rounded bg-muted/50 px-2 py-1">
       <span className="w-5 shrink-0 text-right text-xs text-muted-foreground">
-        {getBlockMarker(block)}
+        {getBlockDragPreviewMarker(block)}
       </span>
       <span
         className={cn(
@@ -70,23 +67,4 @@ function PreviewBlock({ block }: { block: Block }) {
       </span>
     </div>
   );
-}
-
-function getBlockMarker(block: Block) {
-  switch (block.type) {
-    case "bulleted_list":
-      return "-";
-    case "numbered_list":
-      return "1.";
-    case "todo":
-      return block.props.checked ? "[x]" : "[ ]";
-    case "quote":
-      return ">";
-    case "heading_1":
-      return "H1";
-    case "heading_2":
-      return "H2";
-    default:
-      return "";
-  }
 }

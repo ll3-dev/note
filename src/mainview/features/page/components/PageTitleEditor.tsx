@@ -1,13 +1,10 @@
 import {
   forwardRef,
-  useEffect,
   useImperativeHandle,
-  useLayoutEffect,
-  useRef,
-  type KeyboardEvent
 } from "react";
-import type { Page } from "../../../../shared/contracts";
-import { placeCursorAtEnd } from "../lib/domSelection";
+import type { Page } from "@/shared/contracts";
+import { usePageTitleEditing } from "@/mainview/features/page/hooks/usePageTitleEditing";
+import { placeCursorAtEnd } from "@/mainview/features/page/web/domSelection";
 
 export type PageTitleEditorHandle = {
   focus: () => void;
@@ -23,8 +20,12 @@ export const PageTitleEditor = forwardRef<
   PageTitleEditorHandle,
   PageTitleEditorProps
 >(function PageTitleEditor({ page, onFocusFirstBlock, onUpdatePageTitle }, ref) {
-  const titleRef = useRef<HTMLDivElement>(null);
-  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { handleTitleKeyDown, queueTitleSave, saveTitle, titleRef } =
+    usePageTitleEditing({
+      page,
+      onFocusFirstBlock,
+      onUpdatePageTitle
+    });
 
   useImperativeHandle(ref, () => ({
     focus: () => {
@@ -33,55 +34,6 @@ export const PageTitleEditor = forwardRef<
       }
     }
   }));
-
-  useLayoutEffect(() => {
-    const titleElement = titleRef.current;
-
-    if (titleElement && window.document.activeElement !== titleElement) {
-      titleElement.textContent = page.title;
-    }
-  }, [page.id, page.title]);
-
-  useEffect(() => clearSaveTimer, []);
-
-  function clearSaveTimer() {
-    if (saveTimerRef.current) {
-      clearTimeout(saveTimerRef.current);
-      saveTimerRef.current = null;
-    }
-  }
-
-  function saveTitle(target: HTMLElement) {
-    clearSaveTimer();
-    const title = (target.textContent ?? "").trim();
-
-    if (title && title !== page.title) {
-      onUpdatePageTitle(page, title);
-    } else {
-      target.textContent = page.title;
-    }
-  }
-
-  function queueTitleSave(target: HTMLElement) {
-    clearSaveTimer();
-    saveTimerRef.current = setTimeout(() => {
-      saveTitle(target);
-    }, 700);
-  }
-
-  function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
-    if (event.key === "Enter") {
-      event.preventDefault();
-      saveTitle(event.currentTarget);
-      event.currentTarget.blur();
-    }
-
-    if (event.key === "ArrowDown") {
-      event.preventDefault();
-      saveTitle(event.currentTarget);
-      onFocusFirstBlock();
-    }
-  }
 
   return (
     <header className="mb-7 pl-10">
@@ -92,7 +44,7 @@ export const PageTitleEditor = forwardRef<
         contentEditable="plaintext-only"
         onBlur={(event) => saveTitle(event.currentTarget)}
         onInput={(event) => queueTitleSave(event.currentTarget)}
-        onKeyDown={handleKeyDown}
+        onKeyDown={handleTitleKeyDown}
         ref={titleRef}
         role="heading"
         suppressContentEditableWarning

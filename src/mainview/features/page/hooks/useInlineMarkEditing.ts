@@ -1,14 +1,14 @@
 import { useEffect, useState, type RefObject } from "react";
-import type { Block, BlockProps } from "../../../../shared/contracts";
+import type { Block, BlockProps } from "@/shared/contracts";
 import {
   addInlineMarksToProps,
   getInlineFormatProps,
   getInlineMarksAtOffset,
   getInlineMarkType,
-  type InlineMarkType
-} from "../lib/inlineFormatting";
-import { getTextSelectionOffsets } from "../lib/domSelection";
-import type { BlockEditorUpdate } from "../types/blockEditorTypes";
+  type TextStyleInlineMarkType
+} from "@/mainview/features/page/lib/inlineFormatting";
+import { getTextSelectionOffsets } from "@/mainview/features/page/web/domSelection";
+import type { BlockEditorUpdate } from "@/mainview/features/page/types/blockEditorTypes";
 
 type UseInlineMarkEditingOptions = {
   block: Block;
@@ -25,7 +25,7 @@ export function useInlineMarkEditing({
   onUpdate,
   setDraftProps
 }: UseInlineMarkEditingOptions) {
-  const [activeInlineMarks, setActiveInlineMarks] = useState<InlineMarkType[]>([]);
+  const [activeInlineMarks, setActiveInlineMarks] = useState<TextStyleInlineMarkType[]>([]);
 
   useEffect(() => {
     setActiveInlineMarks([]);

@@ -4,17 +4,17 @@ import {
   type DragEvent,
   type KeyboardEvent
 } from "react";
-import type { Block } from "../../../../shared/contracts";
-import type { TextSelectionOffsets } from "../types/blockEditorTypes";
+import type { Block } from "@/shared/contracts";
+import type { TextSelectionOffsets } from "@/mainview/features/page/types/blockEditorTypes";
 import {
   getTextSelectionOffsets,
   insertPlainTextAtSelection
-} from "../lib/domSelection";
+} from "@/mainview/features/page/web/domSelection";
 import {
   getMarkdownClipboardFile,
   readMarkdownFromDataTransfer
-} from "../lib/markdownClipboard";
-import { shouldHandleMarkdownPaste } from "../lib/markdownBlocks";
+} from "@/mainview/features/page/web/markdownClipboard";
+import { shouldHandleMarkdownPaste } from "@/mainview/features/page/lib/markdownBlocks";
 
 type UseBlockClipboardEditingOptions = {
   block: Block;

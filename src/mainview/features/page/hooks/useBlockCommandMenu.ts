@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import {
   type BlockCommand,
   filterBlockCommands
-} from "../lib/blockCommands";
+} from "@/mainview/features/page/lib/blockCommands";
 
 type UseBlockCommandMenuOptions = {
   draft: string;

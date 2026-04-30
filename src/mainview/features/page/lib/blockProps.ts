@@ -1,1 +1,1 @@
-export { areBlockPropsEqual } from "../../../../shared/blockProps";
+export { areBlockPropsEqual } from "@/shared/blockProps";

@@ -1,16 +1,16 @@
 import { RefObject, useCallback, useState } from "react";
-import type { Block, BlockProps } from "../../../../shared/contracts";
-import { type BlockCommand, getMarkdownShortcut } from "../lib/blockCommands";
+import type { Block, BlockProps } from "@/shared/contracts";
+import { type BlockCommand, getMarkdownShortcut } from "@/mainview/features/page/lib/blockCommands";
 import {
   placeCursorAtEnd,
   placeCursorAtOffset
-} from "../lib/domSelection";
-import { areBlockPropsEqual } from "../lib/blockProps";
+} from "@/mainview/features/page/web/domSelection";
+import { areBlockPropsEqual } from "@/mainview/features/page/lib/blockProps";
 import type {
   BlockEditorUpdate,
   CreateBlockOptions
-} from "../types/blockEditorTypes";
-import type { CreateBlockDraft } from "../lib/blockEditingBehavior";
+} from "@/mainview/features/page/types/blockEditorTypes";
+import type { CreateBlockDraft } from "@/mainview/features/page/lib/blockEditingBehavior";
 import { useBlockCommandMenu } from "./useBlockCommandMenu";
 import { useBlockDraftSync } from "./useBlockDraftSync";
 import { useInlineMarkEditing } from "./useInlineMarkEditing";

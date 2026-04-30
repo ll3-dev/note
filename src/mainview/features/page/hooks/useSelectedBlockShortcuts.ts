@@ -1,13 +1,13 @@
 import { useEffect } from "react";
-import type { Block, PageDocument } from "../../../../shared/contracts";
-import { writeTextToClipboard } from "../../workspace/lib/clipboardText";
-import { serializePageToMarkdown } from "../lib/markdownBlocks";
+import type { Block, PageDocument } from "@/shared/contracts";
+import { copyBlocksToClipboard } from "@/mainview/features/page/lib/blockClipboard";
 
 type UseSelectedBlockShortcutsOptions = {
   clearSelection: () => void;
   document: PageDocument;
   onDeleteBlocks: (blocks: Block[]) => void;
   onDuplicateBlocks: (blocks: Block[]) => void;
+  onPasteBlocks: (afterBlock: Block) => Promise<void> | void;
   selectedBlocks: Block[];
 };
 
@@ -16,6 +16,7 @@ export function useSelectedBlockShortcuts({
   document,
   onDeleteBlocks,
   onDuplicateBlocks,
+  onPasteBlocks,
   selectedBlocks
 }: UseSelectedBlockShortcutsOptions) {
   useEffect(() => {
@@ -32,7 +33,14 @@ export function useSelectedBlockShortcuts({
 
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "c") {
         event.preventDefault();
-        void copySelectedBlocks(document, selectedBlocks);
+        void copyBlocksToClipboard(document, selectedBlocks);
+        return;
+      }
+
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "v") {
+        event.preventDefault();
+        const afterBlock = selectedBlocks[selectedBlocks.length - 1];
+        void Promise.resolve(onPasteBlocks(afterBlock)).then(clearSelection);
         return;
       }
 
@@ -60,7 +68,14 @@ export function useSelectedBlockShortcuts({
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [clearSelection, document, onDeleteBlocks, onDuplicateBlocks, selectedBlocks]);
+  }, [
+    clearSelection,
+    document,
+    onDeleteBlocks,
+    onDuplicateBlocks,
+    onPasteBlocks,
+    selectedBlocks
+  ]);
 }
 
 export function shouldIgnoreSelectedBlockShortcutTarget(
@@ -95,11 +110,5 @@ function isClosestTarget(
     target !== null &&
     "closest" in target &&
     typeof target.closest === "function"
-  );
-}
-
-async function copySelectedBlocks(document: PageDocument, selectedBlocks: Block[]) {
-  await writeTextToClipboard(
-    serializePageToMarkdown({ ...document, blocks: selectedBlocks })
   );
 }

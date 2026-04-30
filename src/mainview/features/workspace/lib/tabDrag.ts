@@ -35,3 +35,10 @@ export function getAfterTabIdForMovingTab(
 
   return targetIndex > 0 ? orderedTabs[targetIndex - 1].id : null;
 }
+
+export function getDropPlacementForTab(
+  dropTarget: TabDropTarget | null,
+  tabId: string
+) {
+  return dropTarget?.tabId === tabId ? dropTarget.placement : null;
+}

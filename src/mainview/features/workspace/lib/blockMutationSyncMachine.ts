@@ -2,8 +2,8 @@ import type {
   Block,
   BlockProps,
   BlockType
-} from "../../../../shared/contracts";
-import { areBlockPropsEqual } from "../../../../shared/blockProps";
+} from "@/shared/contracts";
+import { areBlockPropsEqual } from "@/shared/blockProps";
 
 export type BlockMutationDraft = {
   props?: BlockProps;

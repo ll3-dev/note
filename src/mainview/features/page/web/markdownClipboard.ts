@@ -1,4 +1,4 @@
-import { htmlToMarkdown } from "./htmlMarkdown";
+import { htmlToMarkdown } from "./htmlMarkdownDom";
 
 const MARKDOWN_FILE_EXTENSIONS = [".md", ".markdown"];
 const MARKDOWN_MIME_TYPES = new Set([
@@ -20,7 +20,8 @@ export function getMarkdownClipboardFile(files: FileList | File[]) {
 }
 
 export async function readMarkdownFromDataTransfer(
-  dataTransfer: DataTransfer
+  dataTransfer: DataTransfer,
+  options: { htmlToMarkdown?: (html: string) => string } = {}
 ) {
   const markdownText = dataTransfer.getData("text/markdown");
 
@@ -37,7 +38,7 @@ export async function readMarkdownFromDataTransfer(
   const html = dataTransfer.getData("text/html");
 
   if (html) {
-    const markdown = htmlToMarkdown(html);
+    const markdown = (options.htmlToMarkdown ?? htmlToMarkdown)(html);
 
     if (markdown) {
       return markdown;

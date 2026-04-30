@@ -29,6 +29,19 @@ describe("inline formatting", () => {
     ]);
   });
 
+  test("keeps link hrefs on marked viewer segments", () => {
+    expect(
+      getInlineTextSegments("Read docs", {
+        inlineMarks: [
+          { end: 9, href: "https://example.com", start: 5, type: "link" }
+        ]
+      })
+    ).toEqual([
+      { marks: [], text: "Read " },
+      { href: "https://example.com", marks: [], text: "docs" }
+    ]);
+  });
+
   test("reads active marks from the caret offset", () => {
     const props = {
       inlineMarks: [

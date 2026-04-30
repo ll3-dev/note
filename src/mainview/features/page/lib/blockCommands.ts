@@ -10,7 +10,7 @@ import {
   Quote,
   Text
 } from "lucide-react";
-import type { BlockProps, BlockType } from "../../../../shared/contracts";
+import type { BlockProps, BlockType } from "@/shared/contracts";
 import type { CreateBlockDraft } from "./blockEditingBehavior";
 
 export type BlockCommand = {

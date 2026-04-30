@@ -32,16 +32,6 @@ export function placeCursorAtOffset(element: HTMLElement, offset: number) {
   selection?.addRange(range);
 }
 
-export function isCursorAtStart(element: HTMLElement) {
-  return getCursorOffset(element) === 0;
-}
-
-export function isCursorAtEnd(element: HTMLElement) {
-  const offset = getCursorOffset(element);
-
-  return offset !== null && offset === (element.textContent ?? "").length;
-}
-
 export function getTextSelectionOffsets(element: HTMLElement) {
   const selection = window.getSelection();
 

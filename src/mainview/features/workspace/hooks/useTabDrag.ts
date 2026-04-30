@@ -3,7 +3,7 @@ import type { WorkspaceTab } from "@/mainview/store/useWorkspaceStore";
 import {
   getTabDropPlacement,
   type TabDropTarget
-} from "../lib/tabDrag";
+} from "@/mainview/features/workspace/lib/tabDrag";
 
 const TAB_DRAG_START_DISTANCE = 4;
 

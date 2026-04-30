@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type { Block } from "../../../../shared/contracts";
+import type { Block } from "@/shared/contracts";
 import { getAfterBlockIdForMovingBlocks, getBlocksAfterMove } from "./blockDrag";
 
 const blocks = ["a", "b", "c", "d", "e"].map((id, index) =>

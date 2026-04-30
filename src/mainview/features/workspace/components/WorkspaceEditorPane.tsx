@@ -1,12 +1,12 @@
 import type { ComponentProps } from "react";
-import type { Block, PageDocument } from "../../../../shared/contracts";
-import { PageEditor } from "../../page/components/PageEditor";
-import type { CreateBlockDraft } from "../../page/lib/blockEditingBehavior";
+import type { Block, PageDocument } from "@/shared/contracts";
+import { PageEditor } from "@/mainview/features/page/components/PageEditor";
+import type { CreateBlockDraft } from "@/mainview/features/page/lib/blockEditingBehavior";
 import type {
   BlockEditorUpdate,
   CreateBlockOptions,
   TextSelectionOffsets
-} from "../../page/types/blockEditorTypes";
+} from "@/mainview/features/page/types/blockEditorTypes";
 import { EmptyEditorState } from "./EmptyEditorState";
 
 type WorkspaceEditorPaneProps = {
@@ -20,6 +20,7 @@ type WorkspaceEditorPaneProps = {
   onDeleteBlock: (block: Block) => void;
   onDeleteBlocks: (blocks: Block[]) => void;
   onDuplicateBlocks: (blocks: Block[]) => void;
+  onPasteBlocks: (afterBlock: Block) => Promise<void> | void;
   onFocusFirstBlock: () => void;
   onFocusNextBlock: (block: Block) => void;
   onFocusPreviousBlock: (block: Block) => void;
@@ -65,6 +66,7 @@ export function WorkspaceEditorPane({
   onDeleteBlock,
   onDeleteBlocks,
   onDuplicateBlocks,
+  onPasteBlocks,
   onFocusFirstBlock,
   onFocusNextBlock,
   onFocusPreviousBlock,
@@ -88,6 +90,7 @@ export function WorkspaceEditorPane({
           onDeleteBlock={onDeleteBlock}
           onDeleteBlocks={onDeleteBlocks}
           onDuplicateBlocks={onDuplicateBlocks}
+          onPasteBlocks={onPasteBlocks}
           onFocusFirstBlock={onFocusFirstBlock}
           onFocusNextBlock={onFocusNextBlock}
           onFocusPreviousBlock={onFocusPreviousBlock}

@@ -1,16 +1,16 @@
-import type { Block, PageDocument } from "../../../../shared/contracts";
+import type { Block, PageDocument } from "@/shared/contracts";
 import { BlockEditor } from "./BlockEditor";
-import type { CreateBlockDraft } from "../lib/blockEditingBehavior";
+import type { CreateBlockDraft } from "@/mainview/features/page/lib/blockEditingBehavior";
 import {
   getMaxIndentDepth,
   getNumberedListStartAfterDepthChange
-} from "../lib/blockIndentTargets";
-import { getNumberedListMarkers } from "../lib/blockNumbering";
+} from "@/mainview/features/page/lib/blockIndentTargets";
+import { getNumberedListMarkers } from "@/mainview/features/page/lib/blockNumbering";
 import type {
   BlockEditorUpdate,
   CreateBlockOptions,
   TextSelectionOffsets
-} from "../types/blockEditorTypes";
+} from "@/mainview/features/page/types/blockEditorTypes";
 
 type PageBlockListProps = {
   document: PageDocument;

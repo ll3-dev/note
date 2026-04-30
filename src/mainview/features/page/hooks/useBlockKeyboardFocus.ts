@@ -1,4 +1,4 @@
-import type { Block, PageDocument } from "../../../../shared/contracts";
+import type { Block, PageDocument } from "@/shared/contracts";
 
 type FocusBlock = (blockId: string, placement?: "start" | "end") => void;
 

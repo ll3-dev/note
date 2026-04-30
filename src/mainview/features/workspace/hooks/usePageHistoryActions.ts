@@ -1,4 +1,4 @@
-import type { Block } from "../../../../shared/contracts";
+import type { Block } from "@/shared/contracts";
 import { noteApi } from "@/mainview/lib/rpc";
 
 type UsePageHistoryActionsInput = {

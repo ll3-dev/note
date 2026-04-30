@@ -2,7 +2,7 @@ import { ChevronRight, FileText } from "lucide-react";
 import type { DragEvent } from "react";
 import { Button } from "@/mainview/components/ui/button";
 import { cn } from "@/mainview/lib/utils";
-import type { Page } from "../../../../shared/contracts";
+import type { Page } from "@/shared/contracts";
 
 export const PAGE_DRAG_TYPE = "application/x-note-page-id";
 
@@ -85,6 +85,7 @@ export function SidebarPageItem({
           )}
         />
         <span
+          aria-label={isExpanded ? "페이지 접기" : "페이지 펼치기"}
           className={cn(
             "absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-150",
             hasChildren && "group-hover/page:opacity-100",
@@ -99,6 +100,17 @@ export function SidebarPageItem({
             event.stopPropagation();
           }}
           onDrop={handleDropAsChild}
+          onKeyDown={(event) => {
+            if (event.key !== "Enter" && event.key !== " ") {
+              return;
+            }
+
+            event.preventDefault();
+            event.stopPropagation();
+            onToggleExpanded(page.id);
+          }}
+          role="button"
+          tabIndex={-1}
         >
           <ChevronRight
             className={cn(

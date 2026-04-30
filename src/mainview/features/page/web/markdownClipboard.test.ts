@@ -1,10 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import {
   getMarkdownClipboardFile,
-  isMarkdownClipboardFile
+  isMarkdownClipboardFile,
+  readMarkdownFromDataTransfer
 } from "./markdownClipboard";
 
-describe("markdown clipboard", () => {
+describe("markdown clipboard web adapter", () => {
   test("detects markdown files by mime type and extension", () => {
     expect(isMarkdownClipboardFile(file("notes.md", ""))).toBe(true);
     expect(isMarkdownClipboardFile(file("notes.markdown", ""))).toBe(true);
@@ -24,8 +25,27 @@ describe("markdown clipboard", () => {
       ])
     ).toBe(markdown);
   });
+
+  test("falls back to converted html when markdown text and files are absent", async () => {
+    expect(
+      await readMarkdownFromDataTransfer(
+        dataTransfer({
+          "text/html": "<h1>Title</h1><ul><li>Item</li></ul>",
+          "text/plain": "Title\nItem"
+        }),
+        { htmlToMarkdown: () => "# Title\n- Item" }
+      )
+    ).toBe("# Title\n- Item");
+  });
 });
 
 function file(name: string, type: string) {
   return { name, type } as File;
+}
+
+function dataTransfer(items: Record<string, string>) {
+  return {
+    files: [],
+    getData: (type: string) => items[type] ?? ""
+  } as unknown as DataTransfer;
 }

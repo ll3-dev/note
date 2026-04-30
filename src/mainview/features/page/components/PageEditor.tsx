@@ -1,24 +1,24 @@
-import { useEffect, useRef, type DragEvent, type MouseEvent } from "react";
+import { useEffect } from "react";
 import { ScrollArea } from "@/mainview/components/ui/scroll-area";
-import type { Block, Page, PageDocument } from "../../../../shared/contracts";
+import type { Block, Page, PageDocument } from "@/shared/contracts";
 import { PageBlockList } from "./PageBlockList";
 import { BlockSelectionGroupRect } from "./BlockSelectionGroupRect";
 import { BlockSelectionRect } from "./BlockSelectionRect";
 import { BlockDragPreview } from "./BlockDragPreview";
 import { BlockDropIndicator } from "./BlockDropIndicator";
-import { PageTitleEditor, type PageTitleEditorHandle } from "./PageTitleEditor";
-import { useBlockDragState } from "../hooks/useBlockDragState";
-import { useInputMode } from "../hooks/useInputMode";
-import { useLastBlockFocus } from "../hooks/useLastBlockFocus";
-import { useSelectedBlockShortcuts } from "../hooks/useSelectedBlockShortcuts";
-import type { CreateBlockDraft } from "../lib/blockEditingBehavior";
-import { clearEditableFocusForBlockSelection } from "../lib/blockSelectionFocus";
-import { getNativeTextSelectionBlock } from "../lib/pageSelectionHitTest";
+import { PageTitleEditor } from "./PageTitleEditor";
+import { useBlockDragState } from "@/mainview/features/page/hooks/useBlockDragState";
+import { useInputMode } from "@/mainview/features/page/hooks/useInputMode";
+import { useLastBlockFocus } from "@/mainview/features/page/hooks/useLastBlockFocus";
+import { usePageEditorInteractions } from "@/mainview/features/page/hooks/usePageEditorInteractions";
+import { useSelectedBlockShortcuts } from "@/mainview/features/page/hooks/useSelectedBlockShortcuts";
+import type { CreateBlockDraft } from "@/mainview/features/page/lib/blockEditingBehavior";
+import { clearEditableFocusForBlockSelection } from "@/mainview/features/page/web/blockSelectionFocus";
 import type {
   BlockEditorUpdate,
   CreateBlockOptions,
   TextSelectionOffsets
-} from "../types/blockEditorTypes";
+} from "@/mainview/features/page/types/blockEditorTypes";
 
 type PageEditorProps = {
   document: PageDocument;
@@ -30,6 +30,7 @@ type PageEditorProps = {
   onDeleteBlock: (block: Block) => void;
   onDeleteBlocks: (blocks: Block[]) => void;
   onDuplicateBlocks: (blocks: Block[]) => void;
+  onPasteBlocks: (afterBlock: Block) => Promise<void> | void;
   onFocusNextBlock: (block: Block) => void;
   onFocusFirstBlock: () => void;
   onFocusPreviousBlock: (block: Block) => void;
@@ -65,6 +66,7 @@ export function PageEditor({
   onDeleteBlock,
   onDeleteBlocks,
   onDuplicateBlocks,
+  onPasteBlocks,
   onFocusFirstBlock,
   onFocusNextBlock,
   onFocusPreviousBlock,
@@ -80,8 +82,6 @@ export function PageEditor({
   onUpdatePageTitle
 }: PageEditorProps) {
   useInputMode();
-  const titleRef = useRef<PageTitleEditorHandle>(null);
-
   const focusLastBlock = useLastBlockFocus({ document, onCreateBlockAfter });
   const {
     beginBlockSelectionDrag,
@@ -96,72 +96,36 @@ export function PageEditor({
     blocks: document.blocks,
     onMoveBlocks
   });
-
-  const selectedBlocks = document.blocks.filter((block) =>
-    selectedBlockIds.includes(block.id)
-  );
+  const {
+    focusPreviousBlock,
+    handleEditorClick,
+    handleEditorMouseDown,
+    handleSelectedBlocksDragStart,
+    selectedBlocks,
+    titleRef
+  } = usePageEditorInteractions({
+    document,
+    selectedBlockIds,
+    onBeginBlockSelectionDrag: beginBlockSelectionDrag,
+    onClearBlockSelection: clearBlockSelection,
+    onConsumeCompletedBlockRangeSelection: consumeCompletedBlockRangeSelection,
+    onFocusLastBlock: focusLastBlock,
+    onFocusPreviousBlock,
+    onStartDrag: startDrag
+  });
 
   useSelectedBlockShortcuts({
     clearSelection: clearBlockSelection,
     document,
     onDeleteBlocks,
     onDuplicateBlocks,
+    onPasteBlocks,
     selectedBlocks
   });
 
   useEffect(() => {
     clearEditableFocusForBlockSelection(selectedBlockIds);
   }, [selectedBlockIds]);
-
-  function handleEditorMouseDown(event: MouseEvent<HTMLDivElement>) {
-    const nativeTextBlock = getNativeTextSelectionBlock(event);
-
-    if (nativeTextBlock) {
-      const selectedBlockId = nativeTextBlock.dataset.blockId;
-
-      if (selectedBlockId && selectedBlockIds.includes(selectedBlockId)) {
-        return;
-      }
-
-      clearBlockSelection();
-      beginBlockSelectionDrag(event, { handoffBlockElement: nativeTextBlock });
-      return;
-    }
-
-    if (beginBlockSelectionDrag(event)) {
-      event.preventDefault();
-      return;
-    }
-
-    focusLastBlock(event);
-  }
-
-  function handleEditorClick(event: MouseEvent<HTMLDivElement>) {
-    if (consumeCompletedBlockRangeSelection()) {
-      return;
-    }
-
-    if (focusLastBlock(event)) {
-      clearBlockSelection();
-    }
-  }
-
-  function handleSelectedBlocksDragStart(event: DragEvent<HTMLDivElement>) {
-    const firstSelectedBlock = selectedBlocks[0];
-    if (!firstSelectedBlock) {
-      event.preventDefault();
-      return;
-    }
-    startDrag(firstSelectedBlock, event);
-  }
-
-  function focusPreviousBlock(block: Block, blockIndex: number) {
-    if (blockIndex === 0) {
-      titleRef.current?.focus();
-    } else {
-      onFocusPreviousBlock(block);
-    }
-  }
 
   return (
     <div

@@ -1,4 +1,4 @@
-import type { Block } from "../../../../shared/contracts";
+import type { Block } from "@/shared/contracts";
 import { getBlockDepth, getNumberedListStart } from "./blockEditingBehavior";
 
 export function getNumberedListMarkers(blocks: Block[]) {

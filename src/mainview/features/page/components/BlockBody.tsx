@@ -4,16 +4,16 @@ import type {
   RefObject
 } from "react";
 import { cn } from "@/mainview/lib/utils";
-import type { Block } from "../../../../shared/contracts";
-import { BLOCK_COMMANDS, type BlockCommand } from "../lib/blockCommands";
-import { getBlockDepth } from "../lib/blockEditingBehavior";
-import { blockShellClass, editableClass } from "../lib/blockStyles";
-import { useBlockClipboardEditing } from "../hooks/useBlockClipboardEditing";
+import type { Block } from "@/shared/contracts";
+import { BLOCK_COMMANDS, type BlockCommand } from "@/mainview/features/page/lib/blockCommands";
+import { getBlockDepth } from "@/mainview/features/page/lib/blockEditingBehavior";
+import { blockShellClass, editableClass } from "@/mainview/features/page/lib/blockStyles";
+import { useBlockClipboardEditing } from "@/mainview/features/page/hooks/useBlockClipboardEditing";
 import { InlineMarksViewer } from "./InlineMarksViewer";
 import type {
   BlockEditorUpdate,
   TextSelectionOffsets
-} from "../types/blockEditorTypes";
+} from "@/mainview/features/page/types/blockEditorTypes";
 
 type BlockBodyProps = {
   block: Block;

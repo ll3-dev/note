@@ -1,9 +1,9 @@
 import { useCallback, useState, type DragEvent } from "react";
-import { useViewportGeometrySync } from "../hooks/useViewportGeometrySync";
+import { useViewportGeometrySync } from "@/mainview/features/page/hooks/useViewportGeometrySync";
 import {
   getSelectionBoundsList,
   type SelectionBounds
-} from "../lib/blockSelectionGeometry";
+} from "@/mainview/features/page/web/blockSelectionGeometry";
 
 type BlockSelectionGroupRectProps = {
   blockIds: string[];

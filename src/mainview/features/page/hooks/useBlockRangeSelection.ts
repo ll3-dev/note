@@ -5,14 +5,14 @@ import {
   useState,
   type MouseEvent as ReactMouseEvent
 } from "react";
-import type { Block } from "../../../../shared/contracts";
+import type { Block } from "@/shared/contracts";
 import {
   getIntersectingBlockIds,
   getSelectionBox,
   getSelectionTargets,
   isPointerInsideBlock,
   type SelectionBox
-} from "../lib/blockSelectionGeometry";
+} from "@/mainview/features/page/web/blockSelectionGeometry";
 
 const BLOCK_SELECTION_DRAG_THRESHOLD = 6;
 

@@ -6,24 +6,24 @@ import {
   type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent
 } from "react";
-import type { Block } from "../../../../shared/contracts";
+import type { Block } from "@/shared/contracts";
 import {
   getAfterBlockIdForMovingBlocks,
-  getDragPreviewOffset,
   type BlockDropPlacement
-} from "../lib/blockDrag";
+} from "@/mainview/features/page/lib/blockDrag";
 import {
   getDragDropTarget,
   getDragPreview,
   getDraggingBlockId,
   transitionBlockDrag,
   type BlockDragMachineState
-} from "../lib/blockDragMachine";
+} from "@/mainview/features/page/lib/blockDragMachine";
 import {
   getBlockRangeSelection,
   getHandleBlockSelection,
   getToggledBlockSelection
-} from "../lib/blockSelection";
+} from "@/mainview/features/page/lib/blockSelection";
+import { getDragPreviewOffset } from "@/mainview/features/page/web/blockDragDom";
 import { useBlockRangeSelection } from "./useBlockRangeSelection";
 import { usePointerBlockDrag } from "./usePointerBlockDrag";
 

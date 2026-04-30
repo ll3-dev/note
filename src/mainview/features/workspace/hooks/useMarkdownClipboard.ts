@@ -3,14 +3,14 @@ import type {
   BlockProps,
   BlockType,
   PageDocument
-} from "../../../../shared/contracts";
-import type { CreateBlockDraft } from "../../page/lib/blockEditingBehavior";
+} from "@/shared/contracts";
+import type { CreateBlockDraft } from "@/mainview/features/page/lib/blockEditingBehavior";
 import {
   buildMarkdownPasteDrafts,
   serializePageToMarkdown
-} from "../../page/lib/markdownBlocks";
-import type { TextSelectionOffsets } from "../../page/types/blockEditorTypes";
-import { writeTextToClipboard } from "../lib/clipboardText";
+} from "@/mainview/features/page/lib/markdownBlocks";
+import type { TextSelectionOffsets } from "@/mainview/features/page/types/blockEditorTypes";
+import { writeTextToClipboard } from "@/mainview/features/workspace/lib/clipboardText";
 
 type CreateBlockInput = {
   afterBlockId?: string | null;

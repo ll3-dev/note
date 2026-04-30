@@ -1,4 +1,4 @@
-import type { BlockType } from "../../../../shared/contracts";
+import type { BlockType } from "@/shared/contracts";
 
 export function blockShellClass(type: BlockType) {
   if (type === "quote") {

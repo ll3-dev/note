@@ -3,8 +3,8 @@ import type {
   Block,
   BlockProps,
   BlockType
-} from "../../../../shared/contracts";
-import type { CreateBlockDraft } from "../lib/blockEditingBehavior";
+} from "@/shared/contracts";
+import type { CreateBlockDraft } from "@/mainview/features/page/lib/blockEditingBehavior";
 
 export type BlockEditorUpdate = {
   props?: BlockProps;

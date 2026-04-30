@@ -1,14 +1,14 @@
 import { useEffect, type Dispatch, type RefObject, type SetStateAction } from "react";
-import type { Block } from "../../../../shared/contracts";
+import type { Block } from "@/shared/contracts";
 import {
-  getDropPlacement,
   type BlockDropPlacement,
   type BlockDropTarget
-} from "../lib/blockDrag";
+} from "@/mainview/features/page/lib/blockDrag";
 import {
   transitionBlockDrag,
   type BlockDragMachineState
-} from "../lib/blockDragMachine";
+} from "@/mainview/features/page/lib/blockDragMachine";
+import { getDropPlacement } from "@/mainview/features/page/web/blockDragDom";
 
 type UsePointerBlockDragOptions = {
   blocksRef: RefObject<Block[]>;

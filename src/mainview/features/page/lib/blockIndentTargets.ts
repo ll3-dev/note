@@ -1,4 +1,4 @@
-import type { Block } from "../../../../shared/contracts";
+import type { Block } from "@/shared/contracts";
 import { getBlockDepth } from "./blockEditingBehavior";
 import { getNumberedListStartForDepth } from "./blockNumbering";
 

@@ -1,8 +1,8 @@
 import type { MouseEvent } from "react";
-import type { PageDocument } from "../../../../shared/contracts";
-import type { CreateBlockDraft } from "../lib/blockEditingBehavior";
-import type { CreateBlockOptions } from "../types/blockEditorTypes";
-import { placeCursorAtEnd } from "../lib/domSelection";
+import type { PageDocument } from "@/shared/contracts";
+import type { CreateBlockDraft } from "@/mainview/features/page/lib/blockEditingBehavior";
+import type { CreateBlockOptions } from "@/mainview/features/page/types/blockEditorTypes";
+import { placeCursorAtEnd } from "@/mainview/features/page/web/domSelection";
 
 type UseLastBlockFocusOptions = {
   document: PageDocument;

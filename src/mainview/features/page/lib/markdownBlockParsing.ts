@@ -1,5 +1,8 @@
-import type { BlockProps } from "../../../../shared/contracts";
-import type { CreateBlockDraft } from "./blockEditingBehavior";
+import {
+  importBlocksToDrafts,
+  parseMarkdownInlineText,
+  type ImportBlock
+} from "./importBlocks";
 
 const MAX_MARKDOWN_DEPTH = 6;
 const BLOCK_MARKDOWN_PATTERNS = [
@@ -13,7 +16,11 @@ const BLOCK_MARKDOWN_PATTERNS = [
 ];
 
 export function parseMarkdownToBlockDrafts(markdown: string) {
-  const drafts: Array<Required<CreateBlockDraft>> = [];
+  return importBlocksToDrafts(parseMarkdownToImportBlocks(markdown));
+}
+
+export function parseMarkdownToImportBlocks(markdown: string) {
+  const blocks: ImportBlock[] = [];
   const lines = markdown.replace(/\r\n?/g, "\n").split("\n");
   let paragraphLines: string[] = [];
 
@@ -37,8 +44,8 @@ export function parseMarkdownToBlockDrafts(markdown: string) {
         index += 1;
       }
 
-      drafts.push({
-        props: codeFence[1] ? { language: codeFence[1] } : {},
+      blocks.push({
+        ...(codeFence[1] ? { language: codeFence[1] } : {}),
         text: codeLines.join("\n"),
         type: "code"
       });
@@ -49,7 +56,7 @@ export function parseMarkdownToBlockDrafts(markdown: string) {
 
     if (blockDraft) {
       flushParagraph();
-      drafts.push(blockDraft);
+      blocks.push(blockDraft);
       continue;
     }
 
@@ -58,16 +65,15 @@ export function parseMarkdownToBlockDrafts(markdown: string) {
 
   flushParagraph();
 
-  return drafts;
+  return blocks;
 
   function flushParagraph() {
     if (paragraphLines.length === 0) {
       return;
     }
 
-    drafts.push({
-      props: {},
-      text: paragraphLines.join("\n"),
+    blocks.push({
+      children: parseMarkdownInlineText(paragraphLines.join("\n")),
       type: "paragraph"
     });
     paragraphLines = [];
@@ -88,30 +94,27 @@ export function shouldHandleMarkdownPaste(text: string) {
   return BLOCK_MARKDOWN_PATTERNS.some((pattern) => pattern.test(normalizedText));
 }
 
-function parseMarkdownLine(line: string): Required<CreateBlockDraft> | null {
+function parseMarkdownLine(line: string): ImportBlock | null {
   const heading = /^(#{1,2})\s+(.+)$/.exec(line);
 
   if (heading) {
     return {
-      props: {},
-      text: heading[2],
+      children: parseMarkdownInlineText(heading[2]),
       type: heading[1].length === 1 ? "heading_1" : "heading_2"
     };
   }
 
   if (/^---$/.test(line.trim())) {
-    return { props: {}, text: "", type: "divider" };
+    return { type: "divider" };
   }
 
   const todo = /^(\s*)[-*]\s+\[([ xX])\]\s+(.+)$/.exec(line);
 
   if (todo) {
     return {
-      props: {
-        ...depthProps(todo[1]),
-        checked: todo[2].toLowerCase() === "x"
-      },
-      text: todo[3],
+      checked: todo[2].toLowerCase() === "x",
+      children: parseMarkdownInlineText(todo[3]),
+      depth: getDepth(todo[1]),
       type: "todo"
     };
   }
@@ -120,8 +123,8 @@ function parseMarkdownLine(line: string): Required<CreateBlockDraft> | null {
 
   if (bullet) {
     return {
-      props: depthProps(bullet[1]),
-      text: bullet[2],
+      children: parseMarkdownInlineText(bullet[2]),
+      depth: getDepth(bullet[1]),
       type: "bulleted_list"
     };
   }
@@ -130,25 +133,23 @@ function parseMarkdownLine(line: string): Required<CreateBlockDraft> | null {
 
   if (numbered) {
     return {
-      props: {
-        ...depthProps(numbered[1]),
-        start: Number(numbered[2])
-      },
-      text: numbered[3],
+      children: parseMarkdownInlineText(numbered[3]),
+      depth: getDepth(numbered[1]),
+      start: Number(numbered[2]),
       type: "numbered_list"
     };
   }
 
   const quote = /^>\s+(.+)$/.exec(line);
 
-  return quote ? { props: {}, text: quote[1], type: "quote" } : null;
+  return quote
+    ? { children: parseMarkdownInlineText(quote[1]), type: "quote" }
+    : null;
 }
 
-function depthProps(indentation: string): BlockProps {
-  const depth = Math.min(
+function getDepth(indentation: string) {
+  return Math.min(
     MAX_MARKDOWN_DEPTH,
     Math.floor(indentation.replace(/\t/g, "  ").length / 2)
   );
-
-  return depth > 0 ? { depth } : {};
 }

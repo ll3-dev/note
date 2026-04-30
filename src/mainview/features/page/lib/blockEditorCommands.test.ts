@@ -33,7 +33,7 @@ function createContext(overrides: Partial<BlockShortcutContext> = {}) {
     },
     draft: "/",
     draftProps: {},
-    event: {} as BlockShortcutContext["event"],
+    getCursorOffset: () => null,
     isCommandMenuOpen: true,
     maxIndentDepth: 1,
     numberedListMarker: null,
@@ -351,9 +351,7 @@ describe("block editor commands", () => {
       },
       blocksCount: 2,
       draft: "",
-      event: {
-        currentTarget: createEditableAtStart()
-      } as BlockShortcutContext["event"],
+      getCursorOffset: () => 0,
       isCommandMenuOpen: false
     });
     const command = resolveKeybinding({
@@ -477,29 +475,3 @@ describe("block editor commands", () => {
     expect(updates).toEqual([{ props: { start: 2 } }]);
   });
 });
-
-function createEditableAtStart() {
-  const node = {};
-  const range = {
-    cloneRange: () => ({
-      selectNodeContents: () => {},
-      setEnd: () => {},
-      toString: () => ""
-    }),
-    startContainer: node,
-    startOffset: 0
-  };
-
-  globalThis.window = {
-    getSelection: () => ({
-      getRangeAt: () => range,
-      isCollapsed: true,
-      rangeCount: 1
-    })
-  } as unknown as Window & typeof globalThis;
-
-  return {
-    contains: (target: unknown) => target === node,
-    textContent: ""
-  } as HTMLElement;
-}

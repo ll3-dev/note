@@ -1,14 +1,12 @@
-import type { KeyboardEvent } from "react";
 import type { Command } from "@/mainview/features/commands/types";
-import type { Block, BlockType } from "../../../../shared/contracts";
+import type { Block, BlockType } from "@/shared/contracts";
 import {
   getBlockDepth,
   getBlockIndentUpdate,
   getNextBlockDraft,
   getSplitBlockDraft
 } from "./blockEditingBehavior";
-import { getCursorTextOffset, isCursorAtEnd, isCursorAtStart } from "./domSelection";
-import type { BlockEditorUpdate } from "../types/blockEditorTypes";
+import type { BlockEditorUpdate } from "@/mainview/features/page/types/blockEditorTypes";
 
 const EMPTY_ENTER_RESET_TYPES = new Set<BlockType>([
   "bulleted_list",
@@ -26,7 +24,7 @@ export type BlockShortcutContext = {
   commitDraft: () => Promise<void>;
   draft: string;
   draftProps: Block["props"];
-  event: KeyboardEvent<HTMLElement>;
+  getCursorOffset: () => number | null;
   isCommandMenuOpen: boolean;
   maxIndentDepth: number;
   numberedListMarker: number | null;
@@ -150,8 +148,8 @@ export const BLOCK_EDITOR_COMMANDS: Command<BlockShortcutContext>[] = [
     }
   },
   {
-    canRun: ({ draft, event }) => {
-      const offset = getCursorTextOffset(event.currentTarget);
+    canRun: ({ draft, getCursorOffset }) => {
+      const offset = getCursorOffset();
 
       return offset !== null && offset > 0 && offset < draft.length;
     },
@@ -163,12 +161,12 @@ export const BLOCK_EDITOR_COMMANDS: Command<BlockShortcutContext>[] = [
       block,
       draft,
       draftProps,
-      event,
+      getCursorOffset,
       numberedListMarker,
       onCreateAfter,
       onUpdate
     }) => {
-      const offset = getCursorTextOffset(event.currentTarget);
+      const offset = getCursorOffset();
 
       if (offset === null) {
         return;
@@ -202,8 +200,8 @@ export const BLOCK_EDITOR_COMMANDS: Command<BlockShortcutContext>[] = [
     }
   },
   {
-    canRun: ({ block, event }) =>
-      block.type !== "paragraph" && isCursorAtStart(event.currentTarget),
+    canRun: ({ block, getCursorOffset }) =>
+      block.type !== "paragraph" && getCursorOffset() === 0,
     defaultKeybindings: ["Backspace"],
     id: "editor.block.resetToParagraph",
     scope: "block",
@@ -227,12 +225,12 @@ export const BLOCK_EDITOR_COMMANDS: Command<BlockShortcutContext>[] = [
     }
   },
   {
-    canRun: ({ block, draft, event, previousBlock }) =>
+    canRun: ({ block, draft, getCursorOffset, previousBlock }) =>
       block.type === "paragraph" &&
       draft.length > 0 &&
       previousBlock !== null &&
       previousBlock.type !== "divider" &&
-      isCursorAtStart(event.currentTarget),
+      getCursorOffset() === 0,
     defaultKeybindings: ["Backspace"],
     id: "editor.block.mergeWithPrevious",
     scope: "block",
@@ -246,7 +244,7 @@ export const BLOCK_EDITOR_COMMANDS: Command<BlockShortcutContext>[] = [
     }
   },
   {
-    canRun: ({ event }) => isCursorAtStart(event.currentTarget),
+    canRun: ({ getCursorOffset }) => getCursorOffset() === 0,
     defaultKeybindings: ["ArrowUp"],
     id: "editor.block.focusPrevious",
     scope: "block",
@@ -257,7 +255,7 @@ export const BLOCK_EDITOR_COMMANDS: Command<BlockShortcutContext>[] = [
     }
   },
   {
-    canRun: ({ event }) => isCursorAtEnd(event.currentTarget),
+    canRun: ({ draft, getCursorOffset }) => getCursorOffset() === draft.length,
     defaultKeybindings: ["ArrowDown"],
     id: "editor.block.focusNext",
     scope: "block",

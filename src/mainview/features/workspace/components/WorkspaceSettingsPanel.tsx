@@ -9,7 +9,7 @@ import {
 } from "@/mainview/features/theme/theme";
 import { cn } from "@/mainview/lib/utils";
 import { useThemeStore } from "@/mainview/store/useThemeStore";
-import type { TextSyncStatus } from "../hooks/useBlockTextSync";
+import type { TextSyncStatus } from "@/mainview/features/workspace/hooks/useBlockTextSync";
 import { SaveStatusIndicator } from "./SaveStatusIndicator";
 
 type WorkspaceSettingsPanelProps = {

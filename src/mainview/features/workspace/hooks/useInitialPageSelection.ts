@@ -1,6 +1,6 @@
 import { useNavigate } from "@tanstack/react-router";
 import { useLayoutEffect, useRef } from "react";
-import type { Page } from "../../../../shared/contracts";
+import type { Page } from "@/shared/contracts";
 import { navigateToPage } from "./useWorkspaceNavigation";
 
 type UseInitialPageSelectionOptions = {

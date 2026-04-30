@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type { Block } from "../../../../shared/contracts";
+import type { Block } from "@/shared/contracts";
 import {
   buildMarkdownPasteDrafts,
   parseMarkdownToBlockDrafts,
@@ -33,7 +33,7 @@ describe("markdown blocks", () => {
           "const value = 1;",
           "```",
           "---",
-          "Paragraph text"
+          "Paragraph [link](https://example.com)"
         ].join("\n")
       )
     ).toEqual([
@@ -47,7 +47,36 @@ describe("markdown blocks", () => {
       { props: { checked: true }, text: "Done task", type: "todo" },
       { props: { language: "ts" }, text: "const value = 1;", type: "code" },
       { props: {}, text: "", type: "divider" },
-      { props: {}, text: "Paragraph text", type: "paragraph" }
+      {
+        props: {
+          inlineMarks: [
+            { end: 14, href: "https://example.com", start: 10, type: "link" }
+          ]
+        },
+        text: "Paragraph link",
+        type: "paragraph"
+      }
+    ]);
+  });
+
+  test("parses Markdown inline syntax through import block inline nodes", () => {
+    expect(
+      parseMarkdownToBlockDrafts(
+        "**Bold** and _italic_ plus `code` [link](https://example.com)"
+      )
+    ).toEqual([
+      {
+        props: {
+          inlineMarks: [
+            { end: 4, start: 0, type: "bold" },
+            { end: 15, start: 9, type: "italic" },
+            { end: 25, start: 21, type: "code" },
+            { end: 30, href: "https://example.com", start: 26, type: "link" }
+          ]
+        },
+        text: "Bold and italic plus code link",
+        type: "paragraph"
+      }
     ]);
   });
 
@@ -56,7 +85,11 @@ describe("markdown blocks", () => {
       serializePageToMarkdown({
         blocks: [
           block("heading_1", "Title"),
-          block("paragraph", "Intro"),
+          block("paragraph", "Intro link", {
+            inlineMarks: [
+              { end: 10, href: "https://example.com", start: 6, type: "link" }
+            ]
+          }),
           block("bulleted_list", "Nested", { depth: 1 }),
           block("numbered_list", "Second", { depth: 1, start: 2 }),
           block("todo", "Done", { checked: true }),
@@ -80,7 +113,7 @@ describe("markdown blocks", () => {
       [
         "# Title",
         "",
-        "Intro",
+        "Intro [link](https://example.com)",
         "",
         "  - Nested",
         "  2. Second",

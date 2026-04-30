@@ -2,7 +2,7 @@ import type {
   Block,
   BlockProps,
   BlockType
-} from "../../../../shared/contracts";
+} from "@/shared/contracts";
 import {
   getInlineMarks,
   type InlineMark

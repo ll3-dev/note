@@ -5,11 +5,12 @@ import { cn } from "@/mainview/lib/utils";
 import { BlockBody } from "./BlockBody";
 import { BlockCommandMenu } from "./BlockCommandMenu";
 import { BlockDragHandle } from "./BlockDragHandle";
-import { useBlockTextEditing } from "../hooks/useBlockTextEditing";
-import { getBlockDepth } from "../lib/blockEditingBehavior";
-import { getDropPlacement } from "../lib/blockDrag";
-import { BLOCK_EDITOR_COMMANDS } from "../lib/blockEditorCommands";
-import type { BlockEditorProps } from "../types/blockEditorTypes";
+import { useBlockTextEditing } from "@/mainview/features/page/hooks/useBlockTextEditing";
+import { getBlockDepth } from "@/mainview/features/page/lib/blockEditingBehavior";
+import { BLOCK_EDITOR_COMMANDS } from "@/mainview/features/page/lib/blockEditorCommands";
+import type { BlockEditorProps } from "@/mainview/features/page/types/blockEditorTypes";
+import { getCursorTextOffset } from "@/mainview/features/page/web/domSelection";
+import { getDropPlacement } from "@/mainview/features/page/web/blockDragDom";
 
 export function BlockEditor({
   block,
@@ -89,6 +90,8 @@ export function BlockEditor({
       commitDraft,
       draft,
       draftProps,
+      getCursorOffset: () =>
+        editableRef.current ? getCursorTextOffset(editableRef.current) : null,
       isCommandMenuOpen,
       maxIndentDepth,
       numberedListMarker,

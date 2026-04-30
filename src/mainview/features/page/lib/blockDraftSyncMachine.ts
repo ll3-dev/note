@@ -1,4 +1,4 @@
-import type { Block, BlockProps } from "../../../../shared/contracts";
+import type { Block, BlockProps } from "@/shared/contracts";
 import { areBlockPropsEqual } from "./blockProps";
 
 type DraftSnapshot = {

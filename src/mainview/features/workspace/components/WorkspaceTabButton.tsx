@@ -3,7 +3,7 @@ import type { MouseEvent, PointerEvent } from "react";
 import { Button } from "@/mainview/components/ui/button";
 import { cn } from "@/mainview/lib/utils";
 import type { WorkspaceTab } from "@/mainview/store/useWorkspaceStore";
-import type { TabDropPlacement } from "../lib/tabDrag";
+import type { TabDropPlacement } from "@/mainview/features/workspace/lib/tabDrag";
 
 type WorkspaceTabButtonProps = {
   draggedTabId: string | null;

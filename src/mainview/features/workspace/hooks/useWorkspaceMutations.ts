@@ -8,15 +8,15 @@ import type {
   BlockType,
   Page,
   PageDocument
-} from "../../../../shared/contracts";
+} from "@/shared/contracts";
 import {
   getBlocksAfterMove,
   moveBlocksSequentially
-} from "../../page/lib/blockDrag";
+} from "@/mainview/features/page/lib/blockDrag";
 import {
   getBlockMutationSyncState,
   shouldApplyBlockMutationResponse
-} from "../lib/blockMutationSyncMachine";
+} from "@/mainview/features/workspace/lib/blockMutationSyncMachine";
 
 type UseWorkspaceMutationsOptions = {
   navigateToPage: (pageId: string) => Promise<void>;
