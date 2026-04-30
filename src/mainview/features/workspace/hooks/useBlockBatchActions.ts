@@ -1,13 +1,10 @@
 import type { Block } from "@/shared/contracts";
 import { readBlockClipboardPaste } from "@/mainview/features/page/lib/blockClipboard";
-
-type CreateBlockInput = {
-  afterBlockId?: string | null;
-  pageId: string;
-  props?: Block["props"];
-  text?: string;
-  type?: Block["type"];
-};
+import {
+  buildPasteBlockInputs,
+  shouldCreateFallbackBlockAfterDelete,
+  type CreateBlockInput
+} from "@/mainview/features/workspace/lib/blockBatchActions";
 
 type UseBlockBatchActionsOptions = {
   clearPendingText: (blockId: string) => void;
@@ -63,27 +60,14 @@ export function useBlockBatchActions({
     }
 
     await flushAllTextDrafts();
-    let afterBlockId: string | null = block.id;
-    const inputs: CreateBlockInput[] = [];
-
-    for (const draft of paste.drafts) {
-      inputs.push({
-        afterBlockId,
-        pageId: block.pageId,
-        props: draft.props,
-        text: draft.text,
-        type: draft.type
-      });
-      afterBlockId = null;
-    }
-
-    return createBlocks(inputs);
+    return createBlocks(buildPasteBlockInputs(block, paste.drafts));
   }
 
   async function deleteBlocks(blocks: Block[]) {
     const pageId = blocks[0]?.pageId;
     const shouldCreateFallbackBlock =
-      Boolean(pageId) && blocks.length >= getBlocksCount();
+      Boolean(pageId) &&
+      shouldCreateFallbackBlockAfterDelete(blocks.length, getBlocksCount());
 
     await flushAllTextDrafts();
 
