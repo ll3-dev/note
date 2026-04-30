@@ -54,6 +54,31 @@ export function getTextSelectionOffsets(element: HTMLElement) {
   };
 }
 
+export function getTextSelectionRect(element: HTMLElement) {
+  const selection = window.getSelection();
+
+  if (!selection?.rangeCount || selection.isCollapsed) {
+    return null;
+  }
+
+  const range = selection.getRangeAt(0);
+
+  if (
+    !element.contains(range.startContainer) ||
+    !element.contains(range.endContainer)
+  ) {
+    return null;
+  }
+
+  const rect = range.getBoundingClientRect();
+
+  if (rect.width === 0 && rect.height === 0) {
+    return null;
+  }
+
+  return rect;
+}
+
 export function getCursorTextOffset(element: HTMLElement) {
   return getCursorOffset(element);
 }

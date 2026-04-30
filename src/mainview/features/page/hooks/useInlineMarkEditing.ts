@@ -3,12 +3,18 @@ import type { Block, BlockProps } from "@/shared/contracts";
 import {
   addInlineMarksToProps,
   getInlineFormatProps,
+  getInlineLinkProps,
   getInlineMarksAtOffset,
   getInlineMarkType,
   type TextStyleInlineMarkType
 } from "@/mainview/features/page/lib/inlineFormatting";
-import { getTextSelectionOffsets } from "@/mainview/features/page/web/domSelection";
+import {
+  getTextSelectionOffsets,
+  getTextSelectionRect
+} from "@/mainview/features/page/web/domSelection";
 import type { BlockEditorUpdate } from "@/mainview/features/page/types/blockEditorTypes";
+
+type SelectionOffsets = { end: number; start: number };
 
 type UseInlineMarkEditingOptions = {
   block: Block;
@@ -26,9 +32,13 @@ export function useInlineMarkEditing({
   setDraftProps
 }: UseInlineMarkEditingOptions) {
   const [activeInlineMarks, setActiveInlineMarks] = useState<TextStyleInlineMarkType[]>([]);
+  const [selectionOffsets, setSelectionOffsets] = useState<SelectionOffsets | null>(null);
+  const [selectionToolbarRect, setSelectionToolbarRect] = useState<DOMRect | null>(null);
 
   useEffect(() => {
     setActiveInlineMarks([]);
+    setSelectionOffsets(null);
+    setSelectionToolbarRect(null);
   }, [block.id]);
 
   function applyInlineFormat(commandId: string) {
@@ -48,6 +58,23 @@ export function useInlineMarkEditing({
 
     setDraftProps(props);
     onUpdate(block, { props });
+    syncActiveInlineMarksFromSelection();
+  }
+
+  function applyInlineLink(href: string) {
+    const editable = editableRef.current;
+    const selection = editable
+      ? getTextSelectionOffsets(editable) ?? selectionOffsets
+      : selectionOffsets;
+    const props = getInlineLinkProps(draftProps, selection, href);
+
+    if (!props) {
+      return;
+    }
+
+    setDraftProps(props);
+    onUpdate(block, { props });
+    syncActiveInlineMarksFromSelection();
   }
 
   function applyMarksToInsertedText(nextValue: string, previousValue: string) {
@@ -74,10 +101,19 @@ export function useInlineMarkEditing({
     const editable = editableRef.current;
     const selection = editable ? getTextSelectionOffsets(editable) : null;
 
-    if (!selection || selection.start !== selection.end) {
+    setSelectionToolbarRect(editable ? getTextSelectionRect(editable) : null);
+
+    if (!selection) {
+      setSelectionOffsets(null);
       return;
     }
 
+    if (selection.start !== selection.end) {
+      setSelectionOffsets(selection);
+      return;
+    }
+
+    setSelectionOffsets(null);
     setActiveInlineMarks(getInlineMarksAtOffset(draftProps, selection.start));
   }
 
@@ -97,7 +133,9 @@ export function useInlineMarkEditing({
 
   return {
     applyInlineFormat,
+    applyInlineLink,
     applyMarksToInsertedText,
+    selectionToolbarRect,
     syncActiveInlineMarksFromSelection
   };
 }

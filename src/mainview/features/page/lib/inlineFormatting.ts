@@ -1,4 +1,5 @@
 import type { BlockProps } from "@/shared/contracts";
+import { normalizeLinkHref } from "@/shared/linkSanitization";
 
 export type InlineMarkType = "bold" | "italic" | "code";
 export type TextStyleInlineMarkType = InlineMarkType;
@@ -71,6 +72,36 @@ export function getInlineFormatProps(
   return {
     ...props,
     inlineMarks: nextMarks
+  };
+}
+
+export function getInlineLinkProps(
+  props: BlockProps,
+  selection: { end: number; start: number } | null,
+  href: string
+) {
+  const safeHref = normalizeLinkHref(href);
+
+  if (!safeHref || !selection) {
+    return null;
+  }
+
+  const start = Math.min(selection.start, selection.end);
+  const end = Math.max(selection.start, selection.end);
+
+  if (start === end) {
+    return null;
+  }
+
+  return {
+    ...props,
+    inlineMarks: [
+      ...getInlineMarks(props).filter(
+        (mark) =>
+          !(mark.type === "link" && mark.start === start && mark.end === end)
+      ),
+      { end, href: safeHref, start, type: "link" }
+    ]
   };
 }
 

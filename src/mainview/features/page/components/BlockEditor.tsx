@@ -5,6 +5,7 @@ import { cn } from "@/mainview/lib/utils";
 import { BlockBody } from "./BlockBody";
 import { BlockCommandMenu } from "./BlockCommandMenu";
 import { BlockDragHandle } from "./BlockDragHandle";
+import { InlineFormattingToolbar } from "./InlineFormattingToolbar";
 import { useBlockTextEditing } from "@/mainview/features/page/hooks/useBlockTextEditing";
 import { getBlockDepth } from "@/mainview/features/page/lib/blockEditingBehavior";
 import { BLOCK_EDITOR_COMMANDS } from "@/mainview/features/page/lib/blockEditorCommands";
@@ -48,6 +49,7 @@ export function BlockEditor({
   const {
     applyCommand,
     applyInlineFormat,
+    applyInlineLink,
     applySelectedCommand,
     changeDraft,
     closeCommandMenu,
@@ -56,6 +58,7 @@ export function BlockEditor({
     draftProps,
     isCommandMenuOpen,
     selectedCommandIndex,
+    selectionToolbarRect,
     selectNextCommand,
     selectPreviousCommand,
     setSelectedCommandIndex,
@@ -204,6 +207,11 @@ export function BlockEditor({
             onSelect={applyCommand}
           />
         ) : null}
+        <InlineFormattingToolbar
+          onFormat={applyInlineFormat}
+          onLink={applyInlineLink}
+          rect={selectionToolbarRect}
+        />
       </div>
     </div>
   );

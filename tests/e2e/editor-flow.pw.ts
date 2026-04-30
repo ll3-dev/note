@@ -104,3 +104,31 @@ test("keeps an editable block after deleting every selected block", async ({ pag
   await expect(page.getByRole("textbox", { name: "paragraph block" })).toHaveCount(1);
   await expect(page.getByRole("textbox", { name: "paragraph block" }).first()).toBeFocused();
 });
+
+test("formats selected inline text from the floating toolbar", async ({ page }) => {
+  await page.goto("/");
+
+  const firstBlock = page.getByRole("textbox", { name: "paragraph block" }).first();
+  await firstBlock.click();
+  await page.keyboard.type("Format docs");
+  await page.keyboard.press("Shift+ArrowLeft");
+  await page.keyboard.press("Shift+ArrowLeft");
+  await page.keyboard.press("Shift+ArrowLeft");
+  await page.keyboard.press("Shift+ArrowLeft");
+
+  await page.getByRole("button", { name: "Bold" }).click();
+  await page.getByRole("button", { name: "Link" }).click();
+  await page.getByLabel("Link URL").fill("https://example.com");
+  await page.keyboard.press("Enter");
+
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () => window.__noteE2E.getDocument("page-1").blocks[0]?.props.inlineMarks
+      )
+    )
+    .toEqual([
+      { end: 11, start: 7, type: "bold" },
+      { end: 11, href: "https://example.com", start: 7, type: "link" }
+    ]);
+});

@@ -79,7 +79,9 @@ export function useBlockTextEditing({
 
   const {
     applyInlineFormat,
+    applyInlineLink,
     applyMarksToInsertedText,
+    selectionToolbarRect,
     syncActiveInlineMarksFromSelection
   } = useInlineMarkEditing({
     block,
@@ -179,6 +181,7 @@ export function useBlockTextEditing({
   return {
     applyCommand,
     applyInlineFormat,
+    applyInlineLink,
     applySelectedCommand,
     changeDraft,
     closeCommandMenu: commandMenu.closeCommandMenu,
@@ -187,6 +190,7 @@ export function useBlockTextEditing({
     draftProps,
     isCommandMenuOpen: commandMenu.isCommandMenuOpen,
     selectedCommandIndex: commandMenu.selectedCommandIndex,
+    selectionToolbarRect,
     selectNextCommand: commandMenu.selectNextCommand,
     selectPreviousCommand: commandMenu.selectPreviousCommand,
     setSelectedCommandIndex: commandMenu.setSelectedCommandIndex,

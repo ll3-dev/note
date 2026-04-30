@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
   getInlineFormatProps,
+  getInlineLinkProps,
   getInlineMarksAtOffset,
   getInlineTextSegments
 } from "./inlineFormatting";
@@ -40,6 +41,20 @@ describe("inline formatting", () => {
       { marks: [], text: "Read " },
       { href: "https://example.com", marks: [], text: "docs" }
     ]);
+  });
+
+  test("stores a sanitized link mark for the selected text", () => {
+    expect(
+      getInlineLinkProps({}, { end: 9, start: 5 }, " https://example.com ")
+    ).toEqual({
+      inlineMarks: [
+        { end: 9, href: "https://example.com", start: 5, type: "link" }
+      ]
+    });
+
+    expect(
+      getInlineLinkProps({}, { end: 9, start: 5 }, "javascript:alert(1)")
+    ).toBeNull();
   });
 
   test("reads active marks from the caret offset", () => {
