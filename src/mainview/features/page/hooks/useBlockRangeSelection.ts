@@ -6,15 +6,15 @@ import {
   type MouseEvent as ReactMouseEvent
 } from "react";
 import type { Block } from "../../../../shared/contracts";
+import {
+  getIntersectingBlockIds,
+  getSelectionBox,
+  getSelectionTargets,
+  isPointerInsideBlock,
+  type SelectionBox
+} from "../lib/blockSelectionGeometry";
 
 const BLOCK_SELECTION_DRAG_THRESHOLD = 6;
-
-type SelectionBox = {
-  height: number;
-  left: number;
-  top: number;
-  width: number;
-};
 
 type SelectionDrag = {
   active: boolean;
@@ -35,6 +35,7 @@ export function useBlockRangeSelection({
   const [selectionBox, setSelectionBox] = useState<SelectionBox | null>(null);
   const blocksRef = useRef(blocks);
   const selectionDragRef = useRef<SelectionDrag | null>(null);
+  const selectionTargetsRef = useRef<ReturnType<typeof getSelectionTargets>>([]);
 
   useEffect(() => {
     blocksRef.current = blocks;
@@ -76,12 +77,15 @@ export function useBlockRangeSelection({
         }
 
         selectionDrag.active = true;
+        selectionTargetsRef.current = getSelectionTargets(blocksRef.current);
       }
 
       event.preventDefault();
       window.getSelection()?.removeAllRanges();
       setSelectionBox(nextBox);
-      onSelectBlockIds(getIntersectingBlockIds(blocksRef.current, nextBox));
+      onSelectBlockIds(
+        getIntersectingBlockIds(selectionTargetsRef.current, nextBox)
+      );
     }
 
     function handleMouseUp(event: MouseEvent) {
@@ -91,6 +95,7 @@ export function useBlockRangeSelection({
       }
 
       selectionDragRef.current = null;
+      selectionTargetsRef.current = [];
       setSelectionBox(null);
     }
 
@@ -142,59 +147,5 @@ function canStartBlockRangeSelection(event: ReactMouseEvent<HTMLElement>) {
 
   return !event.target.closest(
     "button,input,textarea,select,a,[data-block-drag-handle],[data-ignore-block-selection-drag]"
-  );
-}
-
-function getSelectionBox(
-  originX: number,
-  originY: number,
-  currentX: number,
-  currentY: number
-): SelectionBox {
-  const left = Math.min(originX, currentX);
-  const top = Math.min(originY, currentY);
-
-  return {
-    height: Math.abs(currentY - originY),
-    left,
-    top,
-    width: Math.abs(currentX - originX)
-  };
-}
-
-function getIntersectingBlockIds(blocks: Block[], selectionBox: SelectionBox) {
-  return blocks
-    .filter((block) => {
-      const element = document.querySelector<HTMLElement>(
-        `[data-block-id="${block.id}"]`
-      );
-
-      return element
-        ? rectanglesIntersect(selectionBox, element.getBoundingClientRect())
-        : false;
-    })
-    .map((block) => block.id);
-}
-
-function rectanglesIntersect(
-  selectionBox: SelectionBox,
-  blockRect: DOMRect
-) {
-  return (
-    selectionBox.left < blockRect.right &&
-    selectionBox.left + selectionBox.width > blockRect.left &&
-    selectionBox.top < blockRect.bottom &&
-    selectionBox.top + selectionBox.height > blockRect.top
-  );
-}
-
-function isPointerInsideBlock(blockElement: HTMLElement, event: MouseEvent) {
-  const rect = blockElement.getBoundingClientRect();
-
-  return (
-    event.clientX >= rect.left - 4 &&
-    event.clientX <= rect.right + 4 &&
-    event.clientY >= rect.top - 4 &&
-    event.clientY <= rect.bottom + 4
   );
 }

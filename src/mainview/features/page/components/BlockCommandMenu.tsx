@@ -1,11 +1,6 @@
-import {
-  type CSSProperties,
-  type RefObject,
-  useLayoutEffect,
-  useRef,
-  useState
-} from "react";
+import { type RefObject, useLayoutEffect, useRef } from "react";
 import type { BlockCommand } from "../lib/blockCommands";
+import { useFloatingCommandMenuStyle } from "../hooks/useFloatingCommandMenuStyle";
 
 type BlockCommandMenuProps = {
   activeIndex: number;
@@ -15,8 +10,6 @@ type BlockCommandMenuProps = {
   onSelect: (command: BlockCommand) => Promise<void> | void;
 };
 
-type MenuStyle = Pick<CSSProperties, "left" | "maxHeight" | "top">;
-
 export function BlockCommandMenu({
   activeIndex,
   anchorRef,
@@ -25,97 +18,8 @@ export function BlockCommandMenu({
   onSelect
 }: BlockCommandMenuProps) {
   const commandRefs = useRef<Array<HTMLButtonElement | null>>([]);
-  const lastMenuStyleRef = useRef<MenuStyle | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
-  const [menuStyle, setMenuStyle] = useState<CSSProperties | null>(null);
-
-  useLayoutEffect(() => {
-    if (!anchorRef.current) {
-      return;
-    }
-
-    function updateMenuStyle(): MenuStyle | null {
-      const anchor = anchorRef.current;
-
-      if (!anchor) {
-        return null;
-      }
-
-      const rect = anchor.getBoundingClientRect();
-      const viewportPadding = 16;
-      const menuGap = 8;
-      const menuWidth = 320;
-      const preferredMaxHeight = 448;
-      const minimumMaxHeight = 220;
-      const belowTop = rect.bottom + menuGap;
-      const availableBelow = window.innerHeight - belowTop - viewportPadding;
-      const availableAbove = rect.top - menuGap - viewportPadding;
-      const placeAbove =
-        availableBelow < minimumMaxHeight && availableAbove > availableBelow;
-      const availableHeight = placeAbove ? availableAbove : availableBelow;
-      const viewportMaxHeight = Math.max(
-        96,
-        window.innerHeight - viewportPadding * 2
-      );
-      const maxHeight = Math.min(
-        preferredMaxHeight,
-        viewportMaxHeight,
-        Math.max(minimumMaxHeight, availableHeight)
-      );
-      const left = Math.min(
-        Math.max(rect.left + 32, viewportPadding),
-        window.innerWidth - menuWidth - viewportPadding
-      );
-      const preferredTop = placeAbove
-        ? rect.top - menuGap - maxHeight
-        : belowTop;
-      const top = Math.min(
-        Math.max(preferredTop, viewportPadding),
-        window.innerHeight - maxHeight - viewportPadding
-      );
-
-      return {
-        left,
-        maxHeight,
-        top
-      };
-    }
-
-    function syncMenuStyle() {
-      const nextMenuStyle = updateMenuStyle();
-
-      if (!nextMenuStyle) {
-        return;
-      }
-
-      const previousMenuStyle = lastMenuStyleRef.current;
-
-      if (
-        previousMenuStyle &&
-        previousMenuStyle.left === nextMenuStyle.left &&
-        previousMenuStyle.maxHeight === nextMenuStyle.maxHeight &&
-        previousMenuStyle.top === nextMenuStyle.top
-      ) {
-        return;
-      }
-
-      lastMenuStyleRef.current = nextMenuStyle;
-      setMenuStyle(nextMenuStyle);
-    }
-
-    let animationFrameId = 0;
-
-    function trackAnchorPosition() {
-      syncMenuStyle();
-      animationFrameId = window.requestAnimationFrame(trackAnchorPosition);
-    }
-
-    trackAnchorPosition();
-
-    return () => {
-      window.cancelAnimationFrame(animationFrameId);
-    };
-  }, [anchorRef]);
+  const menuStyle = useFloatingCommandMenuStyle({ anchorRef });
 
   useLayoutEffect(() => {
     const menu = menuRef.current;

@@ -95,7 +95,7 @@ export function useBlockTextEditing({
     setDraft(nextText);
     setDraftProps(nextProps);
     syncEditableText(nextText);
-    commandMenu.setIsCommandMenuOpen(false);
+    commandMenu.closeCommandMenu();
     onUpdate(block, {
       props: nextProps,
       text: nextText,
@@ -119,7 +119,7 @@ export function useBlockTextEditing({
       setDraft(shortcut.text);
       setDraftProps(shortcut.props);
       syncEditableText(shortcut.text);
-      commandMenu.setIsCommandMenuOpen(false);
+      commandMenu.closeCommandMenu();
       onUpdate(block, shortcut);
       if (shortcut.createBlockAfter) {
         void onCreateBlockAfter(block, shortcut.createBlockAfter);

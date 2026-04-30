@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   type BlockCommand,
   filterBlockCommands
@@ -9,36 +9,31 @@ type UseBlockCommandMenuOptions = {
 };
 
 export function useBlockCommandMenu({ draft }: UseBlockCommandMenuOptions) {
-  const [isCommandMenuOpen, setIsCommandMenuOpen] = useState(false);
-  const [selectedCommandIndex, setSelectedCommandIndex] = useState(0);
   const commandQuery = draft.startsWith("/") ? draft.slice(1).toLowerCase() : "";
+  const [closedCommandQuery, setClosedCommandQuery] = useState<string | null>(
+    null
+  );
+  const [selectedCommandState, setSelectedCommandState] = useState({
+    index: 0,
+    query: commandQuery
+  });
   const visibleCommands = useMemo(
     () => filterBlockCommands(commandQuery),
     [commandQuery]
   );
-
-  useEffect(() => {
-    setIsCommandMenuOpen(draft.startsWith("/"));
-  }, [draft]);
-
-  useEffect(() => {
-    setSelectedCommandIndex(0);
-  }, [commandQuery]);
-
-  useEffect(() => {
-    setSelectedCommandIndex((current) =>
-      visibleCommands.length === 0
-        ? 0
-        : Math.min(current, visibleCommands.length - 1)
-    );
-  }, [visibleCommands.length]);
+  const isCommandMenuOpen =
+    draft.startsWith("/") && closedCommandQuery !== commandQuery;
+  const selectedCommandIndex =
+    selectedCommandState.query === commandQuery
+      ? clampCommandIndex(selectedCommandState.index, visibleCommands.length)
+      : 0;
 
   function getSelectedCommand(): BlockCommand | null {
     return visibleCommands[selectedCommandIndex] ?? null;
   }
 
   function closeCommandMenu() {
-    setIsCommandMenuOpen(false);
+    setClosedCommandQuery(commandQuery);
   }
 
   function selectNextCommand() {
@@ -46,9 +41,10 @@ export function useBlockCommandMenu({ draft }: UseBlockCommandMenuOptions) {
       return;
     }
 
-    setSelectedCommandIndex(
-      (current) => (current + 1) % visibleCommands.length
-    );
+    setSelectedCommandState({
+      index: (selectedCommandIndex + 1) % visibleCommands.length,
+      query: commandQuery
+    });
   }
 
   function selectPreviousCommand() {
@@ -56,10 +52,16 @@ export function useBlockCommandMenu({ draft }: UseBlockCommandMenuOptions) {
       return;
     }
 
-    setSelectedCommandIndex(
-      (current) =>
-        (current - 1 + visibleCommands.length) % visibleCommands.length
-    );
+    setSelectedCommandState({
+      index:
+        (selectedCommandIndex - 1 + visibleCommands.length) %
+        visibleCommands.length,
+      query: commandQuery
+    });
+  }
+
+  function setSelectedCommandIndex(index: number) {
+    setSelectedCommandState({ index, query: commandQuery });
   }
 
   return {
@@ -69,8 +71,15 @@ export function useBlockCommandMenu({ draft }: UseBlockCommandMenuOptions) {
     selectedCommandIndex,
     selectNextCommand,
     selectPreviousCommand,
-    setIsCommandMenuOpen,
     setSelectedCommandIndex,
     visibleCommands
   };
+}
+
+function clampCommandIndex(index: number, commandCount: number) {
+  if (commandCount === 0) {
+    return 0;
+  }
+
+  return Math.max(0, Math.min(index, commandCount - 1));
 }

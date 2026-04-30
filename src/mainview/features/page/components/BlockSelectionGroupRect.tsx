@@ -1,17 +1,15 @@
-import { useLayoutEffect, useState, type DragEvent } from "react";
+import { useCallback, useState, type DragEvent } from "react";
+import { useViewportGeometrySync } from "../hooks/useViewportGeometrySync";
+import {
+  getSelectionBoundsList,
+  type SelectionBounds
+} from "../lib/blockSelectionGeometry";
 
 type BlockSelectionGroupRectProps = {
   blockIds: string[];
   isDragging: boolean;
   onDragEnd: () => void;
   onDragStart: (event: DragEvent<HTMLDivElement>) => void;
-};
-
-type SelectionBounds = {
-  bottom: number;
-  left: number;
-  right: number;
-  top: number;
 };
 
 export function BlockSelectionGroupRect({
@@ -21,8 +19,7 @@ export function BlockSelectionGroupRect({
   onDragStart
 }: BlockSelectionGroupRectProps) {
   const [boundsList, setBoundsList] = useState<SelectionBounds[]>([]);
-
-  useLayoutEffect(() => {
+  const syncBoundsList = useCallback(() => {
     if (blockIds.length === 0) {
       setBoundsList([]);
       return;
@@ -30,6 +27,11 @@ export function BlockSelectionGroupRect({
 
     setBoundsList(getSelectionBoundsList(blockIds));
   }, [blockIds]);
+
+  useViewportGeometrySync({
+    enabled: blockIds.length > 0,
+    onSync: syncBoundsList
+  });
 
   if (boundsList.length === 0) {
     return null;
@@ -57,49 +59,4 @@ export function BlockSelectionGroupRect({
       ))}
     </>
   );
-}
-
-function getSelectionBoundsList(blockIds: string[]) {
-  const rects = blockIds
-    .map((blockId) =>
-      document.querySelector<HTMLElement>(`[data-block-id="${blockId}"]`)
-    )
-    .filter((element): element is HTMLElement => Boolean(element))
-    .map((element) => element.getBoundingClientRect());
-
-  if (rects.length === 0) {
-    return [];
-  }
-
-  return mergeNearbyBounds(rects.map(getPaddedBounds));
-}
-
-function getPaddedBounds(rect: DOMRect): SelectionBounds {
-  return {
-    bottom: rect.bottom + 1,
-    left: rect.left - 3,
-    right: rect.right + 3,
-    top: rect.top - 1
-  };
-}
-
-function mergeNearbyBounds(boundsList: SelectionBounds[]) {
-  const sortedBounds = [...boundsList].sort((a, b) => a.top - b.top);
-  const mergedBounds: SelectionBounds[] = [];
-
-  for (const bounds of sortedBounds) {
-    const lastBounds = mergedBounds.at(-1);
-
-    if (!lastBounds || bounds.top - lastBounds.bottom > 3) {
-      mergedBounds.push(bounds);
-      continue;
-    }
-
-    lastBounds.bottom = Math.max(lastBounds.bottom, bounds.bottom);
-    lastBounds.left = Math.min(lastBounds.left, bounds.left);
-    lastBounds.right = Math.max(lastBounds.right, bounds.right);
-    lastBounds.top = Math.min(lastBounds.top, bounds.top);
-  }
-
-  return mergedBounds;
 }
