@@ -21,7 +21,8 @@ import {
 import {
   getBlockRangeSelection,
   getHandleBlockSelection,
-  getToggledBlockSelection
+  getToggledBlockSelection,
+  type KeyboardBlockSelectionResult
 } from "@/mainview/features/page/lib/blockSelection";
 import { getDragPreviewOffset } from "@/mainview/features/page/web/blockDragDom";
 import { useBlockRangeSelection } from "./useBlockRangeSelection";
@@ -43,12 +44,17 @@ export function useBlockDragState({
     status: "idle"
   });
   const [selectedBlockIds, setSelectedBlockIds] = useState<string[]>([]);
+  const [selectionAnchorBlockId, setSelectionAnchorBlockId] = useState<string | null>(null);
+  const [selectionFocusBlockId, setSelectionFocusBlockId] = useState<string | null>(null);
   const blocksRef = useRef(blocks);
   const dragStateRef = useRef(dragState);
   const {
     beginBlockRangeSelection, consumeCompletedBlockRangeSelection,
     isBlockRangeSelecting, selectionBox
-  } = useBlockRangeSelection({ blocks, onSelectBlockIds: setSelectedBlockIds });
+  } = useBlockRangeSelection({
+    blocks,
+    onSelectBlockIds: (blockIds) => setBlockSelection(blockIds)
+  });
 
   blocksRef.current = blocks;
   dragStateRef.current = dragState;
@@ -85,7 +91,7 @@ export function useBlockDragState({
         placement
       );
 
-      setSelectedBlockIds(movingBlocks.map((block) => block.id));
+      setBlockSelection(movingBlocks.map((block) => block.id));
       void onMoveBlocks(movingBlocks, afterBlockId);
 
       clearDragState();
@@ -122,7 +128,7 @@ export function useBlockDragState({
     const nextSelectedBlockIds = getPointerBlockSelection(block, event);
     const previewOffset = getDragPreviewOffset(event);
 
-    setSelectedBlockIds(nextSelectedBlockIds);
+    setBlockSelection(nextSelectedBlockIds, block.id, block.id);
     setDragState(
       transitionBlockDrag(dragStateRef.current, {
         blockId: block.id,
@@ -138,18 +144,25 @@ export function useBlockDragState({
 
   function selectBlock(block: Block, event?: ReactMouseEvent) {
     if (event?.shiftKey && selectedBlockIds.length > 0) {
-      setSelectedBlockIds(
-        getBlockRangeSelection(blocks, selectedBlockIds, block.id)
+      const anchorBlockId = selectionAnchorBlockId ?? selectedBlockIds.at(-1) ?? block.id;
+      setBlockSelection(
+        getBlockRangeSelection(blocks, [anchorBlockId], block.id),
+        anchorBlockId,
+        block.id
       );
       return;
     }
 
     if (event?.metaKey || event?.ctrlKey) {
-      setSelectedBlockIds(getToggledBlockSelection(selectedBlockIds, block.id));
+      setBlockSelection(
+        getToggledBlockSelection(selectedBlockIds, block.id),
+        block.id,
+        block.id
+      );
       return;
     }
 
-    setSelectedBlockIds([block.id]);
+    setBlockSelection([block.id], block.id, block.id);
   }
 
   function getPointerBlockSelection(
@@ -161,6 +174,26 @@ export function useBlockDragState({
 
   function clearBlockSelection() {
     setSelectedBlockIds([]);
+    setSelectionAnchorBlockId(null);
+    setSelectionFocusBlockId(null);
+  }
+
+  function setBlockSelection(
+    blockIds: string[],
+    anchorBlockId = blockIds[0] ?? null,
+    focusBlockId = blockIds.at(-1) ?? null
+  ) {
+    setSelectedBlockIds(blockIds);
+    setSelectionAnchorBlockId(anchorBlockId);
+    setSelectionFocusBlockId(focusBlockId);
+  }
+
+  function applyKeyboardBlockSelection(selection: KeyboardBlockSelectionResult) {
+    setBlockSelection(
+      selection.selectedBlockIds,
+      selection.anchorBlockId,
+      selection.focusBlockId
+    );
   }
 
   function setDropPlacement(block: Block, placement: BlockDropPlacement) {
@@ -196,6 +229,10 @@ export function useBlockDragState({
     isBlockRangeSelecting,
     pressBlockDragHandle,
     selectBlock,
+    selectionAnchorBlockId,
+    selectionFocusBlockId,
+    applyKeyboardBlockSelection,
+    setBlockSelection,
     selectedBlockIds,
     selectionBox,
     setDropPlacement,

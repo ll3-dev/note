@@ -1,4 +1,4 @@
-import { useCallback, useState, type DragEvent } from "react";
+import { useCallback, useEffect, useState, type DragEvent } from "react";
 import { useViewportGeometrySync } from "@/mainview/features/page/hooks/useViewportGeometrySync";
 import {
   getSelectionBoundsList,
@@ -27,6 +27,12 @@ export function BlockSelectionGroupRect({
 
     setBoundsList(getSelectionBoundsList(blockIds));
   }, [blockIds]);
+
+  useEffect(() => {
+    if (blockIds.length === 0) {
+      setBoundsList([]);
+    }
+  }, [blockIds.length]);
 
   useViewportGeometrySync({
     enabled: blockIds.length > 0,

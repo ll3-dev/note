@@ -1,6 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import type { Block } from "@/shared/contracts";
-import { getHandleBlockSelection } from "./blockSelection";
+import {
+  getHandleBlockSelection,
+  getKeyboardBlockSelection
+} from "./blockSelection";
 
 const blocks = ["a", "b", "c", "d"].map((id) => ({
   createdAt: "2026-04-30T00:00:00.000Z",
@@ -41,5 +44,48 @@ describe("block selection", () => {
     expect(
       getHandleBlockSelection(blocks, ["b"], "b", { metaKey: true })
     ).toEqual(["b"]);
+  });
+
+  test("moves a block selection with arrow keys", () => {
+    expect(
+      getKeyboardBlockSelection(
+        blocks,
+        { anchorBlockId: "b", focusBlockId: "b", selectedBlockIds: ["b"] },
+        "down",
+        false
+      )
+    ).toEqual({
+      anchorBlockId: "c",
+      focusBlockId: "c",
+      selectedBlockIds: ["c"]
+    });
+  });
+
+  test("extends and shrinks a block selection with shift arrows", () => {
+    expect(
+      getKeyboardBlockSelection(
+        blocks,
+        { anchorBlockId: "b", focusBlockId: "b", selectedBlockIds: ["b"] },
+        "down",
+        true
+      )
+    ).toEqual({
+      anchorBlockId: "b",
+      focusBlockId: "c",
+      selectedBlockIds: ["b", "c"]
+    });
+
+    expect(
+      getKeyboardBlockSelection(
+        blocks,
+        { anchorBlockId: "b", focusBlockId: "c", selectedBlockIds: ["b", "c"] },
+        "up",
+        true
+      )
+    ).toEqual({
+      anchorBlockId: "b",
+      focusBlockId: "b",
+      selectedBlockIds: ["b"]
+    });
   });
 });

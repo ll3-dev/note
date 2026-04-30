@@ -59,7 +59,7 @@ export function usePageTitleEditing({
     if (event.key === "Enter") {
       event.preventDefault();
       saveTitle(event.currentTarget);
-      event.currentTarget.blur();
+      onFocusFirstBlock();
     }
 
     if (event.key === "ArrowDown") {

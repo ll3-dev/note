@@ -14,6 +14,7 @@ import { usePageEditorInteractions } from "@/mainview/features/page/hooks/usePag
 import { useSelectedBlockShortcuts } from "@/mainview/features/page/hooks/useSelectedBlockShortcuts";
 import type { CreateBlockDraft } from "@/mainview/features/page/lib/blockEditingBehavior";
 import { clearEditableFocusForBlockSelection } from "@/mainview/features/page/web/blockSelectionFocus";
+import { scrollBlockIntoView } from "@/mainview/features/page/web/blockScroll";
 import type {
   BlockEditorUpdate,
   CreateBlockOptions,
@@ -30,7 +31,7 @@ type PageEditorProps = {
   onDeleteBlock: (block: Block) => void;
   onDeleteBlocks: (blocks: Block[]) => void;
   onDuplicateBlocks: (blocks: Block[]) => void;
-  onPasteBlocks: (afterBlock: Block) => Promise<void> | void;
+  onPasteBlocks: (afterBlock: Block) => Promise<Block[]> | Block[];
   onFocusNextBlock: (block: Block) => void;
   onFocusFirstBlock: () => void;
   onFocusPreviousBlock: (block: Block) => void;
@@ -91,6 +92,10 @@ export function PageEditor({
     draggedBlockId, dragPreview, dropBlock, dropTarget,
     isBlockRangeSelecting,
     pressBlockDragHandle,
+    selectionAnchorBlockId,
+    selectionFocusBlockId,
+    applyKeyboardBlockSelection,
+    setBlockSelection,
     selectedBlockIds, selectionBox, setDropPlacement, startDrag
   } = useBlockDragState({
     blocks: document.blocks,
@@ -119,7 +124,12 @@ export function PageEditor({
     document,
     onDeleteBlocks,
     onDuplicateBlocks,
+    onFocusTitle: () => titleRef.current?.focus(),
+    onKeyboardSelection: applyKeyboardBlockSelection,
     onPasteBlocks,
+    selectionAnchorBlockId,
+    selectionFocusBlockId,
+    setSelection: setBlockSelection,
     selectedBlocks
   });
 
@@ -127,22 +137,25 @@ export function PageEditor({
     clearEditableFocusForBlockSelection(selectedBlockIds);
   }, [selectedBlockIds]);
 
+  useEffect(() => {
+    scrollBlockIntoView(selectionFocusBlockId);
+  }, [selectionFocusBlockId]);
+
   return (
     <div
-      className="flex h-full w-full flex-col px-10 py-8"
+      className="flex h-full w-full flex-col"
       onClick={handleEditorClick}
       onMouseDown={handleEditorMouseDown}
       role="presentation"
     >
-      <div className="mx-auto flex min-h-0 w-full max-w-230 flex-1 flex-col">
-        <PageTitleEditor
-          onFocusFirstBlock={onFocusFirstBlock}
-          onUpdatePageTitle={onUpdatePageTitle}
-          page={document.page}
-          ref={titleRef}
-        />
-
-        <ScrollArea className="min-h-0 flex-1">
+      <ScrollArea className="min-h-0 flex-1">
+        <div className="mx-auto flex min-h-full w-full max-w-230 flex-col px-10 py-8">
+          <PageTitleEditor
+            onFocusFirstBlock={onFocusFirstBlock}
+            onUpdatePageTitle={onUpdatePageTitle}
+            page={document.page}
+            ref={titleRef}
+          />
           <div className="grid min-h-full gap-0.5 pb-20 pl-10" role="presentation">
             <BlockSelectionRect box={selectionBox} />
             <BlockDragPreview blocks={document.blocks} preview={dragPreview} />
@@ -177,8 +190,8 @@ export function PageEditor({
               onUpdateBlock={onUpdateBlock}
             />
           </div>
-        </ScrollArea>
-      </div>
+        </div>
+      </ScrollArea>
     </div>
   );
 }
