@@ -10,6 +10,10 @@ import type {
   PageDocument
 } from "../../../../shared/contracts";
 import {
+  getBlocksAfterMove,
+  moveBlocksSequentially
+} from "../../page/lib/blockDrag";
+import {
   getBlockMutationSyncState,
   shouldApplyBlockMutationResponse
 } from "../lib/blockMutationSyncMachine";
@@ -159,6 +163,46 @@ export function useWorkspaceMutations({
     }
   });
 
+  async function moveBlocks({
+    afterBlockId,
+    blocks
+  }: {
+    afterBlockId: string | null;
+    blocks: Block[];
+  }) {
+    const pageId = blocks[0]?.pageId;
+
+    if (!pageId) {
+      return;
+    }
+
+    const movingBlockIds = blocks.map((block) => block.id);
+
+    await queryClient.cancelQueries({ queryKey: queryKeys.pageDocument(pageId) });
+    queryClient.setQueryData<PageDocument>(
+      queryKeys.pageDocument(pageId),
+      (document) =>
+        document
+          ? {
+              ...document,
+              blocks: getBlocksAfterMove(
+                document.blocks,
+                movingBlockIds,
+                afterBlockId
+              )
+            }
+          : document
+    );
+
+    await moveBlocksSequentially(blocks, afterBlockId, async (block, nextAfterBlockId) => {
+      await noteApi.moveBlock({
+        afterBlockId: nextAfterBlockId,
+        blockId: block.id
+      });
+    });
+    await invalidateDocument(queryClient, pageId);
+  }
+
   const movePageMutation = useMutation({
     mutationFn: ({
       afterPageId,
@@ -184,6 +228,7 @@ export function useWorkspaceMutations({
     createPageMutation,
     deleteBlockMutation,
     moveBlockMutation,
+    moveBlocks,
     movePageMutation,
     updatePageMutation,
     updateBlockMutation

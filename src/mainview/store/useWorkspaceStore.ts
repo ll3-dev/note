@@ -21,7 +21,11 @@ type WorkspaceState = {
   tabs: WorkspaceTab[];
   closeTab: (tabId: string) => void;
   openPageTab: (page: WorkspacePageRef) => void;
-  reorderTabs: (sourceTabId: string, targetTabId: string) => void;
+  reorderTabs: (
+    sourceTabId: string,
+    targetTabId: string,
+    placement: "before" | "after"
+  ) => void;
   renamePageRefs: (page: WorkspacePageRef) => void;
   toggleExpandedPage: (pageId: string) => void;
   setSelectedPageId: (pageId: string | null) => void;
@@ -73,7 +77,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set) => ({
         tabs
       };
     }),
-  reorderTabs: (sourceTabId, targetTabId) =>
+  reorderTabs: (sourceTabId, targetTabId, placement) =>
     set((state) => {
       const sourceIndex = state.tabs.findIndex((tab) => tab.id === sourceTabId);
       const targetIndex = state.tabs.findIndex((tab) => tab.id === targetTabId);
@@ -82,9 +86,20 @@ export const useWorkspaceStore = create<WorkspaceState>((set) => ({
         return {};
       }
 
-      const tabs = [...state.tabs];
-      const [sourceTab] = tabs.splice(sourceIndex, 1);
-      tabs.splice(targetIndex, 0, sourceTab);
+      const orderedTabs = state.tabs.filter((tab) => tab.id !== sourceTabId);
+      const insertionTargetIndex = orderedTabs.findIndex(
+        (tab) => tab.id === targetTabId
+      );
+
+      if (insertionTargetIndex < 0) {
+        return {};
+      }
+
+      const sourceTab = state.tabs[sourceIndex];
+      const insertIndex =
+        placement === "before" ? insertionTargetIndex : insertionTargetIndex + 1;
+      const tabs = [...orderedTabs];
+      tabs.splice(insertIndex, 0, sourceTab);
 
       return { tabs };
     }),

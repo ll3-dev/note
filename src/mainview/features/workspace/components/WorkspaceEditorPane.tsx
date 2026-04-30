@@ -17,7 +17,10 @@ type WorkspaceEditorPaneProps = {
   onFocusFirstBlock: () => void;
   onFocusNextBlock: (block: Block) => void;
   onFocusPreviousBlock: (block: Block) => void;
-  onMoveBlock: (block: Block, afterBlockId: string | null) => Promise<void> | void;
+  onMoveBlocks: (
+    blocks: Block[],
+    afterBlockId: string | null
+  ) => Promise<void> | void;
   onPasteMarkdown: (
     block: Block,
     markdown: string,
@@ -52,7 +55,7 @@ export function WorkspaceEditorPane({
   onFocusFirstBlock,
   onFocusNextBlock,
   onFocusPreviousBlock,
-  onMoveBlock,
+  onMoveBlocks,
   onPasteMarkdown,
   onTextDraftChange,
   onTextDraftFlush,
@@ -73,7 +76,7 @@ export function WorkspaceEditorPane({
           onFocusFirstBlock={onFocusFirstBlock}
           onFocusNextBlock={onFocusNextBlock}
           onFocusPreviousBlock={onFocusPreviousBlock}
-          onMoveBlock={onMoveBlock}
+          onMoveBlocks={onMoveBlocks}
           onPasteMarkdown={onPasteMarkdown}
           onTextDraftChange={onTextDraftChange}
           onTextDraftFlush={onTextDraftFlush}

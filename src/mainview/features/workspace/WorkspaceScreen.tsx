@@ -39,7 +39,7 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
   const activePageId = routePageId ?? selectedPageId;
   const { databaseStatusQuery, pageDocumentQuery, pagesQuery, refreshWorkspace } = useWorkspaceQueries(activePageId);
 
-  const { createBlockMutation, createPageMutation, deleteBlockMutation, moveBlockMutation, movePageMutation, updatePageMutation, updateBlockMutation } = useWorkspaceMutations({
+  const { createBlockMutation, createPageMutation, deleteBlockMutation, moveBlocks, movePageMutation, updatePageMutation, updateBlockMutation } = useWorkspaceMutations({
     navigateToPage: async (pageId) => {
       await navigateToPage(navigate, pageId);
     },
@@ -176,9 +176,9 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
         onFocusFirstBlock={focusFirstBlock}
         onFocusNextBlock={focusNextBlock}
         onFocusPreviousBlock={focusPreviousBlock}
-        onMoveBlock={async (target, afterBlockId) => {
+        onMoveBlocks={async (targets, afterBlockId) => {
           await flushAllTextDrafts();
-          await moveBlockMutation.mutateAsync({ afterBlockId, block: target });
+          await moveBlocks({ afterBlockId, blocks: targets });
         }}
         onPasteMarkdown={pasteMarkdown}
         onTextDraftChange={queueTextDraft}
