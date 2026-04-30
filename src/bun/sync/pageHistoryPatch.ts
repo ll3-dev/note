@@ -1,5 +1,6 @@
 import { eq } from "drizzle-orm";
 import type { Block, Page, PageDocument } from "../../shared/contracts";
+import { areBlockPropsEqual } from "../../shared/blockProps";
 import { runInTransaction, type DatabaseHandle } from "../database";
 import { blocks, pages } from "../schema";
 import { listBlocksForPage } from "../repositories/blockReadRepository";
@@ -137,11 +138,7 @@ function changedJson(
   from: Record<string, unknown>,
   to: Record<string, unknown>
 ) {
-  return JSON.stringify(isEqual(current, from) ? to : current);
-}
-
-function isEqual(left: unknown, right: unknown) {
-  return JSON.stringify(left) === JSON.stringify(right);
+  return JSON.stringify(areBlockPropsEqual(current, from) ? to : current);
 }
 
 function currentBlocks(handle: DatabaseHandle, pageId: string) {

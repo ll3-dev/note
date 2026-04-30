@@ -3,7 +3,7 @@ import type {
   BlockProps,
   BlockType
 } from "../../../../shared/contracts";
-import { areBlockPropsEqual } from "../../page/lib/blockProps";
+import { areBlockPropsEqual } from "../../../../shared/blockProps";
 
 export type BlockMutationDraft = {
   props?: BlockProps;

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Block, BlockProps } from "../../../../shared/contracts";
-import { areBlockPropsEqual } from "../../page/lib/blockProps";
+import { areBlockPropsEqual } from "../../../../shared/blockProps";
 
 const TEXT_SYNC_DEBOUNCE_MS = 700;
 const SAVED_STATUS_VISIBLE_MS = 1200;
