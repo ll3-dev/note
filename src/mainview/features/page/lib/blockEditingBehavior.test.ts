@@ -3,8 +3,10 @@ import type { Block } from "../../../../shared/contracts";
 import {
   getBlockDepth,
   getBlockIndentUpdate,
+  getMergedBlockUpdate,
   getNextBlockDraft,
-  getNumberedListStart
+  getNumberedListStart,
+  getSplitBlockDraft
 } from "./blockEditingBehavior";
 
 const block = {
@@ -73,5 +75,69 @@ describe("block editing behavior", () => {
     expect(getNumberedListStart({ ...block, props: { start: 5 } })).toBe(5);
     expect(getNumberedListStart({ ...block, props: { start: "5" } })).toBe(1);
     expect(getNumberedListStart({ ...block, props: { start: 0 } })).toBe(1);
+  });
+
+  test("splits block text and inline marks at the cursor", () => {
+    expect(
+      getSplitBlockDraft(
+        { ...block, props: { inlineMarks: [{ end: 8, start: 2, type: "bold" }] } },
+        "hello world",
+        { inlineMarks: [{ end: 8, start: 2, type: "bold" }] },
+        5
+      )
+    ).toEqual({
+      currentUpdate: {
+        props: { inlineMarks: [{ end: 5, start: 2, type: "bold" }] },
+        text: "hello"
+      },
+      nextDraft: {
+        props: { inlineMarks: [{ end: 3, start: 0, type: "bold" }] },
+        text: " world",
+        type: "paragraph"
+      }
+    });
+  });
+
+  test("splits numbered lists into the next displayed marker", () => {
+    expect(
+      getSplitBlockDraft(
+        { ...block, props: { depth: 1, start: 5 }, type: "numbered_list" },
+        "first item",
+        { depth: 1, start: 5 },
+        5,
+        7
+      ).nextDraft
+    ).toEqual({
+      props: { depth: 1, start: 8 },
+      text: " item",
+      type: "numbered_list"
+    });
+  });
+
+  test("merges block text into the previous block and shifts inline marks", () => {
+    expect(
+      getMergedBlockUpdate(
+        {
+          ...block,
+          id: "previous",
+          props: { inlineMarks: [{ end: 2, start: 0, type: "italic" }] },
+          text: "hi"
+        },
+        {
+          ...block,
+          id: "current",
+          props: { inlineMarks: [{ end: 3, start: 1, type: "code" }] },
+          text: " all"
+        }
+      )
+    ).toEqual({
+      props: {
+        inlineMarks: [
+          { end: 2, start: 0, type: "italic" },
+          { end: 5, start: 3, type: "code" }
+        ]
+      },
+      text: "hi all"
+    });
   });
 });

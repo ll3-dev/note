@@ -22,6 +22,7 @@ export function BlockEditor({
   numberedListMarker,
   numberedListStartAfterIndent,
   numberedListStartAfterOutdent,
+  previousBlock,
   onCreateAfter,
   onDelete,
   onDragEnd,
@@ -31,8 +32,8 @@ export function BlockEditor({
   onDrop,
   onFocusNext,
   onFocusPrevious,
+  onMergeWithPrevious,
   onPasteMarkdown,
-  onSelect,
   onTextDraftChange,
   onTextDraftFlush,
   onTextHistoryApply,
@@ -51,6 +52,7 @@ export function BlockEditor({
     closeCommandMenu,
     commitDraft,
     draft,
+    draftProps,
     isCommandMenuOpen,
     selectedCommandIndex,
     selectNextCommand,
@@ -86,6 +88,7 @@ export function BlockEditor({
       closeCommandMenu,
       commitDraft,
       draft,
+      draftProps,
       isCommandMenuOpen,
       maxIndentDepth,
       numberedListMarker,
@@ -95,7 +98,9 @@ export function BlockEditor({
       onDelete,
       onFocusNext,
       onFocusPrevious,
+      onMergeWithPrevious,
       onUpdate,
+      previousBlock,
       redoTextDraft,
       selectNextCommand,
       selectPreviousCommand,
@@ -144,7 +149,6 @@ export function BlockEditor({
         onDragEnd={onDragEnd}
         onDragPointerDown={onDragPointerDown}
         onDragStart={onDragStart}
-        onSelect={onSelect}
       />
 
       <div className="min-w-0">
@@ -153,6 +157,7 @@ export function BlockEditor({
           blockIndex={blockIndex}
           checked={checked}
           draft={draft}
+          draftProps={draftProps}
           isSelected={isSelected}
           numberedListMarker={numberedListMarker}
           onApplyCommand={applyCommand}

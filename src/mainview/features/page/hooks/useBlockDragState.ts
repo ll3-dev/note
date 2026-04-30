@@ -21,6 +21,7 @@ import {
 } from "../lib/blockDragMachine";
 import {
   getBlockRangeSelection,
+  getHandleBlockSelection,
   getToggledBlockSelection
 } from "../lib/blockSelection";
 import { useBlockRangeSelection } from "./useBlockRangeSelection";
@@ -118,9 +119,7 @@ export function useBlockDragState({
     event.preventDefault();
     event.stopPropagation();
 
-    const nextSelectedBlockIds = selectedBlockIds.includes(block.id)
-      ? selectedBlockIds
-      : [block.id];
+    const nextSelectedBlockIds = getPointerBlockSelection(block, event);
     const previewOffset = getDragPreviewOffset(event);
 
     setSelectedBlockIds(nextSelectedBlockIds);
@@ -151,6 +150,13 @@ export function useBlockDragState({
     }
 
     setSelectedBlockIds([block.id]);
+  }
+
+  function getPointerBlockSelection(
+    block: Block,
+    event: ReactPointerEvent<HTMLElement>
+  ) {
+    return getHandleBlockSelection(blocks, selectedBlockIds, block.id, event);
   }
 
   function clearBlockSelection() {

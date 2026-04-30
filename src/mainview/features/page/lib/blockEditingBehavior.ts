@@ -3,11 +3,23 @@ import type {
   BlockProps,
   BlockType
 } from "../../../../shared/contracts";
+import {
+  getInlineMarks,
+  type InlineMark
+} from "./inlineFormatting";
 
 export type CreateBlockDraft = {
   props?: BlockProps;
   text?: string;
   type?: BlockType;
+};
+
+export type SplitBlockDraft = {
+  currentUpdate: {
+    props: BlockProps;
+    text: string;
+  };
+  nextDraft: CreateBlockDraft;
 };
 
 const MAX_BLOCK_DEPTH = 6;
@@ -97,8 +109,93 @@ export function getNextBlockDraft(
   };
 }
 
+export function getSplitBlockDraft(
+  block: Block,
+  text: string,
+  props: BlockProps,
+  offset: number,
+  numberedListMarker?: number
+): SplitBlockDraft {
+  const splitOffset = clampOffset(offset, text);
+  const currentText = text.slice(0, splitOffset);
+  const nextText = text.slice(splitOffset);
+  const nextDraft = getNextBlockDraft({ ...block, props }, numberedListMarker);
+
+  return {
+    currentUpdate: {
+      props: withInlineMarks(props, sliceInlineMarks(props, 0, splitOffset)),
+      text: currentText
+    },
+    nextDraft: {
+      ...nextDraft,
+      props: withInlineMarks(
+        nextDraft.props ?? {},
+        sliceInlineMarks(props, splitOffset, text.length, -splitOffset)
+      ),
+      text: nextText
+    }
+  };
+}
+
+export function getMergedBlockUpdate(
+  previousBlock: Block,
+  currentBlock: Block,
+  currentText = currentBlock.text,
+  currentProps = currentBlock.props
+) {
+  const previousText = previousBlock.text;
+  const mergedMarks = [
+    ...getInlineMarks(previousBlock.props),
+    ...shiftInlineMarks(currentProps, previousText.length)
+  ];
+
+  return {
+    props: withInlineMarks(previousBlock.props, mergedMarks),
+    text: previousText + currentText
+  };
+}
+
 function pickDepthProps(block: Block): BlockProps {
   const depth = getBlockDepth(block);
 
   return depth > 0 ? { depth } : {};
+}
+
+function sliceInlineMarks(
+  props: BlockProps,
+  start: number,
+  end: number,
+  delta = 0
+): InlineMark[] {
+  return getInlineMarks(props)
+    .map((mark) => ({
+      ...mark,
+      end: Math.min(mark.end, end) + delta,
+      start: Math.max(mark.start, start) + delta
+    }))
+    .filter((mark) => mark.start < mark.end);
+}
+
+function shiftInlineMarks(props: BlockProps, offset: number): InlineMark[] {
+  return getInlineMarks(props).map((mark) => ({
+    ...mark,
+    end: mark.end + offset,
+    start: mark.start + offset
+  }));
+}
+
+function withInlineMarks(props: BlockProps, marks: InlineMark[]): BlockProps {
+  const nextProps = { ...props };
+
+  if (marks.length > 0) {
+    nextProps.inlineMarks = marks;
+  } else {
+    delete nextProps.inlineMarks;
+  }
+
+  return nextProps;
+}
+
+function clampOffset(offset: number, text: string) {
+  return Math.max(0, Math.min(offset, text.length));
 }

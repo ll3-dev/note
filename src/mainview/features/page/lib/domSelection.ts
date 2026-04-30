@@ -64,6 +64,10 @@ export function getTextSelectionOffsets(element: HTMLElement) {
   };
 }
 
+export function getCursorTextOffset(element: HTMLElement) {
+  return getCursorOffset(element);
+}
+
 export function insertPlainTextAtSelection(element: HTMLElement, text: string) {
   const selection = window.getSelection();
 
@@ -89,6 +93,10 @@ export function insertPlainTextAtSelection(element: HTMLElement, text: string) {
 }
 
 function getCursorOffset(element: HTMLElement) {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
   const selection = window.getSelection();
 
   if (!selection?.rangeCount || !selection.isCollapsed) {

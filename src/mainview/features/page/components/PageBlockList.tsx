@@ -8,6 +8,7 @@ import {
 import { getNumberedListMarkers } from "../lib/blockNumbering";
 import type {
   BlockEditorUpdate,
+  CreateBlockOptions,
   TextSelectionOffsets
 } from "../types/blockEditorTypes";
 
@@ -15,7 +16,11 @@ type PageBlockListProps = {
   document: PageDocument;
   draggedBlockId: string | null;
   isBlockRangeSelecting: boolean;
-  onCreateBlockAfter: (block: Block, draft?: CreateBlockDraft) => Promise<void>;
+  onCreateBlockAfter: (
+    block: Block,
+    draft?: CreateBlockDraft,
+    options?: CreateBlockOptions
+  ) => Promise<void>;
   onDeleteBlock: (block: Block) => void;
   onDragEnd: () => void;
   onDragOver: (block: Block, placement: "before" | "after") => void;
@@ -24,13 +29,18 @@ type PageBlockListProps = {
   onDrop: (block: Block, placement: "before" | "after") => void;
   onFocusNextBlock: (block: Block) => void;
   onFocusPreviousBlock: (block: Block, blockIndex: number) => void;
+  onMergeBlockWithPrevious: (
+    previousBlock: Block,
+    block: Block,
+    text: string,
+    props: Block["props"]
+  ) => Promise<void> | void;
   onPasteMarkdown: (
     block: Block,
     markdown: string,
     editableElement: HTMLElement,
     selection: TextSelectionOffsets
   ) => Promise<void> | void;
-  onSelectBlock: (block: Block, event?: React.MouseEvent) => void;
   selectedBlockIds: string[];
   onTextDraftChange: (
     block: Block,
@@ -61,8 +71,8 @@ export function PageBlockList({
   onDrop,
   onFocusNextBlock,
   onFocusPreviousBlock,
+  onMergeBlockWithPrevious,
   onPasteMarkdown,
-  onSelectBlock,
   selectedBlockIds,
   onTextDraftChange,
   onTextDraftFlush,
@@ -98,6 +108,7 @@ export function PageBlockList({
             "out",
             numberedListMarkers
           )}
+          previousBlock={document.blocks[blockIndex - 1] ?? null}
           onCreateAfter={onCreateBlockAfter}
           onDelete={onDeleteBlock}
           onDragEnd={onDragEnd}
@@ -107,8 +118,8 @@ export function PageBlockList({
           onDrop={onDrop}
           onFocusNext={onFocusNextBlock}
           onFocusPrevious={(target) => onFocusPreviousBlock(target, blockIndex)}
+          onMergeWithPrevious={onMergeBlockWithPrevious}
           onPasteMarkdown={onPasteMarkdown}
-          onSelect={onSelectBlock}
           onTextDraftChange={onTextDraftChange}
           onTextDraftFlush={onTextDraftFlush}
           onTextHistoryApply={onTextHistoryApply}

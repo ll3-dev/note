@@ -5,8 +5,14 @@ import { useWorkspaceStore } from "@/mainview/store/useWorkspaceStore";
 import type { Block, BlockProps, Page } from "../../../shared/contracts";
 import { useBlockFocus } from "../page/hooks/useBlockFocus";
 import { useBlockKeyboardFocus } from "../page/hooks/useBlockKeyboardFocus";
-import type { CreateBlockDraft } from "../page/lib/blockEditingBehavior";
-import type { BlockEditorUpdate } from "../page/types/blockEditorTypes";
+import {
+  getMergedBlockUpdate,
+  type CreateBlockDraft
+} from "../page/lib/blockEditingBehavior";
+import type {
+  BlockEditorUpdate,
+  CreateBlockOptions
+} from "../page/types/blockEditorTypes";
 import { WorkspaceEditorPane } from "./components/WorkspaceEditorPane";
 import { WorkspaceLayout } from "./components/WorkspaceLayout";
 import { useBlockBatchActions } from "./hooks/useBlockBatchActions";
@@ -79,7 +85,7 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
     setFocusBlockId,
     updateBlock: updateBlockMutation.mutateAsync
   });
-  const { deleteBlocks } = useBlockBatchActions({
+  const { deleteBlocks, duplicateBlocks } = useBlockBatchActions({
     clearPendingText,
     createBlock: createBlockMutation.mutateAsync,
     deleteBlock: deleteBlockMutation.mutateAsync,
@@ -109,7 +115,11 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
     }
   }
 
-  async function createBlockAfter(block: Block, draft?: CreateBlockDraft) {
+  async function createBlockAfter(
+    block: Block,
+    draft?: CreateBlockDraft,
+    options?: CreateBlockOptions
+  ) {
     await flushAllTextDrafts();
     const created = await createBlockMutation.mutateAsync({
       afterBlockId: block.id,
@@ -118,7 +128,7 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
       text: draft?.text,
       type: draft?.type
     });
-    setFocusBlockId(created.id);
+    setFocusBlockId(created.id, options?.focusPlacement ?? "end");
   }
 
   async function updateBlock(block: Block, changes: BlockEditorUpdate) {
@@ -127,6 +137,23 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
     }
     clearPendingText(block.id);
     updateBlockMutation.mutate({ block, ...changes });
+  }
+
+  async function mergeBlockWithPrevious(
+    previousBlock: Block,
+    block: Block,
+    text: string,
+    props: BlockProps
+  ) {
+    await flushQueuedTextDraft(previousBlock.id);
+    clearPendingText(previousBlock.id);
+    clearPendingText(block.id);
+    await updateBlockMutation.mutateAsync({
+      block: previousBlock,
+      ...getMergedBlockUpdate(previousBlock, block, text, props)
+    });
+    await deleteBlockMutation.mutateAsync(block);
+    setFocusBlockId(previousBlock.id, "end");
   }
 
   function updatePageTitle(page: Page, title: string) {
@@ -173,9 +200,11 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
           void flushAllTextDrafts().then(() => deleteBlockMutation.mutate(target));
         }}
         onDeleteBlocks={(targets) => void deleteBlocks(targets)}
+        onDuplicateBlocks={(targets) => void duplicateBlocks(targets)}
         onFocusFirstBlock={focusFirstBlock}
         onFocusNextBlock={focusNextBlock}
         onFocusPreviousBlock={focusPreviousBlock}
+        onMergeBlockWithPrevious={mergeBlockWithPrevious}
         onMoveBlocks={async (targets, afterBlockId) => {
           await flushAllTextDrafts();
           await moveBlocks({ afterBlockId, blocks: targets });

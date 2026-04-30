@@ -29,3 +29,27 @@ export function getToggledBlockSelection(
     ? selectedBlockIds.filter((blockId) => blockId !== targetBlockId)
     : [...selectedBlockIds, targetBlockId];
 }
+
+export function getHandleBlockSelection(
+  blocks: Block[],
+  selectedBlockIds: string[],
+  targetBlockId: string,
+  modifiers: { ctrlKey?: boolean; metaKey?: boolean; shiftKey?: boolean }
+) {
+  if (modifiers.shiftKey && selectedBlockIds.length > 0) {
+    return getBlockRangeSelection(blocks, selectedBlockIds, targetBlockId);
+  }
+
+  if (modifiers.metaKey || modifiers.ctrlKey) {
+    const nextSelection = getToggledBlockSelection(
+      selectedBlockIds,
+      targetBlockId
+    );
+
+    return nextSelection.length > 0 ? nextSelection : [targetBlockId];
+  }
+
+  return selectedBlockIds.includes(targetBlockId)
+    ? selectedBlockIds
+    : [targetBlockId];
+}

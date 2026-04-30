@@ -1,10 +1,19 @@
-import { useRef, type ClipboardEvent, type KeyboardEvent } from "react";
+import {
+  useRef,
+  type ClipboardEvent,
+  type DragEvent,
+  type KeyboardEvent
+} from "react";
 import type { Block } from "../../../../shared/contracts";
 import type { TextSelectionOffsets } from "../types/blockEditorTypes";
 import {
   getTextSelectionOffsets,
   insertPlainTextAtSelection
 } from "../lib/domSelection";
+import {
+  getMarkdownClipboardFile,
+  readMarkdownFromDataTransfer
+} from "../lib/markdownClipboard";
 import { shouldHandleMarkdownPaste } from "../lib/markdownBlocks";
 
 type UseBlockClipboardEditingOptions = {
@@ -29,21 +38,36 @@ export function useBlockClipboardEditing({
 
   function handlePaste(event: ClipboardEvent<HTMLDivElement>) {
     lastPasteEventAtRef.current = Date.now();
-    const text = event.clipboardData.getData("text/plain");
+    const shouldReadMarkdownFile = Boolean(
+      getMarkdownClipboardFile(event.clipboardData.files)
+    );
+    const html = event.clipboardData.getData("text/html");
+    const markdownText = event.clipboardData.getData("text/markdown");
+    const plainText = event.clipboardData.getData("text/plain");
 
-    if (shouldHandleMarkdownPaste(text)) {
-      const selection = getTextSelectionOffsets(event.currentTarget) ?? {
-        end: event.currentTarget.textContent?.length ?? 0,
-        start: event.currentTarget.textContent?.length ?? 0
-      };
-
+    if (
+      shouldReadMarkdownFile ||
+      html ||
+      markdownText ||
+      shouldHandleMarkdownPaste(plainText)
+    ) {
       event.preventDefault();
-      void onPasteMarkdown(block, text, event.currentTarget, selection);
+      void pasteMarkdownFromDataTransfer(event.currentTarget, event.clipboardData);
       return;
     }
 
     event.preventDefault();
-    insertClipboardText(event.currentTarget, text);
+    insertClipboardText(event.currentTarget, plainText);
+  }
+
+  function handleDrop(event: DragEvent<HTMLDivElement>) {
+    if (!getMarkdownClipboardFile(event.dataTransfer.files)) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    void pasteMarkdownFromDataTransfer(event.currentTarget, event.dataTransfer);
   }
 
   function handleEditableKeyDown(event: KeyboardEvent<HTMLDivElement>) {
@@ -91,13 +115,26 @@ export function useBlockClipboardEditing({
     }, 20);
   }
 
+  async function pasteMarkdownFromDataTransfer(
+    editable: HTMLElement,
+    dataTransfer: DataTransfer
+  ) {
+    const text = await readMarkdownFromDataTransfer(dataTransfer);
+    const selection = getTextSelectionOffsets(editable) ?? {
+      end: editable.textContent?.length ?? 0,
+      start: editable.textContent?.length ?? 0
+    };
+
+    await onPasteMarkdown(block, text, editable, selection);
+  }
+
   function insertClipboardText(editable: HTMLElement, text: string) {
     if (insertPlainTextAtSelection(editable, text)) {
       onChange(editable.textContent ?? "");
     }
   }
 
-  return { handleEditableKeyDown, handlePaste };
+  return { handleDrop, handleEditableKeyDown, handlePaste };
 }
 
 async function copySelectionFallback(editable: HTMLElement) {

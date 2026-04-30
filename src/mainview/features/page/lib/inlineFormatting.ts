@@ -114,7 +114,7 @@ export function getInlineMarksAtOffset(props: BlockProps, offset: number) {
     .map((mark) => mark.type);
 }
 
-function getInlineMarks(props: BlockProps): InlineMark[] {
+export function getInlineMarks(props: BlockProps): InlineMark[] {
   const marks = props.inlineMarks;
 
   if (!Array.isArray(marks)) {

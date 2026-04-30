@@ -20,6 +20,7 @@ type BlockBodyProps = {
   blockIndex: number;
   checked: boolean;
   draft: string;
+  draftProps: Block["props"];
   numberedListMarker: number | null;
   isSelected: boolean;
   onApplyCommand: (command: BlockCommand) => Promise<void> | void;
@@ -43,6 +44,7 @@ export function BlockBody({
   blockIndex,
   checked,
   draft,
+  draftProps,
   numberedListMarker,
   isSelected,
   onApplyCommand,
@@ -56,7 +58,7 @@ export function BlockBody({
   editableRef
 }: BlockBodyProps) {
   const blockDepth = getBlockDepth(block);
-  const { handleEditableKeyDown, handlePaste } = useBlockClipboardEditing({
+  const { handleDrop, handleEditableKeyDown, handlePaste } = useBlockClipboardEditing({
     block,
     onChange,
     onKeyDown,
@@ -110,7 +112,7 @@ export function BlockBody({
                 block.type === "todo" &&
                 "text-muted-foreground line-through"
             )}
-            props={block.props}
+            props={draftProps}
             text={draft}
           />
           <div
@@ -118,13 +120,13 @@ export function BlockBody({
             className={cn(
               "block-editable min-h-7 w-full min-w-0 whitespace-pre-wrap wrap-break-word rounded-sm bg-transparent px-1 py-1 outline-none",
               editableClass(block.type),
-              hasInlineMarks(block.props) && "text-transparent",
+              hasInlineMarks(draftProps) && "text-transparent",
               checked &&
                 block.type === "todo" &&
                 "text-muted-foreground line-through",
             )}
             contentEditable="plaintext-only"
-            data-has-inline-marks={hasInlineMarks(block.props) ? "true" : undefined}
+            data-has-inline-marks={hasInlineMarks(draftProps) ? "true" : undefined}
             data-placeholder="Type '/' for commands"
             draggable={isSelected}
             onBlur={() => void onBlur()}
@@ -133,6 +135,7 @@ export function BlockBody({
                 onDragStart(event);
               }
             }}
+            onDrop={handleDrop}
             onFocus={onSelectionChange}
             onInput={(event) => onChange(event.currentTarget.textContent ?? "")}
             onKeyDown={handleEditableKeyDown}

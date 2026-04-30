@@ -4,6 +4,7 @@ import { PageEditor } from "../../page/components/PageEditor";
 import type { CreateBlockDraft } from "../../page/lib/blockEditingBehavior";
 import type {
   BlockEditorUpdate,
+  CreateBlockOptions,
   TextSelectionOffsets
 } from "../../page/types/blockEditorTypes";
 import { EmptyEditorState } from "./EmptyEditorState";
@@ -11,12 +12,23 @@ import { EmptyEditorState } from "./EmptyEditorState";
 type WorkspaceEditorPaneProps = {
   document: PageDocument | null;
   isLoading: boolean;
-  onCreateBlockAfter: (block: Block, draft?: CreateBlockDraft) => Promise<void>;
+  onCreateBlockAfter: (
+    block: Block,
+    draft?: CreateBlockDraft,
+    options?: CreateBlockOptions
+  ) => Promise<void>;
   onDeleteBlock: (block: Block) => void;
   onDeleteBlocks: (blocks: Block[]) => void;
+  onDuplicateBlocks: (blocks: Block[]) => void;
   onFocusFirstBlock: () => void;
   onFocusNextBlock: (block: Block) => void;
   onFocusPreviousBlock: (block: Block) => void;
+  onMergeBlockWithPrevious: (
+    previousBlock: Block,
+    block: Block,
+    text: string,
+    props: Block["props"]
+  ) => Promise<void> | void;
   onMoveBlocks: (
     blocks: Block[],
     afterBlockId: string | null
@@ -52,9 +64,11 @@ export function WorkspaceEditorPane({
   onCreateBlockAfter,
   onDeleteBlock,
   onDeleteBlocks,
+  onDuplicateBlocks,
   onFocusFirstBlock,
   onFocusNextBlock,
   onFocusPreviousBlock,
+  onMergeBlockWithPrevious,
   onMoveBlocks,
   onPasteMarkdown,
   onTextDraftChange,
@@ -73,9 +87,11 @@ export function WorkspaceEditorPane({
           onCreateBlockAfter={onCreateBlockAfter}
           onDeleteBlock={onDeleteBlock}
           onDeleteBlocks={onDeleteBlocks}
+          onDuplicateBlocks={onDuplicateBlocks}
           onFocusFirstBlock={onFocusFirstBlock}
           onFocusNextBlock={onFocusNextBlock}
           onFocusPreviousBlock={onFocusPreviousBlock}
+          onMergeBlockWithPrevious={onMergeBlockWithPrevious}
           onMoveBlocks={onMoveBlocks}
           onPasteMarkdown={onPasteMarkdown}
           onTextDraftChange={onTextDraftChange}

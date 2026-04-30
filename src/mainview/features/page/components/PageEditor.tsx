@@ -14,16 +14,31 @@ import { useSelectedBlockShortcuts } from "../hooks/useSelectedBlockShortcuts";
 import type { CreateBlockDraft } from "../lib/blockEditingBehavior";
 import { clearEditableFocusForBlockSelection } from "../lib/blockSelectionFocus";
 import { getNativeTextSelectionBlock } from "../lib/pageSelectionHitTest";
-import type { BlockEditorUpdate, TextSelectionOffsets } from "../types/blockEditorTypes";
+import type {
+  BlockEditorUpdate,
+  CreateBlockOptions,
+  TextSelectionOffsets
+} from "../types/blockEditorTypes";
 
 type PageEditorProps = {
   document: PageDocument;
-  onCreateBlockAfter: (block: Block, draft?: CreateBlockDraft) => Promise<void>;
+  onCreateBlockAfter: (
+    block: Block,
+    draft?: CreateBlockDraft,
+    options?: CreateBlockOptions
+  ) => Promise<void>;
   onDeleteBlock: (block: Block) => void;
   onDeleteBlocks: (blocks: Block[]) => void;
+  onDuplicateBlocks: (blocks: Block[]) => void;
   onFocusNextBlock: (block: Block) => void;
   onFocusFirstBlock: () => void;
   onFocusPreviousBlock: (block: Block) => void;
+  onMergeBlockWithPrevious: (
+    previousBlock: Block,
+    block: Block,
+    text: string,
+    props: Block["props"]
+  ) => Promise<void> | void;
   onMoveBlocks: (blocks: Block[], afterBlockId: string | null) => Promise<void> | void;
   onPasteMarkdown: PasteMarkdownHandler;
   onTextDraftChange: TextDraftChangeHandler;
@@ -49,9 +64,11 @@ export function PageEditor({
   onCreateBlockAfter,
   onDeleteBlock,
   onDeleteBlocks,
+  onDuplicateBlocks,
   onFocusFirstBlock,
   onFocusNextBlock,
   onFocusPreviousBlock,
+  onMergeBlockWithPrevious,
   onMoveBlocks,
   onPasteMarkdown,
   onTextDraftChange,
@@ -74,7 +91,6 @@ export function PageEditor({
     draggedBlockId, dragPreview, dropBlock, dropTarget,
     isBlockRangeSelecting,
     pressBlockDragHandle,
-    selectBlock,
     selectedBlockIds, selectionBox, setDropPlacement, startDrag
   } = useBlockDragState({
     blocks: document.blocks,
@@ -86,7 +102,11 @@ export function PageEditor({
   );
 
   useSelectedBlockShortcuts({
-    clearSelection: clearBlockSelection, document, onDeleteBlocks, selectedBlocks
+    clearSelection: clearBlockSelection,
+    document,
+    onDeleteBlocks,
+    onDuplicateBlocks,
+    selectedBlocks
   });
 
   useEffect(() => {
@@ -182,8 +202,8 @@ export function PageEditor({
               onDrop={dropBlock}
               onFocusNextBlock={onFocusNextBlock}
               onFocusPreviousBlock={focusPreviousBlock}
+              onMergeBlockWithPrevious={onMergeBlockWithPrevious}
               onPasteMarkdown={onPasteMarkdown}
-              onSelectBlock={selectBlock}
               selectedBlockIds={selectedBlockIds}
               onTextDraftChange={onTextDraftChange}
               onTextDraftFlush={onTextDraftFlush}

@@ -1,13 +1,15 @@
 import type { MouseEvent } from "react";
 import type { PageDocument } from "../../../../shared/contracts";
 import type { CreateBlockDraft } from "../lib/blockEditingBehavior";
+import type { CreateBlockOptions } from "../types/blockEditorTypes";
 import { placeCursorAtEnd } from "../lib/domSelection";
 
 type UseLastBlockFocusOptions = {
   document: PageDocument;
   onCreateBlockAfter: (
     block: PageDocument["blocks"][number],
-    draft?: CreateBlockDraft
+    draft?: CreateBlockDraft,
+    options?: CreateBlockOptions
   ) => Promise<void>;
 };
 

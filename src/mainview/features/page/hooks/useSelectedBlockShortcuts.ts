@@ -7,6 +7,7 @@ type UseSelectedBlockShortcutsOptions = {
   clearSelection: () => void;
   document: PageDocument;
   onDeleteBlocks: (blocks: Block[]) => void;
+  onDuplicateBlocks: (blocks: Block[]) => void;
   selectedBlocks: Block[];
 };
 
@@ -14,6 +15,7 @@ export function useSelectedBlockShortcuts({
   clearSelection,
   document,
   onDeleteBlocks,
+  onDuplicateBlocks,
   selectedBlocks
 }: UseSelectedBlockShortcutsOptions) {
   useEffect(() => {
@@ -31,6 +33,12 @@ export function useSelectedBlockShortcuts({
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "c") {
         event.preventDefault();
         void copySelectedBlocks(document, selectedBlocks);
+        return;
+      }
+
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "d") {
+        event.preventDefault();
+        onDuplicateBlocks(selectedBlocks);
         return;
       }
 
@@ -52,7 +60,7 @@ export function useSelectedBlockShortcuts({
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [clearSelection, document, onDeleteBlocks, selectedBlocks]);
+  }, [clearSelection, document, onDeleteBlocks, onDuplicateBlocks, selectedBlocks]);
 }
 
 export function shouldIgnoreSelectedBlockShortcutTarget(

@@ -32,6 +32,7 @@ function createContext(overrides: Partial<BlockShortcutContext> = {}) {
       calls.push("commitDraft");
     },
     draft: "/",
+    draftProps: {},
     event: {} as BlockShortcutContext["event"],
     isCommandMenuOpen: true,
     maxIndentDepth: 1,
@@ -50,9 +51,13 @@ function createContext(overrides: Partial<BlockShortcutContext> = {}) {
     onFocusPrevious: () => {
       calls.push("onFocusPrevious");
     },
+    onMergeWithPrevious: async () => {
+      calls.push("onMergeWithPrevious");
+    },
     onUpdate: (_block, changes) => {
       calls.push(`onUpdate:${changes.type}`);
     },
+    previousBlock: null,
     redoTextDraft: () => {
       calls.push("redoTextDraft");
     },

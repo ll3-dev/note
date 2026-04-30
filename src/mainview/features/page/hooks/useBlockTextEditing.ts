@@ -6,7 +6,10 @@ import {
   placeCursorAtOffset
 } from "../lib/domSelection";
 import { areBlockPropsEqual } from "../lib/blockProps";
-import type { BlockEditorUpdate } from "../types/blockEditorTypes";
+import type {
+  BlockEditorUpdate,
+  CreateBlockOptions
+} from "../types/blockEditorTypes";
 import type { CreateBlockDraft } from "../lib/blockEditingBehavior";
 import { useBlockCommandMenu } from "./useBlockCommandMenu";
 import { useBlockDraftSync } from "./useBlockDraftSync";
@@ -22,7 +25,11 @@ type UseBlockTextEditingOptions = {
     text: string,
     props?: BlockProps
   ) => Promise<void>;
-  onCreateBlockAfter: (block: Block, draft?: CreateBlockDraft) => Promise<void>;
+  onCreateBlockAfter: (
+    block: Block,
+    draft?: CreateBlockDraft,
+    options?: CreateBlockOptions
+  ) => Promise<void>;
   onTextHistoryApply: (block: Block, text: string) => void;
   onTextRedo: (block: Block) => Promise<Block | null>;
   onTextUndo: (block: Block) => Promise<Block | null>;

@@ -1,4 +1,4 @@
-import type { MouseEvent, PointerEvent } from "react";
+import type { PointerEvent } from "react";
 import type {
   Block,
   BlockProps,
@@ -10,6 +10,10 @@ export type BlockEditorUpdate = {
   props?: BlockProps;
   text?: string;
   type?: BlockType;
+};
+
+export type CreateBlockOptions = {
+  focusPlacement?: "end" | "start";
 };
 
 export type TextSelectionOffsets = {
@@ -28,7 +32,18 @@ export type BlockEditorProps = {
   numberedListMarker: number | null;
   numberedListStartAfterIndent: number | null;
   numberedListStartAfterOutdent: number | null;
-  onCreateAfter: (block: Block, draft?: CreateBlockDraft) => Promise<void>;
+  previousBlock: Block | null;
+  onCreateAfter: (
+    block: Block,
+    draft?: CreateBlockDraft,
+    options?: CreateBlockOptions
+  ) => Promise<void>;
+  onMergeWithPrevious: (
+    previousBlock: Block,
+    block: Block,
+    text: string,
+    props: BlockProps
+  ) => Promise<void> | void;
   onDelete: (block: Block) => void;
   onDragEnd: () => void;
   onDragOver: (block: Block, placement: "before" | "after") => void;
@@ -43,7 +58,6 @@ export type BlockEditorProps = {
     editableElement: HTMLElement,
     selection: TextSelectionOffsets
   ) => Promise<void> | void;
-  onSelect: (block: Block, event?: MouseEvent) => void;
   onSelectionChange?: () => void;
   onTextDraftChange: (block: Block, text: string, props?: BlockProps) => void;
   onTextDraftFlush: (

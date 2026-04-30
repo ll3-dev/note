@@ -4,9 +4,10 @@ import type { Block, BlockType } from "../../../../shared/contracts";
 import {
   getBlockDepth,
   getBlockIndentUpdate,
-  getNextBlockDraft
+  getNextBlockDraft,
+  getSplitBlockDraft
 } from "./blockEditingBehavior";
-import { isCursorAtEnd, isCursorAtStart } from "./domSelection";
+import { getCursorTextOffset, isCursorAtEnd, isCursorAtStart } from "./domSelection";
 import type { BlockEditorUpdate } from "../types/blockEditorTypes";
 
 const EMPTY_ENTER_RESET_TYPES = new Set<BlockType>([
@@ -24,6 +25,7 @@ export type BlockShortcutContext = {
   closeCommandMenu: () => void;
   commitDraft: () => Promise<void>;
   draft: string;
+  draftProps: Block["props"];
   event: KeyboardEvent<HTMLElement>;
   isCommandMenuOpen: boolean;
   maxIndentDepth: number;
@@ -32,12 +34,20 @@ export type BlockShortcutContext = {
   numberedListStartAfterOutdent: number | null;
   onCreateAfter: (
     block: Block,
-    draft?: ReturnType<typeof getNextBlockDraft>
+    draft?: ReturnType<typeof getNextBlockDraft>,
+    options?: { focusPlacement?: "end" | "start" }
   ) => Promise<void>;
   onDelete: (block: Block) => void;
   onFocusNext: (block: Block) => void;
   onFocusPrevious: (block: Block) => void;
+  onMergeWithPrevious: (
+    previousBlock: Block,
+    block: Block,
+    text: string,
+    props: Block["props"]
+  ) => Promise<void> | void;
   onUpdate: (block: Block, changes: BlockEditorUpdate) => void;
+  previousBlock: Block | null;
   redoTextDraft: () => void;
   selectNextCommand: () => void;
   selectPreviousCommand: () => void;
@@ -140,6 +150,45 @@ export const BLOCK_EDITOR_COMMANDS: Command<BlockShortcutContext>[] = [
     }
   },
   {
+    canRun: ({ draft, event }) => {
+      const offset = getCursorTextOffset(event.currentTarget);
+
+      return offset !== null && offset > 0 && offset < draft.length;
+    },
+    defaultKeybindings: ["Enter"],
+    id: "editor.block.splitAtCursor",
+    scope: "block",
+    title: "Split block at cursor",
+    run: async ({
+      block,
+      draft,
+      draftProps,
+      event,
+      numberedListMarker,
+      onCreateAfter,
+      onUpdate
+    }) => {
+      const offset = getCursorTextOffset(event.currentTarget);
+
+      if (offset === null) {
+        return;
+      }
+
+      const splitDraft = getSplitBlockDraft(
+        block,
+        draft,
+        draftProps,
+        offset,
+        numberedListMarker ?? undefined
+      );
+
+      onUpdate(block, splitDraft.currentUpdate);
+      await onCreateAfter(block, splitDraft.nextDraft, {
+        focusPlacement: "start"
+      });
+    }
+  },
+  {
     defaultKeybindings: ["Enter"],
     id: "editor.block.createBelow",
     scope: "block",
@@ -175,6 +224,25 @@ export const BLOCK_EDITOR_COMMANDS: Command<BlockShortcutContext>[] = [
     run: ({ block, onDelete, onFocusPrevious }) => {
       onFocusPrevious(block);
       onDelete(block);
+    }
+  },
+  {
+    canRun: ({ block, draft, event, previousBlock }) =>
+      block.type === "paragraph" &&
+      draft.length > 0 &&
+      previousBlock !== null &&
+      previousBlock.type !== "divider" &&
+      isCursorAtStart(event.currentTarget),
+    defaultKeybindings: ["Backspace"],
+    id: "editor.block.mergeWithPrevious",
+    scope: "block",
+    title: "Merge block with previous",
+    run: async ({ block, draft, draftProps, onMergeWithPrevious, previousBlock }) => {
+      if (!previousBlock) {
+        return;
+      }
+
+      await onMergeWithPrevious(previousBlock, block, draft, draftProps);
     }
   },
   {
