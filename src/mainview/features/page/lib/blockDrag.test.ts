@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { Block } from "../../../../shared/contracts";
-import { getAfterBlockIdForMovingBlocks } from "./blockDrag";
+import { getAfterBlockIdForMovingBlocks, getBlocksAfterMove } from "./blockDrag";
 
 const blocks = ["a", "b", "c", "d", "e"].map((id, index) =>
   createBlock(id, index)
@@ -23,6 +23,13 @@ describe("block drag", () => {
     expect(
       getAfterBlockIdForMovingBlocks(blocks, ["b", "c"], "b", "after")
     ).toBeNull();
+  });
+
+  test("reorders moving blocks in one snapshot", () => {
+    expect(getBlocksAfterMove(blocks, ["b", "c"], "e").map((block) => block.id))
+      .toEqual(["a", "d", "e", "b", "c"]);
+    expect(getBlocksAfterMove(blocks, ["d", "e"], null).map((block) => block.id))
+      .toEqual(["d", "e", "a", "b", "c"]);
   });
 });
 

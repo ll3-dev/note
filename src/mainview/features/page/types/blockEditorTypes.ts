@@ -22,8 +22,6 @@ export type BlockEditorProps = {
   blockIndex: number;
   blocksCount: number;
   isDragging: boolean;
-  isDropAfter: boolean;
-  isDropBefore: boolean;
   isBlockRangeSelecting: boolean;
   isSelected: boolean;
   maxIndentDepth: number;

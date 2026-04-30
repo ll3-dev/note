@@ -9,6 +9,7 @@ import {
 import type { Block } from "../../../../shared/contracts";
 import {
   getAfterBlockIdForMovingBlocks,
+  getDragPreviewOffset,
   type BlockDropPlacement
 } from "../lib/blockDrag";
 import {
@@ -27,12 +28,15 @@ import { usePointerBlockDrag } from "./usePointerBlockDrag";
 
 type UseBlockDragStateOptions = {
   blocks: Block[];
-  onMoveBlock: (block: Block, afterBlockId: string | null) => Promise<void> | void;
+  onMoveBlocks: (
+    blocks: Block[],
+    afterBlockId: string | null
+  ) => Promise<void> | void;
 };
 
 export function useBlockDragState({
   blocks,
-  onMoveBlock
+  onMoveBlocks
 }: UseBlockDragStateOptions) {
   const [dragState, setDragState] = useState<BlockDragMachineState>({
     status: "idle"
@@ -40,8 +44,10 @@ export function useBlockDragState({
   const [selectedBlockIds, setSelectedBlockIds] = useState<string[]>([]);
   const blocksRef = useRef(blocks);
   const dragStateRef = useRef(dragState);
-  const { beginBlockRangeSelection, isBlockRangeSelecting, selectionBox } =
-    useBlockRangeSelection({ blocks, onSelectBlockIds: setSelectedBlockIds });
+  const {
+    beginBlockRangeSelection, consumeCompletedBlockRangeSelection,
+    isBlockRangeSelecting, selectionBox
+  } = useBlockRangeSelection({ blocks, onSelectBlockIds: setSelectedBlockIds });
 
   blocksRef.current = blocks;
   dragStateRef.current = dragState;
@@ -78,7 +84,8 @@ export function useBlockDragState({
         placement
       );
 
-      void moveBlocks(movingBlocks, afterBlockId);
+      setSelectedBlockIds(movingBlocks.map((block) => block.id));
+      void onMoveBlocks(movingBlocks, afterBlockId);
 
       clearDragState();
     },
@@ -114,6 +121,7 @@ export function useBlockDragState({
     const nextSelectedBlockIds = selectedBlockIds.includes(block.id)
       ? selectedBlockIds
       : [block.id];
+    const previewOffset = getDragPreviewOffset(event);
 
     setSelectedBlockIds(nextSelectedBlockIds);
     setDragState(
@@ -121,6 +129,8 @@ export function useBlockDragState({
         blockId: block.id,
         clientX: event.clientX,
         clientY: event.clientY,
+        previewOffsetX: previewOffset.x,
+        previewOffsetY: previewOffset.y,
         selectedBlockIds: nextSelectedBlockIds,
         type: "press"
       })
@@ -168,21 +178,11 @@ export function useBlockDragState({
     return blocksRef.current.filter((block) => selectedBlockIds.includes(block.id));
   }
 
-  async function moveBlocks(movingBlocks: Block[], afterBlockId: string | null) {
-    let currentAfterBlockId = afterBlockId;
-
-    for (const block of movingBlocks) {
-      await onMoveBlock(block, currentAfterBlockId);
-      currentAfterBlockId = block.id;
-    }
-
-    setSelectedBlockIds(movingBlocks.map((block) => block.id));
-  }
-
   return {
     beginBlockSelectionDrag: beginBlockRangeSelection,
     clearBlockSelection,
     clearDragState,
+    consumeCompletedBlockRangeSelection,
     draggedBlockId: getDraggingBlockId(dragState),
     dragPreview: getDragPreview(dragState),
     dropBlock,

@@ -34,6 +34,7 @@ export function useBlockRangeSelection({
 }: UseBlockRangeSelectionOptions) {
   const [selectionBox, setSelectionBox] = useState<SelectionBox | null>(null);
   const blocksRef = useRef(blocks);
+  const completedSelectionDragRef = useRef(false);
   const selectionDragRef = useRef<SelectionDrag | null>(null);
   const selectionTargetsRef = useRef<ReturnType<typeof getSelectionTargets>>([]);
 
@@ -91,6 +92,7 @@ export function useBlockRangeSelection({
     function handleMouseUp(event: MouseEvent) {
       if (selectionDragRef.current?.active) {
         event.preventDefault();
+        completedSelectionDragRef.current = true;
         window.getSelection()?.removeAllRanges();
       }
 
@@ -129,8 +131,18 @@ export function useBlockRangeSelection({
     []
   );
 
+  const consumeCompletedBlockRangeSelection = useCallback(() => {
+    if (!completedSelectionDragRef.current) {
+      return false;
+    }
+
+    completedSelectionDragRef.current = false;
+    return true;
+  }, []);
+
   return {
     beginBlockRangeSelection,
+    consumeCompletedBlockRangeSelection,
     isBlockRangeSelecting: Boolean(selectionBox),
     selectionBox
   };
@@ -146,6 +158,6 @@ function canStartBlockRangeSelection(event: ReactMouseEvent<HTMLElement>) {
   }
 
   return !event.target.closest(
-    "button,input,textarea,select,a,[data-block-drag-handle],[data-ignore-block-selection-drag]"
+    "[contenteditable],button,input,textarea,select,a,[data-block-drag-handle],[data-ignore-block-selection-drag]"
   );
 }

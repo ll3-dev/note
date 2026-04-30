@@ -8,6 +8,8 @@ export type BlockDragMachineState =
       blockId: string;
       originX: number;
       originY: number;
+      previewOffsetX: number;
+      previewOffsetY: number;
       selectedBlockIds: string[];
       status: "pending";
     }
@@ -16,6 +18,8 @@ export type BlockDragMachineState =
       clientX: number;
       clientY: number;
       dropTarget: BlockDropTarget | null;
+      previewOffsetX: number;
+      previewOffsetY: number;
       selectedBlockIds: string[];
       status: "dragging";
     };
@@ -25,6 +29,8 @@ export type BlockDragMachineEvent =
       blockId: string;
       clientX: number;
       clientY: number;
+      previewOffsetX: number;
+      previewOffsetY: number;
       selectedBlockIds: string[];
       type: "press";
     }
@@ -43,6 +49,8 @@ export function transitionBlockDrag(
         blockId: event.blockId,
         originX: event.clientX,
         originY: event.clientY,
+        previewOffsetX: event.previewOffsetX,
+        previewOffsetY: event.previewOffsetY,
         selectedBlockIds: event.selectedBlockIds,
         status: "pending"
       };
@@ -71,6 +79,8 @@ export function transitionBlockDrag(
         clientX: event.clientX,
         clientY: event.clientY,
         dropTarget: null,
+        previewOffsetX: state.previewOffsetX,
+        previewOffsetY: state.previewOffsetY,
         selectedBlockIds: state.selectedBlockIds,
         status: "dragging"
       };
@@ -101,8 +111,8 @@ export function getDragPreview(state: BlockDragMachineState) {
 
   return {
     blockId: state.blockId,
-    clientX: state.clientX,
-    clientY: state.clientY,
+    x: state.clientX - state.previewOffsetX,
+    y: state.clientY - state.previewOffsetY,
     selectedBlockIds: state.selectedBlockIds
   };
 }

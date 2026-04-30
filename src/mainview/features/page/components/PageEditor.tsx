@@ -5,6 +5,7 @@ import { PageBlockList } from "./PageBlockList";
 import { BlockSelectionGroupRect } from "./BlockSelectionGroupRect";
 import { BlockSelectionRect } from "./BlockSelectionRect";
 import { BlockDragPreview } from "./BlockDragPreview";
+import { BlockDropIndicator } from "./BlockDropIndicator";
 import { PageTitleEditor, type PageTitleEditorHandle } from "./PageTitleEditor";
 import { useBlockDragState } from "../hooks/useBlockDragState";
 import { useInputMode } from "../hooks/useInputMode";
@@ -23,7 +24,7 @@ type PageEditorProps = {
   onFocusNextBlock: (block: Block) => void;
   onFocusFirstBlock: () => void;
   onFocusPreviousBlock: (block: Block) => void;
-  onMoveBlock: (block: Block, afterBlockId: string | null) => Promise<void> | void;
+  onMoveBlocks: (blocks: Block[], afterBlockId: string | null) => Promise<void> | void;
   onPasteMarkdown: PasteMarkdownHandler;
   onTextDraftChange: TextDraftChangeHandler;
   onTextDraftFlush: TextDraftFlushHandler;
@@ -51,7 +52,7 @@ export function PageEditor({
   onFocusFirstBlock,
   onFocusNextBlock,
   onFocusPreviousBlock,
-  onMoveBlock,
+  onMoveBlocks,
   onPasteMarkdown,
   onTextDraftChange,
   onTextDraftFlush,
@@ -64,28 +65,20 @@ export function PageEditor({
   useInputMode();
   const titleRef = useRef<PageTitleEditorHandle>(null);
 
-  const focusLastBlock = useLastBlockFocus({
-    document,
-    onCreateBlockAfter
-  });
+  const focusLastBlock = useLastBlockFocus({ document, onCreateBlockAfter });
   const {
-    clearDragState,
-    clearBlockSelection,
     beginBlockSelectionDrag,
-    draggedBlockId,
-    dragPreview,
-    dropBlock,
-    dropTarget,
+    clearBlockSelection,
+    clearDragState,
+    consumeCompletedBlockRangeSelection,
+    draggedBlockId, dragPreview, dropBlock, dropTarget,
     isBlockRangeSelecting,
     pressBlockDragHandle,
     selectBlock,
-    selectedBlockIds,
-    selectionBox,
-    setDropPlacement,
-    startDrag
+    selectedBlockIds, selectionBox, setDropPlacement, startDrag
   } = useBlockDragState({
     blocks: document.blocks,
-    onMoveBlock
+    onMoveBlocks
   });
 
   const selectedBlocks = document.blocks.filter((block) =>
@@ -93,10 +86,7 @@ export function PageEditor({
   );
 
   useSelectedBlockShortcuts({
-    clearSelection: clearBlockSelection,
-    document,
-    onDeleteBlocks,
-    selectedBlocks
+    clearSelection: clearBlockSelection, document, onDeleteBlocks, selectedBlocks
   });
 
   useEffect(() => {
@@ -126,6 +116,16 @@ export function PageEditor({
     focusLastBlock(event);
   }
 
+  function handleEditorClick(event: MouseEvent<HTMLDivElement>) {
+    if (consumeCompletedBlockRangeSelection()) {
+      return;
+    }
+
+    if (focusLastBlock(event)) {
+      clearBlockSelection();
+    }
+  }
+
   function handleSelectedBlocksDragStart(event: DragEvent<HTMLDivElement>) {
     const firstSelectedBlock = selectedBlocks[0];
     if (!firstSelectedBlock) {
@@ -146,6 +146,7 @@ export function PageEditor({
   return (
     <div
       className="flex h-full w-full flex-col px-10 py-8"
+      onClick={handleEditorClick}
       onMouseDown={handleEditorMouseDown}
       role="presentation"
     >
@@ -161,6 +162,7 @@ export function PageEditor({
           <div className="grid min-h-full gap-0.5 pb-20 pl-10" role="presentation">
             <BlockSelectionRect box={selectionBox} />
             <BlockDragPreview blocks={document.blocks} preview={dragPreview} />
+            <BlockDropIndicator dropTarget={dropTarget} />
             <BlockSelectionGroupRect
               blockIds={selectedBlockIds}
               isDragging={Boolean(draggedBlockId)}
@@ -170,7 +172,6 @@ export function PageEditor({
             <PageBlockList
               document={document}
               draggedBlockId={draggedBlockId}
-              dropTarget={dropTarget}
               isBlockRangeSelecting={isBlockRangeSelecting}
               onCreateBlockAfter={onCreateBlockAfter}
               onDeleteBlock={onDeleteBlock}

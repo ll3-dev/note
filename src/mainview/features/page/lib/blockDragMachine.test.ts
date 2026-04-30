@@ -15,6 +15,8 @@ describe("block drag machine", () => {
       blockId: "a",
       clientX: 10,
       clientY: 20,
+      previewOffsetX: 2,
+      previewOffsetY: 4,
       selectedBlockIds: ["a"],
       type: "press"
     });
@@ -31,6 +33,8 @@ describe("block drag machine", () => {
         blockId: "a",
         clientX: 10,
         clientY: 20,
+        previewOffsetX: 2,
+        previewOffsetY: 4,
         selectedBlockIds: ["a", "b"],
         type: "press"
       }
@@ -47,6 +51,8 @@ describe("block drag machine", () => {
       clientX: 10,
       clientY: 30,
       dropTarget: { blockId: "c", placement: "before" },
+      previewOffsetX: 2,
+      previewOffsetY: 4,
       selectedBlockIds: ["a", "b"],
       status: "dragging"
     });
@@ -56,9 +62,9 @@ describe("block drag machine", () => {
     });
     expect(getDragPreview(state)).toEqual({
       blockId: "a",
-      clientX: 10,
-      clientY: 30,
-      selectedBlockIds: ["a", "b"]
+      selectedBlockIds: ["a", "b"],
+      x: 8,
+      y: 26
     });
   });
 
@@ -68,6 +74,8 @@ describe("block drag machine", () => {
       clientX: 10,
       clientY: 20,
       dropTarget: { blockId: "b", placement: "after" },
+      previewOffsetX: 2,
+      previewOffsetY: 4,
       selectedBlockIds: ["a"],
       status: "dragging"
     };

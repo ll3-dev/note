@@ -5,7 +5,6 @@ import { cn } from "@/mainview/lib/utils";
 import { BlockBody } from "./BlockBody";
 import { BlockCommandMenu } from "./BlockCommandMenu";
 import { BlockDragHandle } from "./BlockDragHandle";
-import { BlockDropIndicator } from "./BlockDropIndicator";
 import { useBlockTextEditing } from "../hooks/useBlockTextEditing";
 import { getBlockDepth } from "../lib/blockEditingBehavior";
 import { getDropPlacement } from "../lib/blockDrag";
@@ -17,8 +16,6 @@ export function BlockEditor({
   blockIndex,
   blocksCount,
   isDragging,
-  isDropAfter,
-  isDropBefore,
   isBlockRangeSelecting,
   isSelected,
   maxIndentDepth,
@@ -142,10 +139,6 @@ export function BlockEditor({
       onDrop={handleDrop}
       style={{ marginLeft: depth * 24 }}
     >
-      <BlockDropIndicator
-        isDropAfter={isDropAfter}
-        isDropBefore={isDropBefore}
-      />
       <BlockDragHandle
         block={block}
         onDragEnd={onDragEnd}

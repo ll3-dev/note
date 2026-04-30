@@ -14,7 +14,6 @@ import type {
 type PageBlockListProps = {
   document: PageDocument;
   draggedBlockId: string | null;
-  dropTarget: { blockId: string; placement: "before" | "after" } | null;
   isBlockRangeSelecting: boolean;
   onCreateBlockAfter: (block: Block, draft?: CreateBlockDraft) => Promise<void>;
   onDeleteBlock: (block: Block) => void;
@@ -52,7 +51,6 @@ type PageBlockListProps = {
 export function PageBlockList({
   document,
   draggedBlockId,
-  dropTarget,
   isBlockRangeSelecting,
   onCreateBlockAfter,
   onDeleteBlock,
@@ -83,8 +81,6 @@ export function PageBlockList({
           blockIndex={blockIndex}
           blocksCount={document.blocks.length}
           isDragging={draggedBlockId === block.id}
-          isDropAfter={isBlockDropTarget(dropTarget, block, "after")}
-          isDropBefore={isBlockDropTarget(dropTarget, block, "before")}
           isBlockRangeSelecting={isBlockRangeSelecting}
           isSelected={selectedBlockIds.includes(block.id)}
           key={block.id}
@@ -123,12 +119,4 @@ export function PageBlockList({
       ))}
     </>
   );
-}
-
-function isBlockDropTarget(
-  dropTarget: { blockId: string; placement: "before" | "after" } | null,
-  block: Block,
-  placement: "before" | "after"
-) {
-  return dropTarget?.blockId === block.id && dropTarget.placement === placement;
 }

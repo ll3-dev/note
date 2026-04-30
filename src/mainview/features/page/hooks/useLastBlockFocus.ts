@@ -17,21 +17,21 @@ export function useLastBlockFocus({
 }: UseLastBlockFocusOptions) {
   return function focusLastBlock(event: MouseEvent<HTMLDivElement>) {
     if (!(event.target instanceof Element)) {
-      return;
+      return false;
     }
 
     if (event.target.closest("[data-block-id]")) {
-      return;
+      return false;
     }
 
     if (event.target.closest("[contenteditable],button,input,textarea,select,a")) {
-      return;
+      return false;
     }
 
     const lastBlock = document.blocks.at(-1);
 
     if (!lastBlock) {
-      return;
+      return false;
     }
 
     const editable = window.document.querySelector<HTMLElement>(
@@ -40,7 +40,7 @@ export function useLastBlockFocus({
 
     if (editable && !shouldCreateBlockAfterBlankClick(lastBlock)) {
       placeCursorAtEnd(editable);
-      return;
+      return true;
     }
 
     void onCreateBlockAfter(lastBlock, {
@@ -48,6 +48,7 @@ export function useLastBlockFocus({
       text: "",
       type: "paragraph"
     });
+    return true;
   };
 }
 

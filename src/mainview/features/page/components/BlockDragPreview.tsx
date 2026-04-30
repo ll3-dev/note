@@ -2,9 +2,9 @@ import type { Block } from "../../../../shared/contracts";
 import { cn } from "@/mainview/lib/utils";
 
 type BlockDragPreviewState = {
-  clientX: number;
-  clientY: number;
   selectedBlockIds: string[];
+  x: number;
+  y: number;
 };
 
 type BlockDragPreviewProps = {
@@ -25,9 +25,9 @@ export function BlockDragPreview({ blocks, preview }: BlockDragPreviewProps) {
     <div
       className="pointer-events-none fixed z-50 w-80 rounded-md border border-border bg-background/95 p-2 text-sm text-foreground opacity-95"
       style={{
-        transform: `translate3d(${preview.clientX + 12}px, ${
-          preview.clientY + 12
-        }px, 0)`
+        left: 0,
+        top: 0,
+        transform: `translate3d(${preview.x}px, ${preview.y}px, 0)`
       }}
     >
       <div className="grid gap-1">
@@ -45,6 +45,14 @@ export function BlockDragPreview({ blocks, preview }: BlockDragPreviewProps) {
 }
 
 function PreviewBlock({ block }: { block: Block }) {
+  if (block.type === "divider") {
+    return (
+      <div className="flex h-7 items-center rounded bg-muted/40 px-2">
+        <span className="h-px w-full bg-border" />
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-w-0 items-center gap-2 rounded bg-muted/50 px-2 py-1">
       <span className="w-5 shrink-0 text-right text-xs text-muted-foreground">
@@ -58,7 +66,7 @@ function PreviewBlock({ block }: { block: Block }) {
           block.type === "todo" && Boolean(block.props.checked) && "line-through"
         )}
       >
-        {block.text || getEmptyBlockLabel(block)}
+        {block.text}
       </span>
     </div>
   );
@@ -81,8 +89,4 @@ function getBlockMarker(block: Block) {
     default:
       return "";
   }
-}
-
-function getEmptyBlockLabel(block: Block) {
-  return block.type === "divider" ? "Divider" : "Empty block";
 }
