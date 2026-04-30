@@ -7,6 +7,15 @@
 - Prefer small hooks and pure `lib` helpers over growing editor components or workspace screens past roughly 200 lines.
 - Put shared cross-runtime logic under `src/shared` instead of importing from one feature into another.
 
+## Component Boundaries
+
+- Components should primarily render UI. Do not leave calculation, condition-building, DOM measurement, selector lookup, or state-transition logic in component files when it can live in `lib` or hooks.
+- Keep small render-only child components in the same component file when they are purely JSX presentation and are not reused elsewhere.
+- Move stateful UI behavior, timers, refs, effects, subscriptions, and event-flow orchestration into feature hooks under `hooks/`.
+- Move pure calculations, shape-aware conditions, tree/grouping helpers, drag/drop placement math, and DOM geometry helpers into feature `lib/`.
+- If a component starts accumulating several local handler/helper functions, classify each one before extracting: render-only stays with the component, state/effect/event orchestration becomes a hook, and pure logic becomes a `lib` helper.
+- Avoid inline render functions that recursively or repeatedly return component trees from inside another component; extract them into named components so React reconciliation stays explicit.
+
 ## React State
 
 - Do not mirror values that can be derived from props/state with `useEffect`. Compute them during render, and keep state only for real user intent or external synchronization.
