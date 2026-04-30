@@ -1,5 +1,5 @@
 import { BrowserView, BrowserWindow, Utils } from "electrobun/bun";
-import type { NoteRPC } from "../shared/contracts";
+import type { NoteRPC } from "@/shared/contracts";
 import { getDatabaseStatus, openDatabase } from "./database";
 import { resolveMainviewUrl } from "./mainviewUrl";
 import {

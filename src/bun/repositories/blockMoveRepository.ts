@@ -1,14 +1,14 @@
 import { and, eq, isNull, ne, sql } from "drizzle-orm";
-import { runInTransaction, type DatabaseHandle } from "../database";
-import { blocks } from "../schema";
+import { runInTransaction, type DatabaseHandle } from "@/bun/database";
+import { blocks } from "@/bun/schema";
 import { getBlock } from "./blockReadRepository";
 import { recordOperation } from "./noteOperations";
 import { touchPage } from "./pageTouch";
 import {
   capturePageHistoryBeforeChange,
   syncPageHistoryAfterChange
-} from "../sync/pageHistory";
-import type { Block, MoveBlockInput } from "../../shared/contracts";
+} from "@/bun/sync/pageHistory";
+import type { Block, MoveBlockInput } from "@/shared/contracts";
 
 export function moveBlock(
   handle: DatabaseHandle,

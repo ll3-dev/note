@@ -2,7 +2,7 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { openDatabase } from "../database";
+import { openDatabase } from "@/bun/database";
 import { SqliteAutomergeStorageAdapter } from "./automergeStorageAdapter";
 
 const tempRoots: string[] = [];

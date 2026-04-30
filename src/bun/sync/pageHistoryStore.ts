@@ -1,8 +1,8 @@
 import { and, desc, eq, isNotNull, isNull, sql } from "drizzle-orm";
-import type { AutomergeChangeOrigin } from "../../shared/automerge/pageDocument";
-import type { PageDocument } from "../../shared/contracts";
-import type { DatabaseHandle } from "../database";
-import { pageHistoryEntries } from "../schema";
+import type { AutomergeChangeOrigin } from "@/shared/automerge/pageDocument";
+import type { PageDocument } from "@/shared/contracts";
+import type { DatabaseHandle } from "@/bun/database";
+import { pageHistoryEntries } from "@/bun/schema";
 
 export const LOCAL_ACTOR_ID = "local";
 export const PAGE_HISTORY_ENTRY_LIMIT = 1000;

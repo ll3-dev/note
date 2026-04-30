@@ -145,6 +145,8 @@ describe("notes repository", () => {
         inlineMarks: [
           { end: 5, start: 0, type: "bold" },
           { end: 50, start: 6, type: "code" },
+          { end: 11, href: "https://example.com", start: 6, type: "link" },
+          { end: 5, href: "javascript:alert", start: 0, type: "link" },
           { end: 2, start: 2, type: "italic" },
           { end: 4, start: 1, type: "unknown" }
         ]
@@ -154,7 +156,8 @@ describe("notes repository", () => {
     expect(block.props).toEqual({
       inlineMarks: [
         { end: 5, start: 0, type: "bold" },
-        { end: 11, start: 6, type: "code" }
+        { end: 11, start: 6, type: "code" },
+        { end: 11, href: "https://example.com", start: 6, type: "link" }
       ]
     });
 

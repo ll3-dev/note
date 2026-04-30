@@ -1,5 +1,5 @@
 import { Electroview } from "electrobun/view";
-import type { NoteRPC } from "../../shared/contracts";
+import type { NoteRPC } from "@/shared/contracts";
 
 const rpc = Electroview.defineRPC<NoteRPC>({
   handlers: {

@@ -1,11 +1,11 @@
 import { eq } from "drizzle-orm";
-import { createAutomergePageDocument, toPageDocument } from "../../shared/automerge/pageDocument";
-import type { AutomergeChangeOrigin } from "../../shared/automerge/pageDocument";
-import type { PageDocument, PageHistoryInput } from "../../shared/contracts";
-import type { DatabaseHandle } from "../database";
-import { pages } from "../schema";
-import { listBlocksForPage } from "../repositories/blockReadRepository";
-import { mapPage } from "../repositories/noteRows";
+import { createAutomergePageDocument, toPageDocument } from "@/shared/automerge/pageDocument";
+import type { AutomergeChangeOrigin } from "@/shared/automerge/pageDocument";
+import type { PageDocument, PageHistoryInput } from "@/shared/contracts";
+import type { DatabaseHandle } from "@/bun/database";
+import { pages } from "@/bun/schema";
+import { listBlocksForPage } from "@/bun/repositories/blockReadRepository";
+import { mapPage } from "@/bun/repositories/noteRows";
 import { applySelectivePageHistory } from "./pageHistoryPatch";
 import {
   discardRedoEntries,

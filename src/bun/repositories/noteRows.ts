@@ -1,5 +1,5 @@
-import type { BlockRow, PageRow } from "../schema";
-import type { Block, BlockProps, BlockType, Page } from "../../shared/contracts";
+import type { BlockRow, PageRow } from "@/bun/schema";
+import type { Block, BlockProps, BlockType, Page } from "@/shared/contracts";
 
 export function mapPage(row: PageRow): Page {
   return {

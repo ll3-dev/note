@@ -1,6 +1,6 @@
 import { eq, sql } from "drizzle-orm";
-import { runInTransaction, type DatabaseHandle } from "../database";
-import { blocks } from "../schema";
+import { runInTransaction, type DatabaseHandle } from "@/bun/database";
+import { blocks } from "@/bun/schema";
 import { getNextSortKey } from "./blockOrdering";
 import { normalizeBlockProps } from "./blockProps";
 import { getBlock } from "./blockReadRepository";
@@ -9,7 +9,7 @@ import { touchPage } from "./pageTouch";
 import {
   capturePageHistoryBeforeChange,
   syncPageHistoryAfterChange
-} from "../sync/pageHistory";
+} from "@/bun/sync/pageHistory";
 import type {
   Block,
   BlockProps,
@@ -17,7 +17,7 @@ import type {
   CreateBlockInput,
   DeleteBlockInput,
   UpdateBlockInput
-} from "../../shared/contracts";
+} from "@/shared/contracts";
 
 export const DEFAULT_BLOCK_TYPE = "paragraph" satisfies BlockType;
 

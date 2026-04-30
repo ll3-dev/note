@@ -1,8 +1,8 @@
 import { eq } from "drizzle-orm";
-import type { DatabaseHandle } from "../database";
-import { blocks } from "../schema";
+import type { DatabaseHandle } from "@/bun/database";
+import { blocks } from "@/bun/schema";
 import { mapBlock } from "./noteRows";
-import type { Block } from "../../shared/contracts";
+import type { Block } from "@/shared/contracts";
 
 export function listBlocksForPage(
   handle: DatabaseHandle,

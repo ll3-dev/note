@@ -1,9 +1,9 @@
 import { eq } from "drizzle-orm";
-import type { Block, Page, PageDocument } from "../../shared/contracts";
-import { areBlockPropsEqual } from "../../shared/blockProps";
-import { runInTransaction, type DatabaseHandle } from "../database";
-import { blocks, pages } from "../schema";
-import { listBlocksForPage } from "../repositories/blockReadRepository";
+import type { Block, Page, PageDocument } from "@/shared/contracts";
+import { areBlockPropsEqual } from "@/shared/blockProps";
+import { runInTransaction, type DatabaseHandle } from "@/bun/database";
+import { blocks, pages } from "@/bun/schema";
+import { listBlocksForPage } from "@/bun/repositories/blockReadRepository";
 
 export type PageHistoryDirection = "redo" | "undo";
 

@@ -1,6 +1,6 @@
 import { and, count, eq, gte, isNull, sql } from "drizzle-orm";
-import type { DatabaseHandle } from "../database";
-import { blocks } from "../schema";
+import type { DatabaseHandle } from "@/bun/database";
+import { blocks } from "@/bun/schema";
 import { getBlock } from "./blockReadRepository";
 
 export function getNextSortKey(

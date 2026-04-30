@@ -1,6 +1,7 @@
-import type { BlockProps } from "../../shared/contracts";
+import type { BlockProps } from "@/shared/contracts";
+import { normalizeLinkHref } from "@/shared/linkSanitization";
 
-const INLINE_MARK_TYPES = new Set(["bold", "italic", "code"]);
+const INLINE_MARK_TYPES = new Set(["bold", "italic", "code", "link"]);
 
 export function normalizeBlockProps(props: BlockProps, text: string): BlockProps {
   const inlineMarks = normalizeInlineMarks(props.inlineMarks, text.length);
@@ -41,6 +42,7 @@ function normalizeInlineMarks(value: unknown, textLength: number) {
 
     const mark = item as {
       end?: unknown;
+      href?: unknown;
       start?: unknown;
       type?: unknown;
     };
@@ -59,6 +61,13 @@ function normalizeInlineMarks(value: unknown, textLength: number) {
 
     if (start >= end) {
       return [];
+    }
+
+    if (mark.type === "link") {
+      const href =
+        typeof mark.href === "string" ? normalizeLinkHref(mark.href) : "";
+
+      return href ? [{ end, href, start, type: mark.type }] : [];
     }
 
     return [{ end, start, type: mark.type }];

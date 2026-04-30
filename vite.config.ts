@@ -10,8 +10,7 @@ const BASE_CSP_DIRECTIVES = [
   "img-src 'self' data: blob:",
   "font-src 'self' data:",
   "object-src 'none'",
-  "base-uri 'none'",
-  "frame-ancestors 'none'"
+  "base-uri 'none'"
 ];
 
 const DEV_CONNECT_SRC = [
@@ -19,18 +18,22 @@ const DEV_CONNECT_SRC = [
   "http://127.0.0.1:*",
   "ws://127.0.0.1:*",
   "http://localhost:*",
-  "ws://localhost:*",
-  "http://[::1]:*",
-  "ws://[::1]:*"
+  "ws://localhost:*"
 ].join(" ");
 
 const PROD_CONNECT_SRC = "connect-src 'self'";
 
 function contentSecurityPolicy(command: "build" | "serve") {
-  return [
-    ...BASE_CSP_DIRECTIVES,
-    command === "serve" ? DEV_CONNECT_SRC : PROD_CONNECT_SRC
-  ].join("; ");
+  const directives = [...BASE_CSP_DIRECTIVES];
+
+  if (command === "serve") {
+    directives[1] = "script-src 'self' 'unsafe-inline'";
+    directives.push(DEV_CONNECT_SRC);
+  } else {
+    directives.push(PROD_CONNECT_SRC);
+  }
+
+  return directives.join("; ");
 }
 
 export default defineConfig(({ command }) => ({

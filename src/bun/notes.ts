@@ -17,7 +17,7 @@ import {
   redoPageHistory,
   undoPageHistory
 } from "./sync/pageHistory";
-import type { GetPageDocumentInput, PageDocument } from "../shared/contracts";
+import type { GetPageDocumentInput, PageDocument } from "@/shared/contracts";
 
 export {
   createBlock,

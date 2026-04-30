@@ -1,9 +1,9 @@
 import { and, eq, gte, isNull, sql } from "drizzle-orm";
-import type { DatabaseHandle } from "../database";
-import { pages } from "../schema";
+import type { DatabaseHandle } from "@/bun/database";
+import { pages } from "@/bun/schema";
 import { makeSortKey } from "./blockOrdering";
 import { getPage } from "./pageRepository";
-import type { MovePageInput, Page } from "../../shared/contracts";
+import type { MovePageInput, Page } from "@/shared/contracts";
 
 export function movePage(handle: DatabaseHandle, input: MovePageInput): Page {
   const page = getPage(handle, input.pageId);

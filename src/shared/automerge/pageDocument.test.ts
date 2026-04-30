@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import * as Automerge from "@automerge/automerge";
-import type { Block, PageDocument } from "../contracts";
+import type { Block, PageDocument } from "@/shared/contracts";
 import {
   changeBlockText,
   changePageTitle,

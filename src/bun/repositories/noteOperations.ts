@@ -1,5 +1,5 @@
-import { blockOperations } from "../schema";
-import type { DatabaseHandle } from "../database";
+import { blockOperations } from "@/bun/schema";
+import type { DatabaseHandle } from "@/bun/database";
 
 export function recordOperation(
   handle: DatabaseHandle,

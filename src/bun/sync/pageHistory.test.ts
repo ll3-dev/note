@@ -3,8 +3,8 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { count, eq, sql } from "drizzle-orm";
-import { openDatabase, type DatabaseHandle } from "../database";
-import { blocks, pageHistoryEntries } from "../schema";
+import { openDatabase, type DatabaseHandle } from "@/bun/database";
+import { blocks, pageHistoryEntries } from "@/bun/schema";
 import {
   createBlock,
   createPage,
@@ -12,8 +12,8 @@ import {
   getPageDocument,
   moveBlock,
   updateBlock
-} from "../notes";
-import { insertBlock } from "../repositories/blockRepository";
+} from "@/bun/notes";
+import { insertBlock } from "@/bun/repositories/blockRepository";
 import {
   capturePageHistoryBeforeChange,
   clearPageHistoryMemoryForTests,

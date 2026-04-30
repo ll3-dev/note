@@ -4,8 +4,8 @@ import type {
   StorageAdapterInterface,
   StorageKey
 } from "@automerge/automerge-repo";
-import type { DatabaseHandle } from "../database";
-import { automergeRepoChunks } from "../schema";
+import type { DatabaseHandle } from "@/bun/database";
+import { automergeRepoChunks } from "@/bun/schema";
 
 export class SqliteAutomergeStorageAdapter implements StorageAdapterInterface {
   constructor(private readonly handle: DatabaseHandle) {}

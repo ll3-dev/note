@@ -1,6 +1,6 @@
 import { and, asc, count, eq, isNull, sql } from "drizzle-orm";
-import { runInTransaction, type DatabaseHandle } from "../database";
-import { pages } from "../schema";
+import { runInTransaction, type DatabaseHandle } from "@/bun/database";
+import { pages } from "@/bun/schema";
 import { DEFAULT_BLOCK_TYPE, insertBlock } from "./blockRepository";
 import { listBlocksForPage } from "./blockReadRepository";
 import { makeSortKey } from "./blockOrdering";
@@ -8,13 +8,13 @@ import { mapPage } from "./noteRows";
 import {
   capturePageHistoryBeforeChange,
   syncPageHistoryAfterChange
-} from "../sync/pageHistory";
+} from "@/bun/sync/pageHistory";
 import type {
   CreatePageInput,
   Page,
   PageDocument,
   UpdatePageInput
-} from "../../shared/contracts";
+} from "@/shared/contracts";
 
 export function listPages(handle: DatabaseHandle): Page[] {
   const rows = handle.orm

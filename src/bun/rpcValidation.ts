@@ -10,7 +10,7 @@ import type {
   PageHistoryInput,
   UpdateBlockInput,
   UpdatePageInput
-} from "../shared/contracts";
+} from "@/shared/contracts";
 
 const BLOCK_TYPES = new Set<BlockType>([
   "paragraph",

@@ -59,6 +59,7 @@ function areInlineMarksEqual(left: unknown, right: unknown) {
   return (
     leftMark.start === rightMark.start &&
     leftMark.end === rightMark.end &&
-    leftMark.type === rightMark.type
+    leftMark.type === rightMark.type &&
+    leftMark.href === rightMark.href
   );
 }

@@ -1,6 +1,6 @@
 import { eq, sql } from "drizzle-orm";
-import type { DatabaseHandle } from "../database";
-import { pages } from "../schema";
+import type { DatabaseHandle } from "@/bun/database";
+import { pages } from "@/bun/schema";
 
 export function touchPage(handle: DatabaseHandle, pageId: string) {
   handle.orm

@@ -3,7 +3,7 @@ import { count, sql } from "drizzle-orm";
 import { drizzle, type BunSQLiteDatabase } from "drizzle-orm/bun-sqlite";
 import { mkdirSync } from "node:fs";
 import path from "node:path";
-import type { DatabaseStatus } from "../shared/contracts";
+import type { DatabaseStatus } from "@/shared/contracts";
 import { runMigrations } from "./migrations";
 import { blocks, pages, schema } from "./schema";
 
