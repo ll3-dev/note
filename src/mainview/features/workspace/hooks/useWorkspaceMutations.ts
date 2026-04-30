@@ -6,6 +6,7 @@ import type {
   Block,
   BlockProps,
   BlockType,
+  CreateBlockInput,
   Page,
   PageDocument
 } from "@/shared/contracts";
@@ -68,6 +69,37 @@ export function useWorkspaceMutations({
       await invalidateDocument(queryClient, block.pageId);
     }
   });
+
+  async function createBlocks(inputs: CreateBlockInput[]) {
+    const pageId = inputs[0]?.pageId;
+
+    if (!pageId || inputs.length === 0) {
+      return [];
+    }
+
+    const createdBlocks: Block[] = [];
+
+    let afterBlockId = inputs[0].afterBlockId ?? null;
+
+    for (const input of inputs) {
+      const created = await noteApi.createBlock({
+        pageId: input.pageId,
+        afterBlockId,
+        parentBlockId: input.parentBlockId ?? null,
+        type: input.type ?? "paragraph",
+        text: input.text ?? "",
+        props: input.props ?? {}
+      });
+
+      createdBlocks.push(created);
+      afterBlockId = created.id;
+    }
+
+    await invalidateDocument(queryClient, pageId);
+    await queryClient.invalidateQueries({ queryKey: queryKeys.databaseStatus });
+
+    return createdBlocks;
+  }
 
   const updateBlockMutation = useMutation({
     mutationFn: ({
@@ -225,6 +257,7 @@ export function useWorkspaceMutations({
 
   return {
     createBlockMutation,
+    createBlocks,
     createPageMutation,
     deleteBlockMutation,
     moveBlockMutation,

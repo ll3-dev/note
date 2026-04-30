@@ -12,16 +12,20 @@ type CreateBlockInput = {
 type UseBlockBatchActionsOptions = {
   clearPendingText: (blockId: string) => void;
   createBlock: (input: CreateBlockInput) => Promise<Block>;
+  createBlocks: (inputs: CreateBlockInput[]) => Promise<Block[]>;
   deleteBlock: (block: Block) => Promise<unknown>;
   flushAllTextDrafts: () => Promise<void>;
+  getBlocksCount: () => number;
   setFocusBlockId: (blockId: string, placement?: "start" | "end") => void;
 };
 
 export function useBlockBatchActions({
   clearPendingText,
   createBlock,
+  createBlocks,
   deleteBlock,
   flushAllTextDrafts,
+  getBlocksCount,
   setFocusBlockId
 }: UseBlockBatchActionsOptions) {
   async function duplicateBlocks(blocks: Block[]) {
@@ -55,37 +59,47 @@ export function useBlockBatchActions({
     const paste = await readBlockClipboardPaste();
 
     if (!paste || paste.drafts.length === 0) {
-      return;
+      return [];
     }
 
     await flushAllTextDrafts();
-    let afterBlockId = block.id;
-    let lastCreatedId: string | null = null;
+    let afterBlockId: string | null = block.id;
+    const inputs: CreateBlockInput[] = [];
 
     for (const draft of paste.drafts) {
-      const created = await createBlock({
+      inputs.push({
         afterBlockId,
         pageId: block.pageId,
         props: draft.props,
         text: draft.text,
         type: draft.type
       });
-
-      afterBlockId = created.id;
-      lastCreatedId = created.id;
+      afterBlockId = null;
     }
 
-    if (lastCreatedId) {
-      setFocusBlockId(lastCreatedId, "end");
-    }
+    return createBlocks(inputs);
   }
 
   async function deleteBlocks(blocks: Block[]) {
+    const pageId = blocks[0]?.pageId;
+    const shouldCreateFallbackBlock =
+      Boolean(pageId) && blocks.length >= getBlocksCount();
+
     await flushAllTextDrafts();
 
     for (const block of blocks) {
       clearPendingText(block.id);
       await deleteBlock(block);
+    }
+
+    if (shouldCreateFallbackBlock && pageId) {
+      const created = await createBlock({
+        pageId,
+        props: {},
+        text: "",
+        type: "paragraph"
+      });
+      setFocusBlockId(created.id, "start");
     }
   }
 

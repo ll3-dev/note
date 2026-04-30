@@ -1,4 +1,4 @@
-import { useCallback, useMemo, type SyntheticEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, type SyntheticEvent } from "react";
 import { useGlobalKeyboardShortcuts } from "@/mainview/features/commands/useGlobalKeyboardShortcuts";
 import { useKeybindingStore } from "@/mainview/features/commands/keybindingStore";
 import { useWorkspaceStore } from "@/mainview/store/useWorkspaceStore";
@@ -43,9 +43,10 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
   const toggleSidebar = useWorkspaceStore((state) => state.toggleSidebar);
   const keybindings = useKeybindingStore((state) => state.keybindings);
   const activePageId = routePageId ?? selectedPageId;
+  const ensuringEmptyPageBlockRef = useRef<string | null>(null);
   const { databaseStatusQuery, pageDocumentQuery, pagesQuery, refreshWorkspace } = useWorkspaceQueries(activePageId);
 
-  const { createBlockMutation, createPageMutation, deleteBlockMutation, moveBlocks, movePageMutation, updatePageMutation, updateBlockMutation } = useWorkspaceMutations({
+  const { createBlockMutation, createBlocks, createPageMutation, deleteBlockMutation, moveBlocks, movePageMutation, updatePageMutation, updateBlockMutation } = useWorkspaceMutations({
     navigateToPage: async (pageId) => {
       await navigateToPage(navigate, pageId);
     },
@@ -88,8 +89,10 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
   const { deleteBlocks, duplicateBlocks, pasteBlocksAfter } = useBlockBatchActions({
     clearPendingText,
     createBlock: createBlockMutation.mutateAsync,
+    createBlocks,
     deleteBlock: deleteBlockMutation.mutateAsync,
     flushAllTextDrafts,
+    getBlocksCount: () => selectedDocument?.blocks.length ?? 0,
     setFocusBlockId
   });
   const { redoBlockText, undoBlockText } = usePageHistoryActions({
@@ -106,6 +109,41 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
     keybindings
   });
   useInitialPageSelection({ activePageId, navigate, openPageTab, pages, routePageId, setSelectedPageId });
+
+  useEffect(() => {
+    if (!selectedDocument) {
+      return;
+    }
+
+    if (selectedDocument.blocks.length > 0) {
+      if (ensuringEmptyPageBlockRef.current === selectedDocument.page.id) {
+        ensuringEmptyPageBlockRef.current = null;
+      }
+      return;
+    }
+
+    if (
+      createBlockMutation.isPending ||
+      ensuringEmptyPageBlockRef.current === selectedDocument.page.id
+    ) {
+      return;
+    }
+
+    ensuringEmptyPageBlockRef.current = selectedDocument.page.id;
+    void createBlockMutation
+      .mutateAsync({
+        pageId: selectedDocument.page.id,
+        props: {},
+        text: "",
+        type: "paragraph"
+      })
+      .then((block) => setFocusBlockId(block.id, "start"))
+      .finally(() => {
+        if (ensuringEmptyPageBlockRef.current === selectedDocument.page.id) {
+          ensuringEmptyPageBlockRef.current = null;
+        }
+      });
+  }, [createBlockMutation, selectedDocument, setFocusBlockId]);
 
   function handleCreatePage(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
