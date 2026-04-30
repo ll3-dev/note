@@ -4,7 +4,6 @@ export type DatabaseStatus = {
   sqliteVersion: string;
   pagesCount: number;
   blocksCount: number;
-  databasePath: string;
 };
 
 export type Page = {

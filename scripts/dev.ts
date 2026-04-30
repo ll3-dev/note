@@ -1,6 +1,6 @@
-const host = process.env.NOTE_VITE_HOST ?? "127.0.0.1";
-const port = process.env.NOTE_VITE_PORT ?? "5173";
-const mainviewUrl = process.env.NOTE_MAINVIEW_URL ?? `http://${host}:${port}`;
+import { resolveDevMainviewConfig } from "../src/bun/mainviewUrl";
+
+const { devServerToken, host, mainviewUrl, port } = resolveDevMainviewConfig();
 const bunExecutable = process.execPath;
 const children: Array<ReturnType<typeof Bun.spawn>> = [];
 
@@ -77,6 +77,7 @@ try {
     stderr: "inherit",
     env: {
       ...process.env,
+      NOTE_MAINVIEW_DEV_SERVER: devServerToken,
       NOTE_MAINVIEW_URL: mainviewUrl
     }
   });

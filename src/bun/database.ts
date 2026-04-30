@@ -51,7 +51,6 @@ export function getDatabaseStatus(handle: DatabaseHandle): DatabaseStatus {
   return {
     sqliteVersion: sqliteVersion![0],
     pagesCount: pagesCount!.count,
-    blocksCount: blocksCount!.count,
-    databasePath: handle.databasePath
+    blocksCount: blocksCount!.count
   };
 }

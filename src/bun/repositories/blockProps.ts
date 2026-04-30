@@ -4,12 +4,26 @@ const INLINE_MARK_TYPES = new Set(["bold", "italic", "code"]);
 
 export function normalizeBlockProps(props: BlockProps, text: string): BlockProps {
   const inlineMarks = normalizeInlineMarks(props.inlineMarks, text.length);
-  const nextProps = { ...props };
+  const nextProps: BlockProps = {};
+
+  if (typeof props.checked === "boolean") {
+    nextProps.checked = props.checked;
+  }
+
+  if (typeof props.depth === "number" && Number.isInteger(props.depth)) {
+    nextProps.depth = Math.max(0, Math.min(props.depth, 6));
+  }
+
+  if (typeof props.start === "number" && Number.isInteger(props.start) && props.start > 0) {
+    nextProps.start = Math.min(props.start, 999_999);
+  }
+
+  if (typeof props.language === "string") {
+    nextProps.language = props.language.slice(0, 64);
+  }
 
   if (inlineMarks.length > 0) {
     nextProps.inlineMarks = inlineMarks;
-  } else {
-    delete nextProps.inlineMarks;
   }
 
   return nextProps;

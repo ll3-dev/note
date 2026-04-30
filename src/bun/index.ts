@@ -1,6 +1,7 @@
 import { BrowserView, BrowserWindow, Utils } from "electrobun/bun";
 import type { NoteRPC } from "../shared/contracts";
 import { getDatabaseStatus, openDatabase } from "./database";
+import { resolveMainviewUrl } from "./mainviewUrl";
 import {
   createBlock,
   createPage,
@@ -14,6 +15,17 @@ import {
   updateBlock,
   updatePage,
 } from "./notes";
+import {
+  validateCreateBlockInput,
+  validateCreatePageInput,
+  validateDeleteBlockInput,
+  validateGetPageDocumentInput,
+  validateMoveBlockInput,
+  validateMovePageInput,
+  validatePageHistoryInput,
+  validateUpdateBlockInput,
+  validateUpdatePageInput
+} from "./rpcValidation";
 
 const databaseHandle = openDatabase(Utils.paths.userData);
 
@@ -23,23 +35,22 @@ const rpc = BrowserView.defineRPC<NoteRPC>({
     requests: {
       getDatabaseStatus: () => getDatabaseStatus(databaseHandle),
       listPages: () => listPages(databaseHandle),
-      getPageDocument: (input) => getPageDocument(databaseHandle, input),
-      createPage: (input) => createPage(databaseHandle, input),
-      updatePage: (input) => updatePage(databaseHandle, input),
-      createBlock: (input) => createBlock(databaseHandle, input),
-      updateBlock: (input) => updateBlock(databaseHandle, input),
-      deleteBlock: (input) => deleteBlock(databaseHandle, input),
-      moveBlock: (input) => moveBlock(databaseHandle, input),
-      movePage: (input) => movePage(databaseHandle, input),
-      redoPageHistory: (input) => redoPageHistory(databaseHandle, input),
-      undoPageHistory: (input) => undoPageHistory(databaseHandle, input),
+      getPageDocument: (input) => getPageDocument(databaseHandle, validateGetPageDocumentInput(input)),
+      createPage: (input) => createPage(databaseHandle, validateCreatePageInput(input)),
+      updatePage: (input) => updatePage(databaseHandle, validateUpdatePageInput(input)),
+      createBlock: (input) => createBlock(databaseHandle, validateCreateBlockInput(input)),
+      updateBlock: (input) => updateBlock(databaseHandle, validateUpdateBlockInput(input)),
+      deleteBlock: (input) => deleteBlock(databaseHandle, validateDeleteBlockInput(input)),
+      moveBlock: (input) => moveBlock(databaseHandle, validateMoveBlockInput(input)),
+      movePage: (input) => movePage(databaseHandle, validateMovePageInput(input)),
+      redoPageHistory: (input) => redoPageHistory(databaseHandle, validatePageHistoryInput(input)),
+      undoPageHistory: (input) => undoPageHistory(databaseHandle, validatePageHistoryInput(input)),
     },
     messages: {},
   },
 });
 
-const mainviewUrl = process.env.NOTE_MAINVIEW_URL ??
-  "views://mainview/index.html";
+const mainviewUrl = resolveMainviewUrl();
 
 new BrowserWindow({
   title: "Note",

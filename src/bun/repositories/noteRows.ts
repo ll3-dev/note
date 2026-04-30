@@ -30,7 +30,13 @@ export function mapBlock(row: BlockRow): Block {
 }
 
 function parseProps(value: string): BlockProps {
-  const parsed = JSON.parse(value) as unknown;
+  let parsed: unknown;
+
+  try {
+    parsed = JSON.parse(value) as unknown;
+  } catch {
+    return {};
+  }
 
   if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
     return {};
