@@ -1,4 +1,4 @@
-import { DragEvent, useRef } from "react";
+import { DragEvent, FormEvent, useRef } from "react";
 import { useKeybindingStore } from "@/mainview/features/commands/keybindingStore";
 import { useKeyboardShortcuts } from "@/mainview/features/commands/useKeyboardShortcuts";
 import { cn } from "@/mainview/lib/utils";
@@ -122,6 +122,25 @@ export function BlockEditor({
     onDrop(block, getDropPlacement(event.clientY, event.currentTarget));
   }
 
+  function handleBeforeInput(event: FormEvent<HTMLDivElement>) {
+    const inputType = (event.nativeEvent as InputEvent).inputType;
+
+    if (inputType !== "historyUndo" && inputType !== "historyRedo") {
+      return;
+    }
+
+    event.preventDefault();
+    void commitDraft().then(() =>
+      inputType === "historyUndo" ? undoTextDraft() : redoTextDraft()
+    );
+  }
+
+  function handleHistoryInput(inputType: "historyRedo" | "historyUndo") {
+    void commitDraft().then(() =>
+      inputType === "historyUndo" ? undoTextDraft() : redoTextDraft()
+    );
+  }
+
   function handleShellDragStart(event: DragEvent<HTMLDivElement>) {
     if (!isSelected) {
       event.preventDefault();
@@ -165,8 +184,10 @@ export function BlockEditor({
           numberedListMarker={numberedListMarker}
           onApplyCommand={applyCommand}
           onBlur={commitDraft}
+          onBeforeInput={handleBeforeInput}
           onChange={changeDraft}
           onDragStart={handleShellDragStart}
+          onHistoryInput={handleHistoryInput}
           onKeyDown={handleKeyDown}
           onPasteMarkdown={onPasteMarkdown}
           onSelectionChange={syncActiveInlineMarksFromSelection}

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { getMarkdownShortcut } from "./blockCommands";
+import { BLOCK_COMMANDS, getMarkdownShortcut } from "./blockCommands";
 
 describe("block command shortcuts", () => {
   test("converts heading shortcuts into typed blocks", () => {
@@ -43,6 +43,18 @@ describe("block command shortcuts", () => {
       props: {},
       text: "",
       type: "divider"
+    });
+  });
+
+  test("divider command requests a following editable text block", () => {
+    const dividerCommand = BLOCK_COMMANDS.find(
+      (command) => command.id === "turn-into-divider"
+    );
+
+    expect(dividerCommand?.createBlockAfter).toEqual({
+      props: {},
+      text: "",
+      type: "paragraph"
     });
   });
 

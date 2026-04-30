@@ -15,6 +15,7 @@ import type { CreateBlockDraft } from "./blockEditingBehavior";
 
 export type BlockCommand = {
   aliases: string[];
+  createBlockAfter?: CreateBlockDraft;
   description: string;
   icon: typeof Text;
   id: string;
@@ -91,6 +92,7 @@ export const BLOCK_COMMANDS: BlockCommand[] = [
   },
   {
     aliases: ["div", "line", "hr"],
+    createBlockAfter: { props: {}, text: "", type: "paragraph" },
     description: "Horizontal divider",
     icon: Minus,
     id: "turn-into-divider",

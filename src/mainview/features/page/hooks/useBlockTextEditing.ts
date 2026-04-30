@@ -108,6 +108,12 @@ export function useBlockTextEditing({
       text: nextText,
       type: command.type
     });
+    if (command.createBlockAfter) {
+      await onCreateBlockAfter(block, command.createBlockAfter, {
+        focusPlacement: "start"
+      });
+      return;
+    }
     editableRef.current?.focus();
   }
 

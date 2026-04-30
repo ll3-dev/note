@@ -1,5 +1,6 @@
 import type {
   DragEvent,
+  FormEvent,
   KeyboardEvent,
   RefObject
 } from "react";
@@ -25,9 +26,11 @@ type BlockBodyProps = {
   isSelected: boolean;
   onApplyCommand: (command: BlockCommand) => Promise<void> | void;
   onBlur: () => Promise<void>;
+  onBeforeInput: (event: FormEvent<HTMLDivElement>) => void;
   onChange: (value: string) => void;
   onKeyDown: (event: KeyboardEvent<HTMLDivElement>) => void;
   onDragStart: (event: DragEvent<HTMLDivElement>) => void;
+  onHistoryInput: (inputType: "historyRedo" | "historyUndo") => void;
   onPasteMarkdown: (
     block: Block,
     markdown: string,
@@ -49,9 +52,11 @@ export function BlockBody({
   isSelected,
   onApplyCommand,
   onBlur,
+  onBeforeInput,
   onChange,
   onKeyDown,
   onDragStart,
+  onHistoryInput,
   onPasteMarkdown,
   onSelectionChange,
   onUpdate,
@@ -130,6 +135,7 @@ export function BlockBody({
             data-placeholder="Type '/' for commands"
             draggable={isSelected}
             onBlur={() => void onBlur()}
+            onBeforeInput={onBeforeInput}
             onDragStart={(event) => {
               if (isSelected) {
                 onDragStart(event);
@@ -137,8 +143,17 @@ export function BlockBody({
             }}
             onDrop={handleDrop}
             onFocus={onSelectionChange}
-            onInput={(event) => onChange(event.currentTarget.textContent ?? "")}
-            onKeyDown={handleEditableKeyDown}
+            onInput={(event) => {
+              const inputType = (event.nativeEvent as InputEvent).inputType;
+
+              if (inputType === "historyUndo" || inputType === "historyRedo") {
+                onHistoryInput(inputType);
+                return;
+              }
+
+              onChange(event.currentTarget.textContent ?? "");
+            }}
+            onKeyDownCapture={handleEditableKeyDown}
             onKeyUp={(event) => {
               if (shouldSyncSelectionAfterKey(event.key)) {
                 onSelectionChange();
