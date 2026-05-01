@@ -50,6 +50,45 @@ export const noteApi = {
     return block;
   },
 
+  async createBlocks(input: { blocks: CreateBlockInput[] }) {
+    const firstInput = input.blocks[0];
+
+    if (!firstInput) {
+      return [];
+    }
+
+    const document = getDocument(firstInput.pageId);
+    const createdBlocks: Block[] = [];
+    let afterBlockId = firstInput.afterBlockId ?? null;
+
+    recordDocumentHistory(document);
+
+    for (const blockInput of input.blocks) {
+      if (blockInput.pageId !== firstInput.pageId) {
+        throw new Error("batch block creation must target one page");
+      }
+
+      const block = makeBlock({
+        pageId: blockInput.pageId,
+        props: blockInput.props ?? {},
+        text: blockInput.text ?? "",
+        type: blockInput.type ?? "paragraph"
+      });
+      const afterIndex = afterBlockId
+        ? document.blocks.findIndex((item) => item.id === afterBlockId)
+        : -1;
+
+      document.blocks.splice(afterIndex + 1, 0, block);
+      afterBlockId = block.id;
+      createdBlocks.push(block);
+    }
+
+    normalizeBlockSortKeys(document);
+    touchPage(document.page);
+
+    return cloneBlocks(createdBlocks);
+  },
+
   async createPage(input: CreatePageInput) {
     const page = makePage(input.title, input.parentPageId ?? null);
     const block = makeBlock({ pageId: page.id });
@@ -77,6 +116,46 @@ export const noteApi = {
     return { deleted: true as const };
   },
 
+  async deleteBlocks(input: {
+    blockIds: string[];
+    fallbackBlock?: {
+      pageId: string;
+      props?: BlockProps;
+      text?: string;
+      type?: BlockType;
+    };
+  }) {
+    const document = [...state.documents.values()].find((item) =>
+      item.blocks.some((block) => block.id === input.blockIds[0])
+    );
+
+    if (!document) {
+      throw new Error(`block not found: ${input.blockIds[0]}`);
+    }
+
+    recordDocumentHistory(document);
+    const blockIds = new Set(input.blockIds);
+    document.blocks = document.blocks.filter((block) => !blockIds.has(block.id));
+    let createdBlock: Block | undefined;
+
+    if (input.fallbackBlock) {
+      createdBlock = makeBlock({
+        pageId: input.fallbackBlock.pageId,
+        props: input.fallbackBlock.props ?? {},
+        text: input.fallbackBlock.text ?? "",
+        type: input.fallbackBlock.type ?? "paragraph"
+      });
+      document.blocks.push(createdBlock);
+    }
+
+    normalizeBlockSortKeys(document);
+    touchPage(document.page);
+
+    return createdBlock
+      ? { createdBlock: cloneBlocks([createdBlock])[0], deleted: true as const }
+      : { deleted: true as const };
+  },
+
   async getDatabaseStatus() {
     return {
       blocksCount: [...state.documents.values()].reduce(
@@ -94,6 +173,64 @@ export const noteApi = {
 
   async listPages() {
     return state.pages.map((page) => ({ ...page }));
+  },
+
+  async searchPages(input: { query: string; limit?: number }) {
+    const query = input.query.trim().toLowerCase();
+
+    if (!query) {
+      return [];
+    }
+
+    return state.pages
+      .filter((page) => page.title.toLowerCase().includes(query))
+      .slice(0, input.limit ?? 8)
+      .map((page) => ({ pageId: page.id, title: page.title }));
+  },
+
+  async listBacklinks(input: { pageId: string }) {
+    return [...state.documents.values()].flatMap((document) =>
+      document.blocks.flatMap((block) =>
+        block.type === "page_link" &&
+        block.pageId !== input.pageId &&
+        block.props.targetPageId === input.pageId
+          ? [
+              {
+                blockId: block.id,
+                pageId: block.pageId,
+                pageTitle: document.page.title,
+                text: block.text
+              }
+            ]
+          : []
+      )
+    );
+  },
+
+  async searchWorkspace(input: { query: string; limit?: number }) {
+    const query = input.query.trim().toLowerCase();
+    const limit = input.limit ?? 12;
+
+    if (!query) {
+      return [];
+    }
+
+    const pageResults = state.pages
+      .filter((page) => page.title.toLowerCase().includes(query))
+      .map((page) => ({ kind: "page" as const, pageId: page.id, title: page.title }));
+    const blockResults = [...state.documents.values()].flatMap((document) =>
+      document.blocks
+        .filter((block) => block.text.toLowerCase().includes(query))
+        .map((block) => ({
+          blockId: block.id,
+          kind: "block" as const,
+          pageId: block.pageId,
+          pageTitle: document.page.title,
+          text: block.text
+        }))
+    );
+
+    return [...pageResults, ...blockResults].slice(0, limit);
   },
 
   async moveBlock(input: MoveBlockInput) {

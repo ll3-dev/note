@@ -8,9 +8,11 @@ import {
 
 type UseBlockBatchActionsOptions = {
   clearPendingText: (blockId: string) => void;
-  createBlock: (input: CreateBlockInput) => Promise<Block>;
   createBlocks: (inputs: CreateBlockInput[]) => Promise<Block[]>;
-  deleteBlock: (block: Block) => Promise<unknown>;
+  deleteBlocksBatch: (
+    blocks: Block[],
+    fallbackBlock?: CreateBlockInput
+  ) => Promise<{ createdBlock?: Block; deleted: true }>;
   flushAllTextDrafts: () => Promise<void>;
   getBlocksCount: () => number;
   setFocusBlockId: (blockId: string, placement?: "start" | "end") => void;
@@ -18,9 +20,8 @@ type UseBlockBatchActionsOptions = {
 
 export function useBlockBatchActions({
   clearPendingText,
-  createBlock,
   createBlocks,
-  deleteBlock,
+  deleteBlocksBatch,
   flushAllTextDrafts,
   getBlocksCount,
   setFocusBlockId
@@ -31,21 +32,16 @@ export function useBlockBatchActions({
     }
 
     await flushAllTextDrafts();
-    let afterBlockId = blocks[blocks.length - 1].id;
-    let lastCreatedId: string | null = null;
-
-    for (const block of blocks) {
-      const created = await createBlock({
-        afterBlockId,
+    const createdBlocks = await createBlocks(
+      blocks.map((block, index) => ({
+        afterBlockId: index === 0 ? blocks[blocks.length - 1].id : null,
         pageId: block.pageId,
         props: block.props,
         text: block.text,
         type: block.type
-      });
-
-      afterBlockId = created.id;
-      lastCreatedId = created.id;
-    }
+      }))
+    );
+    const lastCreatedId = createdBlocks.at(-1)?.id ?? null;
 
     if (lastCreatedId) {
       setFocusBlockId(lastCreatedId, "end");
@@ -70,20 +66,22 @@ export function useBlockBatchActions({
       shouldCreateFallbackBlockAfterDelete(blocks.length, getBlocksCount());
 
     await flushAllTextDrafts();
+    blocks.forEach((block) => clearPendingText(block.id));
 
-    for (const block of blocks) {
-      clearPendingText(block.id);
-      await deleteBlock(block);
-    }
+    const result = await deleteBlocksBatch(
+      blocks,
+      shouldCreateFallbackBlock && pageId
+        ? {
+            pageId,
+            props: {},
+            text: "",
+            type: "paragraph"
+          }
+        : undefined
+    );
 
-    if (shouldCreateFallbackBlock && pageId) {
-      const created = await createBlock({
-        pageId,
-        props: {},
-        text: "",
-        type: "paragraph"
-      });
-      setFocusBlockId(created.id, "start");
+    if (result.createdBlock) {
+      setFocusBlockId(result.createdBlock.id, "start");
     }
   }
 

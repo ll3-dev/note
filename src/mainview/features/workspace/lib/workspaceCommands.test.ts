@@ -10,6 +10,7 @@ describe("workspace commands", () => {
       commands: WORKSPACE_COMMANDS,
       context: {
         closeActiveTab: async () => {},
+        openQuickSwitcher: () => {},
         toggleSidebar: () => {
           calls.push("toggleSidebar");
         }
@@ -26,6 +27,7 @@ describe("workspace commands", () => {
     expect(command?.id).toBe("workspace.sidebar.toggle");
     command?.run({
       closeActiveTab: async () => {},
+      openQuickSwitcher: () => {},
       toggleSidebar: () => {
         calls.push("toggleSidebar");
       }
@@ -42,6 +44,7 @@ describe("workspace commands", () => {
         closeActiveTab: async () => {
           calls.push("closeActiveTab");
         },
+        openQuickSwitcher: () => {},
         toggleSidebar: () => {}
       },
       event: {
@@ -58,8 +61,41 @@ describe("workspace commands", () => {
       closeActiveTab: async () => {
         calls.push("closeActiveTab");
       },
+      openQuickSwitcher: () => {},
       toggleSidebar: () => {}
     });
     expect(calls).toEqual(["closeActiveTab"]);
+  });
+
+  test("opens the quick switcher with Mod+P", () => {
+    const calls: string[] = [];
+    const command = resolveKeybinding({
+      activeScopes: ["global", "workspace"],
+      commands: WORKSPACE_COMMANDS,
+      context: {
+        closeActiveTab: async () => {},
+        openQuickSwitcher: () => {
+          calls.push("openQuickSwitcher");
+        },
+        toggleSidebar: () => {}
+      },
+      event: {
+        altKey: false,
+        ctrlKey: false,
+        key: "p",
+        metaKey: true,
+        shiftKey: false
+      }
+    });
+
+    expect(command?.id).toBe("workspace.quickSwitcher.open");
+    command?.run({
+      closeActiveTab: async () => {},
+      openQuickSwitcher: () => {
+        calls.push("openQuickSwitcher");
+      },
+      toggleSidebar: () => {}
+    });
+    expect(calls).toEqual(["openQuickSwitcher"]);
   });
 });

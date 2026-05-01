@@ -1,0 +1,225 @@
+import { useEffect, useRef, type SyntheticEvent } from "react";
+import type { useNavigate } from "@tanstack/react-router";
+import type { Block, BlockProps, Page, PageDocument } from "@/shared/contracts";
+import { noteApi } from "@/mainview/lib/rpc";
+import {
+  getMergedBlockUpdate,
+  type CreateBlockDraft
+} from "@/mainview/features/page/lib/blockEditingBehavior";
+import {
+  getBlocksWithDescendants,
+  getSubtreeSafeAfterBlockId
+} from "@/mainview/features/page/lib/blockTree";
+import type {
+  BlockEditorUpdate,
+  CreateBlockOptions
+} from "@/mainview/features/page/types/blockEditorTypes";
+import { navigateToPage } from "./useWorkspaceNavigation";
+
+type WorkspaceEditorActionsOptions = {
+  clearPendingText: (blockId: string) => void;
+  createBlockMutation: {
+    isPending: boolean;
+    mutateAsync: (input: {
+      afterBlockId?: string | null;
+      pageId: string;
+      props?: BlockProps;
+      text?: string;
+      type?: Block["type"];
+    }) => Promise<Block>;
+  };
+  createLinkedPage: (title: string) => Promise<Page>;
+  createPageMutation: { mutate: (title: string) => void };
+  deleteBlockMutation: {
+    mutate: (block: Block) => void;
+    mutateAsync: (block: Block) => Promise<unknown>;
+  };
+  flushAllTextDrafts: () => Promise<void>;
+  flushQueuedTextDraft: (blockId: string) => Promise<void>;
+  moveBlocks: (input: { afterBlockId: string | null; blocks: Block[] }) => Promise<void>;
+  navigate: ReturnType<typeof useNavigate>;
+  pageTitleDraft: string;
+  selectedDocument: PageDocument | null;
+  setFocusBlockId: (blockId: string, placement?: "start" | "end") => void;
+  updateBlockMutation: {
+    mutate: (input: { block: Block } & BlockEditorUpdate) => void;
+    mutateAsync: (input: { block: Block } & BlockEditorUpdate) => Promise<Block>;
+  };
+  updatePageMutation: { mutate: (input: { page: Page; title: string }) => void };
+};
+
+export function useWorkspaceEditorActions({
+  clearPendingText,
+  createBlockMutation,
+  createLinkedPage,
+  createPageMutation,
+  deleteBlockMutation,
+  flushAllTextDrafts,
+  flushQueuedTextDraft,
+  moveBlocks,
+  navigate,
+  pageTitleDraft,
+  selectedDocument,
+  setFocusBlockId,
+  updateBlockMutation,
+  updatePageMutation
+}: WorkspaceEditorActionsOptions) {
+  const ensuringEmptyPageBlockRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!selectedDocument) {
+      return;
+    }
+
+    if (selectedDocument.blocks.length > 0) {
+      if (ensuringEmptyPageBlockRef.current === selectedDocument.page.id) {
+        ensuringEmptyPageBlockRef.current = null;
+      }
+      return;
+    }
+
+    if (
+      createBlockMutation.isPending ||
+      ensuringEmptyPageBlockRef.current === selectedDocument.page.id
+    ) {
+      return;
+    }
+
+    ensuringEmptyPageBlockRef.current = selectedDocument.page.id;
+    void createBlockMutation
+      .mutateAsync({
+        pageId: selectedDocument.page.id,
+        props: {},
+        text: "",
+        type: "paragraph"
+      })
+      .then((block) => setFocusBlockId(block.id, "start"))
+      .finally(() => {
+        if (ensuringEmptyPageBlockRef.current === selectedDocument.page.id) {
+          ensuringEmptyPageBlockRef.current = null;
+        }
+      });
+  }, [createBlockMutation, selectedDocument, setFocusBlockId]);
+
+  function handleCreatePage(event: SyntheticEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const title = pageTitleDraft.trim();
+    if (title) {
+      createPageMutation.mutate(title);
+    }
+  }
+
+  async function createBlockAfter(
+    block: Block,
+    draft?: CreateBlockDraft,
+    options?: CreateBlockOptions
+  ) {
+    await flushAllTextDrafts();
+    const created = await createBlockMutation.mutateAsync({
+      afterBlockId: block.id,
+      pageId: block.pageId,
+      props: draft?.props,
+      text: draft?.text,
+      type: draft?.type
+    });
+    setFocusBlockId(created.id, options?.focusPlacement ?? "end");
+  }
+
+  async function updateBlock(block: Block, changes: BlockEditorUpdate) {
+    if (changes.text === undefined) {
+      await flushQueuedTextDraft(block.id);
+    }
+    clearPendingText(block.id);
+    updateBlockMutation.mutate({ block, ...changes });
+  }
+
+  async function createPageLink(block: Block, query: string) {
+    const title = query.trim() || "Untitled";
+    const [existingPage] = await noteApi.searchPages({ query: title, limit: 1 });
+    const targetPage = existingPage
+      ? { id: existingPage.pageId, title: existingPage.title }
+      : await createLinkedPage(title);
+
+    await updateBlock(block, {
+      props: {
+        targetPageId: targetPage.id,
+        targetTitle: targetPage.title
+      },
+      text: targetPage.title,
+      type: "page_link"
+    });
+  }
+
+  function openPageLink(pageId: string) {
+    void flushAllTextDrafts().then(() => navigateToPage(navigate, pageId));
+  }
+
+  async function mergeBlockWithPrevious(
+    previousBlock: Block,
+    block: Block,
+    text: string,
+    props: BlockProps
+  ) {
+    await flushQueuedTextDraft(previousBlock.id);
+    clearPendingText(previousBlock.id);
+    clearPendingText(block.id);
+    await updateBlockMutation.mutateAsync({
+      block: previousBlock,
+      ...getMergedBlockUpdate(previousBlock, block, text, props)
+    });
+    await deleteBlockMutation.mutateAsync(block);
+    setFocusBlockId(previousBlock.id, "end");
+  }
+
+  function updatePageTitle(page: Page, title: string) {
+    const nextTitle = title.trim();
+    if (nextTitle && nextTitle !== page.title) {
+      updatePageMutation.mutate({ page, title: nextTitle });
+    }
+  }
+
+  function focusFirstBlock() {
+    const firstBlock = selectedDocument?.blocks[0];
+    if (firstBlock) {
+      setFocusBlockId(firstBlock.id, "start");
+    }
+  }
+
+  function expandBlocksWithDescendants(blocks: Block[]) {
+    return selectedDocument
+      ? getBlocksWithDescendants(selectedDocument.blocks, blocks)
+      : blocks;
+  }
+
+  async function moveBlocksWithDescendants(
+    targets: Block[],
+    afterBlockId: string | null
+  ) {
+    await flushAllTextDrafts();
+    const movingBlocks = expandBlocksWithDescendants(targets);
+    const safeAfterBlockId = getSubtreeSafeAfterBlockId(
+      selectedDocument?.blocks ?? [],
+      movingBlocks,
+      afterBlockId
+    );
+
+    if (safeAfterBlockId === undefined) {
+      return;
+    }
+
+    await moveBlocks({ afterBlockId: safeAfterBlockId, blocks: movingBlocks });
+  }
+
+  return {
+    createBlockAfter,
+    createPageLink,
+    expandBlocksWithDescendants,
+    focusFirstBlock,
+    handleCreatePage,
+    mergeBlockWithPrevious,
+    moveBlocksWithDescendants,
+    openPageLink,
+    updateBlock,
+    updatePageTitle
+  };
+}

@@ -11,23 +11,36 @@ export function usePageHistoryActions({
   refetchDocument
 }: UsePageHistoryActionsInput) {
   async function undoBlockText(block: Block) {
-    return applyPageHistory(block, "undo");
-  }
-
-  async function redoBlockText(block: Block) {
-    return applyPageHistory(block, "redo");
-  }
-
-  async function applyPageHistory(block: Block, direction: "redo" | "undo") {
     clearPendingText(block.id);
-    const restored =
-      direction === "undo"
-        ? await noteApi.undoPageHistory({ pageId: block.pageId })
-        : await noteApi.redoPageHistory({ pageId: block.pageId });
+    const restored = await applyPageHistory(block.pageId, "undo");
 
-    refetchDocument();
     return restored?.blocks.find((item) => item.id === block.id) ?? null;
   }
 
-  return { redoBlockText, undoBlockText };
+  async function redoBlockText(block: Block) {
+    clearPendingText(block.id);
+    const restored = await applyPageHistory(block.pageId, "redo");
+
+    return restored?.blocks.find((item) => item.id === block.id) ?? null;
+  }
+
+  async function undoPage(pageId: string) {
+    return applyPageHistory(pageId, "undo");
+  }
+
+  async function redoPage(pageId: string) {
+    return applyPageHistory(pageId, "redo");
+  }
+
+  async function applyPageHistory(pageId: string, direction: "redo" | "undo") {
+    const restored =
+      direction === "undo"
+        ? await noteApi.undoPageHistory({ pageId })
+        : await noteApi.redoPageHistory({ pageId });
+
+    refetchDocument();
+    return restored;
+  }
+
+  return { redoBlockText, redoPage, undoBlockText, undoPage };
 }

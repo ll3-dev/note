@@ -21,6 +21,12 @@ export function useWorkspaceQueries(activePageId: string | null) {
     enabled: Boolean(activePageId)
   });
 
+  const backlinksQuery = useQuery({
+    queryKey: queryKeys.backlinks(activePageId),
+    queryFn: () => noteApi.listBacklinks({ pageId: activePageId ?? "" }),
+    enabled: Boolean(activePageId)
+  });
+
   async function refreshWorkspace() {
     await queryClient.invalidateQueries({ queryKey: queryKeys.databaseStatus });
     await queryClient.invalidateQueries({ queryKey: queryKeys.pages });
@@ -29,10 +35,14 @@ export function useWorkspaceQueries(activePageId: string | null) {
       await queryClient.invalidateQueries({
         queryKey: queryKeys.pageDocument(activePageId)
       });
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.backlinks(activePageId)
+      });
     }
   }
 
   return {
+    backlinksQuery,
     databaseStatusQuery,
     pageDocumentQuery,
     pagesQuery,

@@ -77,28 +77,48 @@ export function useWorkspaceMutations({
       return [];
     }
 
-    const createdBlocks: Block[] = [];
-
-    let afterBlockId = inputs[0].afterBlockId ?? null;
-
-    for (const input of inputs) {
-      const created = await noteApi.createBlock({
-        pageId: input.pageId,
-        afterBlockId,
-        parentBlockId: input.parentBlockId ?? null,
-        type: input.type ?? "paragraph",
-        text: input.text ?? "",
-        props: input.props ?? {}
-      });
-
-      createdBlocks.push(created);
-      afterBlockId = created.id;
-    }
-
+    const createdBlocks = await noteApi.createBlocks({ blocks: inputs });
     await invalidateDocument(queryClient, pageId);
     await queryClient.invalidateQueries({ queryKey: queryKeys.databaseStatus });
 
     return createdBlocks;
+  }
+
+  async function deleteBlocks(
+    blocks: Block[],
+    fallbackBlock?: {
+      pageId: string;
+      props?: BlockProps;
+      text?: string;
+      type?: BlockType;
+    }
+  ) {
+    const pageId = blocks[0]?.pageId;
+
+    if (!pageId || blocks.length === 0) {
+      return { deleted: true as const };
+    }
+
+    const result = await noteApi.deleteBlocks({
+      blockIds: blocks.map((block) => block.id),
+      fallbackBlock
+    });
+
+    await invalidateDocument(queryClient, pageId);
+    await queryClient.invalidateQueries({ queryKey: queryKeys.databaseStatus });
+
+    return result;
+  }
+
+  async function createLinkedPage(title: string) {
+    const document = await noteApi.createPage({ title, parentPageId: null });
+
+    onPageCreated(document.page);
+    queryClient.setQueryData(queryKeys.pageDocument(document.page.id), document);
+    await queryClient.invalidateQueries({ queryKey: queryKeys.pages });
+    await queryClient.invalidateQueries({ queryKey: queryKeys.databaseStatus });
+
+    return document.page;
   }
 
   const updateBlockMutation = useMutation({
@@ -128,6 +148,7 @@ export function useWorkspaceMutations({
     },
     onSuccess: async (block, variables) => {
       await queryClient.invalidateQueries({ queryKey: queryKeys.pages });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.backlinksRoot });
       const syncState = getBlockMutationSyncState(
         getCachedBlock(queryClient, block.pageId, block.id),
         variables
@@ -258,6 +279,8 @@ export function useWorkspaceMutations({
   return {
     createBlockMutation,
     createBlocks,
+    deleteBlocks,
+    createLinkedPage,
     createPageMutation,
     deleteBlockMutation,
     moveBlockMutation,

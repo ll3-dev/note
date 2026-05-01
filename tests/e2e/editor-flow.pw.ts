@@ -90,6 +90,19 @@ test("copies a selected block range and supports repeated block paste", async ({
         )
     )
     .toEqual(["One", "Two", "One", "Two", "One", "Two"]);
+
+  await page.evaluate(() =>
+    window.dispatchEvent(new CustomEvent("note-history-command", { detail: "undo" }))
+  );
+
+  await expect
+    .poll(() =>
+      page
+        .evaluate(() =>
+          window.__noteE2E.getDocument("page-1").blocks.map((block) => block.text)
+        )
+    )
+    .toEqual(["One", "Two", "One", "Two"]);
 });
 
 test("keeps an editable block after deleting every selected block", async ({ page }) => {
@@ -103,6 +116,55 @@ test("keeps an editable block after deleting every selected block", async ({ pag
 
   await expect(page.getByRole("textbox", { name: "paragraph block" })).toHaveCount(1);
   await expect(page.getByRole("textbox", { name: "paragraph block" }).first()).toBeFocused();
+
+  await page.evaluate(() =>
+    window.dispatchEvent(new CustomEvent("note-history-command", { detail: "undo" }))
+  );
+
+  await expect
+    .poll(() =>
+      page.evaluate(() => window.__noteE2E.getDocument("page-1").blocks.map((block) => block.text))
+    )
+    .toEqual(["Delete me"]);
+});
+
+test("selects the focused block with Escape and returns to editing with Enter", async ({ page }) => {
+  await page.goto("/");
+
+  const firstBlock = page.getByRole("textbox", { name: "paragraph block" }).first();
+  await firstBlock.click();
+  await page.keyboard.type("Selectable");
+  await page.keyboard.press("Escape");
+
+  await expect(firstBlock).not.toBeFocused();
+
+  await page.keyboard.press("Enter");
+  await expect(firstBlock).toBeFocused();
+});
+
+test("moves selected blocks with command shift arrows", async ({ page }) => {
+  await page.goto("/");
+
+  const firstBlock = page.getByRole("textbox", { name: "paragraph block" }).first();
+  await firstBlock.click();
+  await page.keyboard.type("One");
+  await page.keyboard.press("Enter");
+  await page.keyboard.type("Two");
+  await page.keyboard.press("Enter");
+  await page.keyboard.type("Three");
+
+  const secondBlock = page.getByRole("textbox", { name: "paragraph block" }).nth(1);
+  await secondBlock.click();
+  await page.keyboard.press(`${modKey}+A`);
+  await page.keyboard.press(`${modKey}+Shift+ArrowUp`);
+
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        window.__noteE2E.getDocument("page-1").blocks.map((block) => block.text)
+      )
+    )
+    .toEqual(["Two", "One", "Three"]);
 });
 
 test("formats selected inline text from the floating toolbar", async ({ page }) => {
@@ -131,4 +193,32 @@ test("formats selected inline text from the floating toolbar", async ({ page }) 
       { end: 11, start: 7, type: "bold" },
       { end: 11, href: "https://example.com", start: 7, type: "link" }
     ]);
+});
+
+test("undoes and redoes block text from the app history command", async ({ page }) => {
+  await page.goto("/");
+
+  const firstBlock = page.getByRole("textbox", { name: "paragraph block" }).first();
+  await firstBlock.fill("Undo me");
+  await expect(firstBlock).toHaveText("Undo me");
+
+  await page.evaluate(() =>
+    window.dispatchEvent(new CustomEvent("note-history-command", { detail: "undo" }))
+  );
+
+  await expect
+    .poll(() =>
+      page.evaluate(() => window.__noteE2E.getDocument("page-1").blocks[0]?.text)
+    )
+    .toBe("");
+
+  await page.evaluate(() =>
+    window.dispatchEvent(new CustomEvent("note-history-command", { detail: "redo" }))
+  );
+
+  await expect
+    .poll(() =>
+      page.evaluate(() => window.__noteE2E.getDocument("page-1").blocks[0]?.text)
+    )
+    .toBe("Undo me");
 });

@@ -1,25 +1,20 @@
-import { useCallback, useEffect, useMemo, useRef, type SyntheticEvent } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { useGlobalKeyboardShortcuts } from "@/mainview/features/commands/useGlobalKeyboardShortcuts";
 import { useKeybindingStore } from "@/mainview/features/commands/keybindingStore";
 import { useWorkspaceStore } from "@/mainview/store/useWorkspaceStore";
-import type { Block, BlockProps, Page } from "@/shared/contracts";
+import type { Block, BlockProps } from "@/shared/contracts";
 import { useBlockFocus } from "@/mainview/features/page/hooks/useBlockFocus";
 import { useBlockKeyboardFocus } from "@/mainview/features/page/hooks/useBlockKeyboardFocus";
-import {
-  getMergedBlockUpdate,
-  type CreateBlockDraft
-} from "@/mainview/features/page/lib/blockEditingBehavior";
-import type {
-  BlockEditorUpdate,
-  CreateBlockOptions
-} from "@/mainview/features/page/types/blockEditorTypes";
 import { WorkspaceEditorPane } from "./components/WorkspaceEditorPane";
 import { WorkspaceLayout } from "./components/WorkspaceLayout";
+import { QuickSwitcherDialog } from "./components/QuickSwitcherDialog";
 import { useBlockBatchActions } from "./hooks/useBlockBatchActions";
 import { useBlockTextSync } from "./hooks/useBlockTextSync";
 import { useInitialPageSelection } from "./hooks/useInitialPageSelection";
 import { useMarkdownClipboard } from "./hooks/useMarkdownClipboard";
 import { usePageHistoryActions } from "./hooks/usePageHistoryActions";
+import { useQuickSwitcher } from "./hooks/useQuickSwitcher";
+import { useWorkspaceEditorActions } from "./hooks/useWorkspaceEditorActions";
 import { useWorkspaceMutations } from "./hooks/useWorkspaceMutations";
 import { navigateToPage, useWorkspaceNavigation } from "./hooks/useWorkspaceNavigation";
 import { useWorkspaceQueries } from "./hooks/useWorkspaceQueries";
@@ -43,10 +38,9 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
   const toggleSidebar = useWorkspaceStore((state) => state.toggleSidebar);
   const keybindings = useKeybindingStore((state) => state.keybindings);
   const activePageId = routePageId ?? selectedPageId;
-  const ensuringEmptyPageBlockRef = useRef<string | null>(null);
-  const { databaseStatusQuery, pageDocumentQuery, pagesQuery, refreshWorkspace } = useWorkspaceQueries(activePageId);
+  const { backlinksQuery, databaseStatusQuery, pageDocumentQuery, pagesQuery, refreshWorkspace } = useWorkspaceQueries(activePageId);
 
-  const { createBlockMutation, createBlocks, createPageMutation, deleteBlockMutation, moveBlocks, movePageMutation, updatePageMutation, updateBlockMutation } = useWorkspaceMutations({
+  const { createBlockMutation, createBlocks, deleteBlocks: deleteBlocksBatch, createLinkedPage, createPageMutation, deleteBlockMutation, moveBlocks, movePageMutation, updatePageMutation, updateBlockMutation } = useWorkspaceMutations({
     navigateToPage: async (pageId) => {
       await navigateToPage(navigate, pageId);
     },
@@ -73,9 +67,23 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
     useBlockTextSync({ saveText: saveBlockText });
   const { closeActiveTab, closeWorkspaceTab, navigate, selectPage, selectTab } =
     useWorkspaceNavigation({ activeTabId, closeTab, flushBeforeNavigate: flushAllTextDrafts, openPageTab, setActiveTabId, tabs });
+  const quickSwitcher = useQuickSwitcher({
+    onSelectResult: (result) => {
+      void flushAllTextDrafts().then(() => {
+        void navigateToPage(navigate, result.pageId);
+        if (result.kind === "block") {
+          setFocusBlockId(result.blockId, "start");
+        }
+      });
+    }
+  });
   const workspaceCommandContext = useMemo(
-    () => ({ closeActiveTab, toggleSidebar }),
-    [closeActiveTab, toggleSidebar]
+    () => ({
+      closeActiveTab,
+      openQuickSwitcher: quickSwitcher.openQuickSwitcher,
+      toggleSidebar
+    }),
+    [closeActiveTab, quickSwitcher.openQuickSwitcher, toggleSidebar]
   );
   const { copyCurrentPageMarkdown, pasteMarkdown } = useMarkdownClipboard({
     clearPendingText,
@@ -88,18 +96,54 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
   });
   const { deleteBlocks, duplicateBlocks, pasteBlocksAfter } = useBlockBatchActions({
     clearPendingText,
-    createBlock: createBlockMutation.mutateAsync,
     createBlocks,
-    deleteBlock: deleteBlockMutation.mutateAsync,
+    deleteBlocksBatch,
     flushAllTextDrafts,
     getBlocksCount: () => selectedDocument?.blocks.length ?? 0,
     setFocusBlockId
   });
-  const { redoBlockText, undoBlockText } = usePageHistoryActions({
+  const { redoBlockText, redoPage, undoBlockText, undoPage } = usePageHistoryActions({
     clearPendingText,
     refetchDocument: () => {
       void pageDocumentQuery.refetch();
     }
+  });
+  useEffect(() => {
+    function handleMenuHistoryCommand(event: Event) {
+      if (isEditableElement(document.activeElement) || !selectedDocument) {
+        return;
+      }
+
+      const command = (event as CustomEvent<"redo" | "undo">).detail;
+
+      if (command === "undo") {
+        void undoPage(selectedDocument.page.id);
+      } else if (command === "redo") {
+        void redoPage(selectedDocument.page.id);
+      }
+    }
+
+    window.addEventListener("note-history-command", handleMenuHistoryCommand);
+
+    return () => {
+      window.removeEventListener("note-history-command", handleMenuHistoryCommand);
+    };
+  }, [redoPage, selectedDocument, undoPage]);
+  const editorActions = useWorkspaceEditorActions({
+    clearPendingText,
+    createBlockMutation,
+    createLinkedPage,
+    createPageMutation,
+    deleteBlockMutation,
+    flushAllTextDrafts,
+    flushQueuedTextDraft,
+    moveBlocks,
+    navigate,
+    pageTitleDraft,
+    selectedDocument,
+    setFocusBlockId,
+    updateBlockMutation,
+    updatePageMutation
   });
 
   useGlobalKeyboardShortcuts({
@@ -110,104 +154,6 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
   });
   useInitialPageSelection({ activePageId, navigate, openPageTab, pages, routePageId, setSelectedPageId });
 
-  useEffect(() => {
-    if (!selectedDocument) {
-      return;
-    }
-
-    if (selectedDocument.blocks.length > 0) {
-      if (ensuringEmptyPageBlockRef.current === selectedDocument.page.id) {
-        ensuringEmptyPageBlockRef.current = null;
-      }
-      return;
-    }
-
-    if (
-      createBlockMutation.isPending ||
-      ensuringEmptyPageBlockRef.current === selectedDocument.page.id
-    ) {
-      return;
-    }
-
-    ensuringEmptyPageBlockRef.current = selectedDocument.page.id;
-    void createBlockMutation
-      .mutateAsync({
-        pageId: selectedDocument.page.id,
-        props: {},
-        text: "",
-        type: "paragraph"
-      })
-      .then((block) => setFocusBlockId(block.id, "start"))
-      .finally(() => {
-        if (ensuringEmptyPageBlockRef.current === selectedDocument.page.id) {
-          ensuringEmptyPageBlockRef.current = null;
-        }
-      });
-  }, [createBlockMutation, selectedDocument, setFocusBlockId]);
-
-  function handleCreatePage(event: SyntheticEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const title = pageTitleDraft.trim();
-    if (title) {
-      createPageMutation.mutate(title);
-    }
-  }
-
-  async function createBlockAfter(
-    block: Block,
-    draft?: CreateBlockDraft,
-    options?: CreateBlockOptions
-  ) {
-    await flushAllTextDrafts();
-    const created = await createBlockMutation.mutateAsync({
-      afterBlockId: block.id,
-      pageId: block.pageId,
-      props: draft?.props,
-      text: draft?.text,
-      type: draft?.type
-    });
-    setFocusBlockId(created.id, options?.focusPlacement ?? "end");
-  }
-
-  async function updateBlock(block: Block, changes: BlockEditorUpdate) {
-    if (changes.text === undefined) {
-      await flushQueuedTextDraft(block.id);
-    }
-    clearPendingText(block.id);
-    updateBlockMutation.mutate({ block, ...changes });
-  }
-
-  async function mergeBlockWithPrevious(
-    previousBlock: Block,
-    block: Block,
-    text: string,
-    props: BlockProps
-  ) {
-    await flushQueuedTextDraft(previousBlock.id);
-    clearPendingText(previousBlock.id);
-    clearPendingText(block.id);
-    await updateBlockMutation.mutateAsync({
-      block: previousBlock,
-      ...getMergedBlockUpdate(previousBlock, block, text, props)
-    });
-    await deleteBlockMutation.mutateAsync(block);
-    setFocusBlockId(previousBlock.id, "end");
-  }
-
-  function updatePageTitle(page: Page, title: string) {
-    const nextTitle = title.trim();
-    if (nextTitle && nextTitle !== page.title) {
-      updatePageMutation.mutate({ page, title: nextTitle });
-    }
-  }
-
-  function focusFirstBlock() {
-    const firstBlock = selectedDocument?.blocks[0];
-    if (firstBlock) {
-      setFocusBlockId(firstBlock.id, "start");
-    }
-  }
-
   return (
     <WorkspaceLayout
       activePageId={activePageId}
@@ -215,7 +161,7 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
       isCreatingPage={createPageMutation.isPending}
       onCloseTab={closeWorkspaceTab}
       onCopyCurrentPageMarkdown={() => void copyCurrentPageMarkdown()}
-      onCreatePage={handleCreatePage}
+      onCreatePage={editorActions.handleCreatePage}
       onCreateUntitledPage={() => createPageMutation.mutate("Untitled")}
       onMovePage={(page, parentPageId, afterPageId) => {
         movePageMutation.mutate({ afterPageId, page, parentPageId });
@@ -231,32 +177,56 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
       sqliteVersion={databaseStatusQuery.data?.sqliteVersion}
     >
       <WorkspaceEditorPane
+        backlinks={backlinksQuery.data ?? []}
         document={selectedDocument}
         isLoading={pagesQuery.isLoading}
-        onCreateBlockAfter={createBlockAfter}
+        onCreateBlockAfter={editorActions.createBlockAfter}
+        onCreatePageLink={editorActions.createPageLink}
         onDeleteBlock={(target) => {
           void flushAllTextDrafts().then(() => deleteBlockMutation.mutate(target));
         }}
-        onDeleteBlocks={(targets) => void deleteBlocks(targets)}
-        onDuplicateBlocks={(targets) => void duplicateBlocks(targets)}
+        onDeleteBlocks={(targets) =>
+          void deleteBlocks(editorActions.expandBlocksWithDescendants(targets))
+        }
+        onDuplicateBlocks={(targets) =>
+          void duplicateBlocks(editorActions.expandBlocksWithDescendants(targets))
+        }
         onPasteBlocks={(target) => pasteBlocksAfter(target)}
-        onFocusFirstBlock={focusFirstBlock}
+        onFocusFirstBlock={editorActions.focusFirstBlock}
         onFocusNextBlock={focusNextBlock}
         onFocusPreviousBlock={focusPreviousBlock}
-        onMergeBlockWithPrevious={mergeBlockWithPrevious}
-        onMoveBlocks={async (targets, afterBlockId) => {
-          await flushAllTextDrafts();
-          await moveBlocks({ afterBlockId, blocks: targets });
+        onIndentBlocks={(updates) => {
+          for (const { block, props } of updates) {
+            void editorActions.updateBlock(block, { props });
+          }
         }}
+        onMergeBlockWithPrevious={editorActions.mergeBlockWithPrevious}
+        onMoveBlocks={editorActions.moveBlocksWithDescendants}
         onPasteMarkdown={pasteMarkdown}
+        onOpenPageLink={editorActions.openPageLink}
         onTextDraftChange={queueTextDraft}
         onTextDraftFlush={flushTextDraft}
         onTextHistoryApply={(block) => clearPendingText(block.id)}
         onTextRedo={redoBlockText}
         onTextUndo={undoBlockText}
-        onUpdateBlock={(target, changes) => void updateBlock(target, changes)}
-        onUpdatePageTitle={updatePageTitle}
+        onUpdateBlock={(target, changes) => void editorActions.updateBlock(target, changes)}
+        onUpdatePageTitle={editorActions.updatePageTitle}
+      />
+      <QuickSwitcherDialog
+        activeIndex={quickSwitcher.activeIndex}
+        isOpen={quickSwitcher.isOpen}
+        onActiveIndexChange={quickSwitcher.setActiveIndex}
+        onClose={quickSwitcher.closeQuickSwitcher}
+        onQueryChange={quickSwitcher.updateQuery}
+        onSelect={quickSwitcher.selectResult}
+        query={quickSwitcher.query}
+        results={quickSwitcher.results}
       />
     </WorkspaceLayout>
   );
+
+}
+
+function isEditableElement(element: Element | null) {
+  return Boolean(element?.closest("input,textarea,select,[contenteditable]"));
 }
