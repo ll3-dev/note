@@ -23,6 +23,26 @@ export function normalizeBlockProps(props: BlockProps, text: string): BlockProps
     nextProps.language = props.language.slice(0, 64);
   }
 
+  if (typeof props.targetPageId === "string") {
+    nextProps.targetPageId = props.targetPageId.slice(0, 128);
+  }
+
+  if (typeof props.targetTitle === "string") {
+    nextProps.targetTitle = props.targetTitle.slice(0, 200);
+  }
+
+  if (typeof props.src === "string") {
+    nextProps.src = props.src.slice(0, 4_000);
+  }
+
+  if (typeof props.alt === "string") {
+    nextProps.alt = props.alt.slice(0, 500);
+  }
+
+  if (typeof props.caption === "string") {
+    nextProps.caption = props.caption.slice(0, 1_000);
+  }
+
   if (inlineMarks.length > 0) {
     nextProps.inlineMarks = inlineMarks;
   }

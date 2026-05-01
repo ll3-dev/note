@@ -15,7 +15,9 @@ import type {
   BlockProps,
   BlockType,
   CreateBlockInput,
+  CreateBlocksInput,
   DeleteBlockInput,
+  DeleteBlocksInput,
   UpdateBlockInput
 } from "@/shared/contracts";
 
@@ -57,6 +59,50 @@ export function createBlock(
   }
 
   return block;
+}
+
+export function createBlocks(
+  handle: DatabaseHandle,
+  input: CreateBlocksInput
+): Block[] {
+  const firstInput = input.blocks[0];
+
+  if (!firstInput) {
+    return [];
+  }
+
+  const pageId = firstInput.pageId;
+  const createdBlocks: Block[] = [];
+
+  runInTransaction(handle, () => {
+    capturePageHistoryBeforeChange(handle, pageId);
+    let afterBlockId = firstInput.afterBlockId ?? null;
+
+    for (const blockInput of input.blocks) {
+      if (blockInput.pageId !== pageId) {
+        throw new Error("batch block creation must target one page");
+      }
+
+      const parentBlockId = blockInput.parentBlockId ?? null;
+      const block = insertBlock(handle, {
+        pageId,
+        parentBlockId,
+        type: blockInput.type ?? DEFAULT_BLOCK_TYPE,
+        text: blockInput.text ?? "",
+        props: blockInput.props ?? {},
+        sortKey: getNextSortKey(handle, pageId, parentBlockId, afterBlockId)
+      });
+
+      createdBlocks.push(block);
+      afterBlockId = block.id;
+      recordOperation(handle, "block", block.id, "create", block);
+    }
+
+    touchPage(handle, pageId);
+    syncPageHistoryAfterChange(handle, pageId);
+  });
+
+  return createdBlocks;
 }
 
 export function updateBlock(
@@ -106,6 +152,51 @@ export function deleteBlock(
   recordOperation(handle, "block", input.blockId, "delete", {});
 
   return { deleted: true };
+}
+
+export function deleteBlocks(
+  handle: DatabaseHandle,
+  input: DeleteBlocksInput
+): { createdBlock?: Block; deleted: true } {
+  const firstBlock = getBlock(handle, input.blockIds[0]);
+  const pageId = firstBlock.pageId;
+  let createdBlock: Block | undefined;
+
+  runInTransaction(handle, () => {
+    capturePageHistoryBeforeChange(handle, pageId);
+
+    for (const blockId of input.blockIds) {
+      const block = getBlock(handle, blockId);
+
+      if (block.pageId !== pageId) {
+        throw new Error("batch block deletion must target one page");
+      }
+
+      handle.orm.delete(blocks).where(eq(blocks.id, blockId)).run();
+      recordOperation(handle, "block", blockId, "delete", {});
+    }
+
+    if (input.fallbackBlock) {
+      if (input.fallbackBlock.pageId !== pageId) {
+        throw new Error("fallback block must target the deleted page");
+      }
+
+      createdBlock = insertBlock(handle, {
+        pageId,
+        parentBlockId: null,
+        props: input.fallbackBlock.props ?? {},
+        sortKey: getNextSortKey(handle, pageId, null, null),
+        text: input.fallbackBlock.text ?? "",
+        type: input.fallbackBlock.type ?? DEFAULT_BLOCK_TYPE
+      });
+      recordOperation(handle, "block", createdBlock.id, "create", createdBlock);
+    }
+
+    touchPage(handle, pageId);
+    syncPageHistoryAfterChange(handle, pageId);
+  });
+
+  return createdBlock ? { createdBlock, deleted: true } : { deleted: true };
 }
 
 export function insertBlock(

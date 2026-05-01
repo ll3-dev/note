@@ -14,6 +14,19 @@ describe("RPC input validation", () => {
     expect(
       validateCreateBlockInput({
         pageId: "page-1",
+        text: "Minor heading",
+        type: "heading_3"
+      })
+    ).toEqual({
+      afterBlockId: null,
+      pageId: "page-1",
+      parentBlockId: null,
+      text: "Minor heading",
+      type: "heading_3"
+    });
+    expect(
+      validateCreateBlockInput({
+        pageId: "page-1",
         props: { checked: true },
         text: "Task",
         type: "todo"

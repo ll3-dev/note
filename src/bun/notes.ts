@@ -1,7 +1,9 @@
 import type { DatabaseHandle } from "./database";
 import {
   createBlock,
+  createBlocks,
   deleteBlock,
+  deleteBlocks,
   updateBlock,
 } from "./repositories/blockRepository";
 import { moveBlock } from "./repositories/blockMoveRepository";
@@ -14,6 +16,11 @@ import {
 } from "./repositories/pageRepository";
 import { movePage } from "./repositories/pageMoveRepository";
 import {
+  listBacklinks,
+  searchPages,
+  searchWorkspace
+} from "./repositories/pageLinkRepository";
+import {
   redoPageHistory,
   undoPageHistory
 } from "./sync/pageHistory";
@@ -21,11 +28,16 @@ import type { GetPageDocumentInput, PageDocument } from "@/shared/contracts";
 
 export {
   createBlock,
+  createBlocks,
   createPage,
   deleteBlock,
+  deleteBlocks,
   listPages,
+  listBacklinks,
   moveBlock,
   movePage,
+  searchPages,
+  searchWorkspace,
   redoPageHistory,
   undoPageHistory,
   updateBlock,

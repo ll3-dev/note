@@ -2,12 +2,17 @@ import type {
   BlockProps,
   BlockType,
   CreateBlockInput,
+  CreateBlocksInput,
   CreatePageInput,
   DeleteBlockInput,
+  DeleteBlocksInput,
   GetPageDocumentInput,
   MoveBlockInput,
   MovePageInput,
   PageHistoryInput,
+  ListBacklinksInput,
+  SearchPagesInput,
+  SearchWorkspaceInput,
   UpdateBlockInput,
   UpdatePageInput
 } from "@/shared/contracts";
@@ -16,11 +21,13 @@ const BLOCK_TYPES = new Set<BlockType>([
   "paragraph",
   "heading_1",
   "heading_2",
+  "heading_3",
   "todo",
   "bulleted_list",
   "numbered_list",
   "quote",
   "code",
+  "toggle",
   "divider",
   "image",
   "page_link"
@@ -80,6 +87,22 @@ export function validateCreateBlockInput(input: unknown): CreateBlockInput {
   return output;
 }
 
+export function validateCreateBlocksInput(input: unknown): CreateBlocksInput {
+  const record = asRecord(input);
+
+  if (!Array.isArray(record.blocks)) {
+    throw new Error("blocks must be an array");
+  }
+
+  if (record.blocks.length === 0 || record.blocks.length > 1000) {
+    throw new Error("blocks length is invalid");
+  }
+
+  return {
+    blocks: record.blocks.map(validateCreateBlockInput)
+  };
+}
+
 export function validateUpdateBlockInput(input: unknown): UpdateBlockInput {
   const record = asRecord(input);
   const output: UpdateBlockInput = {
@@ -106,6 +129,47 @@ export function validateDeleteBlockInput(input: unknown): DeleteBlockInput {
   return { blockId: idValue(record.blockId, "blockId") };
 }
 
+export function validateDeleteBlocksInput(input: unknown): DeleteBlocksInput {
+  const record = asRecord(input);
+
+  if (!Array.isArray(record.blockIds)) {
+    throw new Error("blockIds must be an array");
+  }
+
+  if (record.blockIds.length === 0 || record.blockIds.length > 1000) {
+    throw new Error("blockIds length is invalid");
+  }
+
+  const output: DeleteBlocksInput = {
+    blockIds: record.blockIds.map((blockId) => idValue(blockId, "blockId"))
+  };
+
+  if (record.fallbackBlock !== undefined) {
+    const fallback = asRecord(record.fallbackBlock);
+    output.fallbackBlock = {
+      pageId: idValue(fallback.pageId, "pageId")
+    };
+
+    if (fallback.type !== undefined) {
+      output.fallbackBlock.type = blockTypeValue(fallback.type);
+    }
+
+    if (fallback.text !== undefined) {
+      output.fallbackBlock.text = stringValue(
+        fallback.text,
+        "text",
+        MAX_BLOCK_TEXT_LENGTH
+      );
+    }
+
+    if (fallback.props !== undefined) {
+      output.fallbackBlock.props = propsValue(fallback.props);
+    }
+  }
+
+  return output;
+}
+
 export function validateMoveBlockInput(input: unknown): MoveBlockInput {
   const record = asRecord(input);
   return {
@@ -124,6 +188,37 @@ export function validateMovePageInput(input: unknown): MovePageInput {
 }
 
 export function validatePageHistoryInput(input: unknown): PageHistoryInput {
+  const record = asRecord(input);
+  return { pageId: idValue(record.pageId, "pageId") };
+}
+
+export function validateSearchPagesInput(input: unknown): SearchPagesInput {
+  const record = asRecord(input);
+  const output: SearchPagesInput = {
+    query: stringValue(record.query, "query", 200)
+  };
+
+  if (record.limit !== undefined) {
+    output.limit = numberValue(record.limit, "limit", 1, 20);
+  }
+
+  return output;
+}
+
+export function validateSearchWorkspaceInput(input: unknown): SearchWorkspaceInput {
+  const record = asRecord(input);
+  const output: SearchWorkspaceInput = {
+    query: stringValue(record.query, "query", 200)
+  };
+
+  if (record.limit !== undefined) {
+    output.limit = numberValue(record.limit, "limit", 1, 30);
+  }
+
+  return output;
+}
+
+export function validateListBacklinksInput(input: unknown): ListBacklinksInput {
   const record = asRecord(input);
   return { pageId: idValue(record.pageId, "pageId") };
 }
@@ -186,4 +281,17 @@ function propsValue(value: unknown): BlockProps {
   }
 
   return value as BlockProps;
+}
+
+function numberValue(
+  value: unknown,
+  field: string,
+  min: number,
+  max: number
+) {
+  if (typeof value !== "number" || !Number.isInteger(value)) {
+    throw new Error(`${field} must be an integer`);
+  }
+
+  return Math.max(min, Math.min(value, max));
 }

@@ -22,11 +22,13 @@ export type BlockType =
   | "paragraph"
   | "heading_1"
   | "heading_2"
+  | "heading_3"
   | "todo"
   | "bulleted_list"
   | "numbered_list"
   | "quote"
   | "code"
+  | "toggle"
   | "divider"
   | "image"
   | "page_link";
@@ -73,6 +75,10 @@ export type CreateBlockInput = {
   afterBlockId?: string | null;
 };
 
+export type CreateBlocksInput = {
+  blocks: CreateBlockInput[];
+};
+
 export type UpdateBlockInput = {
   blockId: string;
   type?: BlockType;
@@ -82,6 +88,16 @@ export type UpdateBlockInput = {
 
 export type DeleteBlockInput = {
   blockId: string;
+};
+
+export type DeleteBlocksInput = {
+  blockIds: string[];
+  fallbackBlock?: {
+    pageId: string;
+    type?: BlockType;
+    text?: string;
+    props?: BlockProps;
+  };
 };
 
 export type MoveBlockInput = {
@@ -99,6 +115,46 @@ export type PageHistoryInput = {
   pageId: string;
 };
 
+export type SearchPagesInput = {
+  query: string;
+  limit?: number;
+};
+
+export type PageSearchResult = {
+  pageId: string;
+  title: string;
+};
+
+export type ListBacklinksInput = {
+  pageId: string;
+};
+
+export type Backlink = {
+  blockId: string;
+  pageId: string;
+  pageTitle: string;
+  text: string;
+};
+
+export type SearchWorkspaceInput = {
+  query: string;
+  limit?: number;
+};
+
+export type SearchWorkspaceResult =
+  | {
+      kind: "page";
+      pageId: string;
+      title: string;
+    }
+  | {
+      blockId: string;
+      kind: "block";
+      pageId: string;
+      pageTitle: string;
+      text: string;
+    };
+
 export type NoteRPC = {
   bun: RPCSchema<{
     requests: {
@@ -109,6 +165,18 @@ export type NoteRPC = {
       listPages: {
         params: void;
         response: Page[];
+      };
+      searchPages: {
+        params: SearchPagesInput;
+        response: PageSearchResult[];
+      };
+      listBacklinks: {
+        params: ListBacklinksInput;
+        response: Backlink[];
+      };
+      searchWorkspace: {
+        params: SearchWorkspaceInput;
+        response: SearchWorkspaceResult[];
       };
       getPageDocument: {
         params: GetPageDocumentInput;
@@ -126,6 +194,10 @@ export type NoteRPC = {
         params: CreateBlockInput;
         response: Block;
       };
+      createBlocks: {
+        params: CreateBlocksInput;
+        response: Block[];
+      };
       updateBlock: {
         params: UpdateBlockInput;
         response: Block;
@@ -133,6 +205,10 @@ export type NoteRPC = {
       deleteBlock: {
         params: DeleteBlockInput;
         response: { deleted: true };
+      };
+      deleteBlocks: {
+        params: DeleteBlocksInput;
+        response: { createdBlock?: Block; deleted: true };
       };
       moveBlock: {
         params: MoveBlockInput;

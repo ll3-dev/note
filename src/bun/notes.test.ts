@@ -5,12 +5,15 @@ import path from "node:path";
 import { openDatabase, type DatabaseHandle } from "./database";
 import {
   createBlock,
+  createBlocks,
   createPage,
   deleteBlock,
+  deleteBlocks,
   getPageDocument,
   listPages,
   moveBlock,
   movePage,
+  undoPageHistory,
   updatePage,
   updateBlock
 } from "./notes";
@@ -199,6 +202,58 @@ describe("notes repository", () => {
     expect(new Set(ordered.map((block) => block.sortKey)).size).toBe(
       ordered.length
     );
+  });
+
+  test("records batch block creation as one undo step", () => {
+    const handle = openTempDatabase();
+    const page = createPage(handle, { title: "Paste" }).page;
+    const first = getPageDocument(handle, { pageId: page.id }).blocks[0];
+
+    createBlocks(handle, {
+      blocks: [
+        { afterBlockId: first.id, pageId: page.id, text: "One" },
+        { afterBlockId: null, pageId: page.id, text: "Two" }
+      ]
+    });
+
+    expect(getPageDocument(handle, { pageId: page.id }).blocks.map((block) => block.text)).toEqual([
+      "",
+      "One",
+      "Two"
+    ]);
+
+    expect(undoPageHistory(handle, { pageId: page.id })?.blocks.map((block) => block.text)).toEqual([
+      ""
+    ]);
+  });
+
+  test("records batch block deletion and fallback creation as one undo step", () => {
+    const handle = openTempDatabase();
+    const page = createPage(handle, { title: "Delete" }).page;
+    const first = getPageDocument(handle, { pageId: page.id }).blocks[0];
+    const second = createBlock(handle, {
+      afterBlockId: first.id,
+      pageId: page.id,
+      text: "Second"
+    });
+
+    deleteBlocks(handle, {
+      blockIds: [first.id, second.id],
+      fallbackBlock: {
+        pageId: page.id,
+        text: "",
+        type: "paragraph"
+      }
+    });
+
+    expect(getPageDocument(handle, { pageId: page.id }).blocks.map((block) => block.text)).toEqual([
+      ""
+    ]);
+
+    expect(undoPageHistory(handle, { pageId: page.id })?.blocks.map((block) => block.text)).toEqual([
+      "",
+      "Second"
+    ]);
   });
 
   test("moves blocks within a page document and rewrites sort keys", () => {
