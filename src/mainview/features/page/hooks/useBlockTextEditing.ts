@@ -30,6 +30,8 @@ type UseBlockTextEditingOptions = {
     draft?: CreateBlockDraft,
     options?: CreateBlockOptions
   ) => Promise<void>;
+  onDeleteBlock: (block: Block) => void;
+  onCreatePageLink: (block: Block, query: string) => Promise<void> | void;
   onTextHistoryApply: (block: Block, text: string) => void;
   onTextRedo: (block: Block) => Promise<Block | null>;
   onTextUndo: (block: Block) => Promise<Block | null>;
@@ -43,6 +45,8 @@ export function useBlockTextEditing({
   onTextDraftChange,
   onTextDraftFlush,
   onCreateBlockAfter,
+  onDeleteBlock,
+  onCreatePageLink,
   onTextHistoryApply,
   onTextRedo,
   onTextUndo,
@@ -98,7 +102,36 @@ export function useBlockTextEditing({
   }
 
   async function applyCommand(command: BlockCommand) {
-    const nextProps = command.type === "todo" ? { checked, ...command.props } : {};
+    if (command.action === "delete") {
+      commandMenu.closeCommandMenu();
+      onDeleteBlock(block);
+      return;
+    }
+
+    if (command.action === "insertAfter") {
+      commandMenu.closeCommandMenu();
+      await onCreateBlockAfter(
+        block,
+        {
+          props: command.props ?? {},
+          text: "",
+          type: command.type
+        },
+        { focusPlacement: "start" }
+      );
+      return;
+    }
+
+    if (command.type === "page_link") {
+      commandMenu.closeCommandMenu();
+      await onCreatePageLink(block, draft.replace(/^\//, "").trim());
+      return;
+    }
+
+    const nextProps =
+      command.type === "todo"
+        ? { checked, ...command.props }
+        : command.props ?? {};
     const nextText = draft.startsWith("/") ? "" : draft;
 
     setDraft(nextText);

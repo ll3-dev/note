@@ -66,6 +66,38 @@ export function getBlocksAfterMove(
   ];
 }
 
+export function getAfterBlockIdForKeyboardBlockMove(
+  blocks: Block[],
+  selectedBlockIds: string[],
+  direction: "down" | "up"
+) {
+  const selectedBlockIdSet = new Set(selectedBlockIds);
+  const selectedIndexes = blocks
+    .map((block, index) => (selectedBlockIdSet.has(block.id) ? index : -1))
+    .filter((index) => index >= 0);
+
+  if (selectedIndexes.length === 0) {
+    return undefined;
+  }
+
+  const firstSelectedIndex = selectedIndexes[0];
+  const lastSelectedIndex = selectedIndexes[selectedIndexes.length - 1];
+
+  if (direction === "up") {
+    if (firstSelectedIndex === 0) {
+      return undefined;
+    }
+
+    return firstSelectedIndex > 1 ? blocks[firstSelectedIndex - 2].id : null;
+  }
+
+  if (lastSelectedIndex >= blocks.length - 1) {
+    return undefined;
+  }
+
+  return blocks[lastSelectedIndex + 1].id;
+}
+
 export async function moveBlocksSequentially(
   movingBlocks: Block[],
   afterBlockId: string | null,

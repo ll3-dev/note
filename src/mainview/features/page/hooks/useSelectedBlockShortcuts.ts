@@ -1,6 +1,12 @@
 import { useEffect } from "react";
 import type { Block, PageDocument } from "@/shared/contracts";
 import { copyBlocksToClipboard } from "@/mainview/features/page/lib/blockClipboard";
+import { getAfterBlockIdForKeyboardBlockMove } from "@/mainview/features/page/lib/blockDrag";
+import {
+  getIndentedSubtreeBlockUpdates,
+  getBlocksWithDescendants,
+  getSubtreeSafeAfterBlockId
+} from "@/mainview/features/page/lib/blockTree";
 import {
   getKeyboardBlockSelection,
   type KeyboardBlockSelectionResult
@@ -11,7 +17,10 @@ type UseSelectedBlockShortcutsOptions = {
   document: PageDocument;
   onDeleteBlocks: (blocks: Block[]) => void;
   onDuplicateBlocks: (blocks: Block[]) => void;
+  onFocusBlock: (blockId: string) => void;
   onFocusTitle: () => void;
+  onIndentBlocks: (blocks: Array<{ block: Block; props: Block["props"] }>) => void;
+  onMoveBlocks: (blocks: Block[], afterBlockId: string | null) => Promise<void> | void;
   onPasteBlocks: (afterBlock: Block) => Promise<Block[]> | Block[];
   onKeyboardSelection: (selection: KeyboardBlockSelectionResult) => void;
   selectionAnchorBlockId: string | null;
@@ -25,7 +34,10 @@ export function useSelectedBlockShortcuts({
   document,
   onDeleteBlocks,
   onDuplicateBlocks,
+  onFocusBlock,
   onFocusTitle,
+  onIndentBlocks,
+  onMoveBlocks,
   onKeyboardSelection,
   onPasteBlocks,
   selectionAnchorBlockId,
@@ -44,6 +56,39 @@ export function useSelectedBlockShortcuts({
       }
 
       if (selectedBlocks.length === 0) {
+        if (event.key === "Escape") {
+          handleEditableEscape(event);
+        }
+        return;
+      }
+
+      if (
+        isModKey(event) &&
+        event.shiftKey &&
+        (event.key === "ArrowUp" || event.key === "ArrowDown")
+      ) {
+        handleKeyboardBlockMove(
+          event,
+          event.key === "ArrowUp" ? "up" : "down"
+        );
+        return;
+      }
+
+      if (event.key === "Tab") {
+        if (shouldIgnoreSelectedBlockShortcutTarget(event.target, selectedBlockIds)) {
+          return;
+        }
+
+        const updates = getIndentedSubtreeBlockUpdates(
+          document.blocks,
+          selectedBlocks,
+          event.shiftKey ? "out" : "in"
+        );
+
+        if (updates.length > 0) {
+          event.preventDefault();
+          onIndentBlocks(updates);
+        }
         return;
       }
 
@@ -81,13 +126,34 @@ export function useSelectedBlockShortcuts({
         return;
       }
 
+      if (event.key === "Enter") {
+        if (shouldIgnoreSelectedBlockShortcutTarget(event.target, selectedBlockIds)) {
+          return;
+        }
+
+        const targetBlockId = getSelectedBlockEditTargetId(
+          selectedBlockIds,
+          selectionFocusBlockId
+        );
+
+        if (targetBlockId) {
+          event.preventDefault();
+          clearSelection();
+          onFocusBlock(targetBlockId);
+        }
+        return;
+      }
+
       if (shouldIgnoreSelectedBlockShortcutTarget(event.target, selectedBlockIds)) {
         return;
       }
 
       if (isModKey(event) && event.key.toLowerCase() === "c") {
         event.preventDefault();
-        void copyBlocksToClipboard(document, selectedBlocks);
+        void copyBlocksToClipboard(
+          document,
+          getBlocksWithDescendants(document.blocks, selectedBlocks)
+        );
         return;
       }
 
@@ -126,12 +192,54 @@ export function useSelectedBlockShortcuts({
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
+
+    function handleEditableEscape(event: KeyboardEvent) {
+      const targetBlockId = getTargetBlockId(event.target);
+
+      if (!targetBlockId || shouldIgnoreEditableEscapeTarget(event.target)) {
+        return;
+      }
+
+      event.preventDefault();
+      setSelection([targetBlockId]);
+    }
+
+    function handleKeyboardBlockMove(
+      event: KeyboardEvent,
+      direction: "down" | "up"
+    ) {
+      if (shouldIgnoreSelectedBlockShortcutTarget(event.target, selectedBlockIds)) {
+        return;
+      }
+
+      const afterBlockId = getAfterBlockIdForKeyboardBlockMove(
+        document.blocks,
+        selectedBlockIds,
+        direction
+      );
+      const movingBlocks = getBlocksWithDescendants(document.blocks, selectedBlocks);
+      const safeAfterBlockId = getSubtreeSafeAfterBlockId(
+        document.blocks,
+        movingBlocks,
+        afterBlockId ?? null
+      );
+
+      if (afterBlockId === undefined || safeAfterBlockId === undefined) {
+        return;
+      }
+
+      event.preventDefault();
+      void onMoveBlocks(movingBlocks, safeAfterBlockId);
+    }
   }, [
     clearSelection,
     document,
     onDeleteBlocks,
     onDuplicateBlocks,
+    onFocusBlock,
     onFocusTitle,
+    onIndentBlocks,
+    onMoveBlocks,
     onKeyboardSelection,
     onPasteBlocks,
     selectionAnchorBlockId,
@@ -158,6 +266,13 @@ export function useSelectedBlockShortcuts({
     setSelection(nextSelection);
     return true;
   }
+}
+
+export function getSelectedBlockEditTargetId(
+  selectedBlockIds: string[],
+  selectionFocusBlockId: string | null
+) {
+  return selectionFocusBlockId ?? selectedBlockIds.at(-1) ?? null;
 }
 
 export function getBlockSelectAllShortcutIds(
@@ -220,6 +335,14 @@ function getTargetBlockId(target: EventTarget | null) {
   }
 
   return target.closest("[data-block-id]")?.getAttribute("data-block-id") ?? null;
+}
+
+function shouldIgnoreEditableEscapeTarget(target: EventTarget | null) {
+  if (!isClosestTarget(target)) {
+    return true;
+  }
+
+  return !target.closest("[contenteditable]");
 }
 
 function isModKey(event: KeyboardEvent) {

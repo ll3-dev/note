@@ -12,6 +12,10 @@ import {
   type BlockDropPlacement
 } from "@/mainview/features/page/lib/blockDrag";
 import {
+  getBlocksWithDescendants,
+  getSubtreeSafeAfterBlockId
+} from "@/mainview/features/page/lib/blockTree";
+import {
   getDragDropTarget,
   getDragPreview,
   getDraggingBlockId,
@@ -84,12 +88,22 @@ export function useBlockDragState({
         return;
       }
 
-      const afterBlockId = getAfterBlockIdForMovingBlocks(
+      const proposedAfterBlockId = getAfterBlockIdForMovingBlocks(
         blocksRef.current,
         movingBlocks.map((block) => block.id),
         target.id,
         placement
       );
+      const afterBlockId = getSubtreeSafeAfterBlockId(
+        blocksRef.current,
+        movingBlocks,
+        proposedAfterBlockId
+      );
+
+      if (afterBlockId === undefined) {
+        clearDragState();
+        return;
+      }
 
       setBlockSelection(movingBlocks.map((block) => block.id));
       void onMoveBlocks(movingBlocks, afterBlockId);
@@ -211,10 +225,13 @@ export function useBlockDragState({
 
   function getMovingBlocks(draggedBlock: Block) {
     if (!selectedBlockIds.includes(draggedBlock.id)) {
-      return [draggedBlock];
+      return getBlocksWithDescendants(blocksRef.current, [draggedBlock]);
     }
 
-    return blocksRef.current.filter((block) => selectedBlockIds.includes(block.id));
+    return getBlocksWithDescendants(
+      blocksRef.current,
+      blocksRef.current.filter((block) => selectedBlockIds.includes(block.id))
+    );
   }
 
   return {

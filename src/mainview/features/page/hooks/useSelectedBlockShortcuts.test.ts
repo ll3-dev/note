@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
   getBlockSelectAllShortcutIds,
+  getSelectedBlockEditTargetId,
   shouldIgnoreSelectedBlockShortcutTarget
 } from "./useSelectedBlockShortcuts";
 import type { PageDocument } from "@/shared/contracts";
@@ -48,6 +49,14 @@ describe("selected block shortcuts", () => {
     expect(
       getBlockSelectAllShortcutIds(document, ["block-1"], selectedEditable)
     ).toEqual(["block-1", "block-2"]);
+  });
+
+  test("finds the block to edit from keyboard selection focus", () => {
+    expect(getSelectedBlockEditTargetId(["block-1", "block-2"], "block-1"))
+      .toBe("block-1");
+    expect(getSelectedBlockEditTargetId(["block-1", "block-2"], null))
+      .toBe("block-2");
+    expect(getSelectedBlockEditTargetId([], null)).toBeNull();
   });
 });
 

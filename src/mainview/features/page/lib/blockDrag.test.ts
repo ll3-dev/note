@@ -1,6 +1,10 @@
 import { describe, expect, test } from "bun:test";
 import type { Block } from "@/shared/contracts";
-import { getAfterBlockIdForMovingBlocks, getBlocksAfterMove } from "./blockDrag";
+import {
+  getAfterBlockIdForKeyboardBlockMove,
+  getAfterBlockIdForMovingBlocks,
+  getBlocksAfterMove
+} from "./blockDrag";
 
 const blocks = ["a", "b", "c", "d", "e"].map((id, index) =>
   createBlock(id, index)
@@ -30,6 +34,17 @@ describe("block drag", () => {
       .toEqual(["a", "d", "e", "b", "c"]);
     expect(getBlocksAfterMove(blocks, ["d", "e"], null).map((block) => block.id))
       .toEqual(["d", "e", "a", "b", "c"]);
+  });
+
+  test("finds keyboard move targets for selected blocks", () => {
+    expect(getAfterBlockIdForKeyboardBlockMove(blocks, ["b", "c"], "up"))
+      .toBeNull();
+    expect(getAfterBlockIdForKeyboardBlockMove(blocks, ["b", "c"], "down"))
+      .toBe("d");
+    expect(getAfterBlockIdForKeyboardBlockMove(blocks, ["a"], "up"))
+      .toBeUndefined();
+    expect(getAfterBlockIdForKeyboardBlockMove(blocks, ["e"], "down"))
+      .toBeUndefined();
   });
 });
 

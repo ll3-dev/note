@@ -9,7 +9,7 @@ export type ImportInline =
   | { children: ImportInline[]; href: string; type: "link" };
 
 export type ImportBlock =
-  | { children: ImportInline[]; type: "paragraph" | "heading_1" | "heading_2" | "quote" }
+  | { children: ImportInline[]; type: "paragraph" | "heading_1" | "heading_2" | "heading_3" | "quote" }
   | { children: ImportInline[]; depth: number; type: "bulleted_list" }
   | { children: ImportInline[]; depth: number; start: number; type: "numbered_list" }
   | { checked: boolean; children: ImportInline[]; depth: number; type: "todo" }
@@ -72,6 +72,8 @@ function importBlockToMarkdownLines(block: ImportBlock): string[] {
       return [`# ${importInlineToMarkdown(block.children)}`];
     case "heading_2":
       return [`## ${importInlineToMarkdown(block.children)}`];
+    case "heading_3":
+      return [`### ${importInlineToMarkdown(block.children)}`];
     case "paragraph":
       return [importInlineToMarkdown(block.children)];
     case "quote":
