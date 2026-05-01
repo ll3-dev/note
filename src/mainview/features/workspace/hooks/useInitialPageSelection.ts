@@ -1,11 +1,7 @@
-import { useNavigate } from "@tanstack/react-router";
-import { useLayoutEffect, useRef } from "react";
+import { useLayoutEffect } from "react";
 import type { Page } from "@/shared/contracts";
-import { navigateToPage } from "./useWorkspaceNavigation";
 
 type UseInitialPageSelectionOptions = {
-  activePageId: string | null;
-  navigate: ReturnType<typeof useNavigate>;
   openPageTab: (page: Page) => void;
   pages: Page[];
   routePageId: string | null;
@@ -13,18 +9,13 @@ type UseInitialPageSelectionOptions = {
 };
 
 export function useInitialPageSelection({
-  activePageId,
-  navigate,
   openPageTab,
   pages,
   routePageId,
   setSelectedPageId
 }: UseInitialPageSelectionOptions) {
-  const hasOpenedInitialPage = useRef(false);
-
   useLayoutEffect(() => {
     if (routePageId) {
-      hasOpenedInitialPage.current = true;
       setSelectedPageId(routePageId);
       const routePage = pages.find((page) => page.id === routePageId);
 
@@ -33,12 +24,4 @@ export function useInitialPageSelection({
       }
     }
   }, [openPageTab, pages, routePageId, setSelectedPageId]);
-
-  useLayoutEffect(() => {
-    if (!activePageId && pages[0] && !hasOpenedInitialPage.current) {
-      hasOpenedInitialPage.current = true;
-      openPageTab(pages[0]);
-      void navigateToPage(navigate, pages[0].id, true);
-    }
-  }, [activePageId, navigate, openPageTab, pages]);
 }
