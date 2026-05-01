@@ -7,6 +7,7 @@ type UseWorkspaceNavigationOptions = {
   activeTabId: string | null;
   closeTab: (tabId: string) => void;
   flushBeforeNavigate: () => Promise<void>;
+  closeWindow: () => Promise<void>;
   openPageTab: (page: Page) => void;
   setActiveTabId: (tabId: string) => void;
   tabs: WorkspaceTab[];
@@ -15,6 +16,7 @@ type UseWorkspaceNavigationOptions = {
 export function useWorkspaceNavigation({
   activeTabId,
   closeTab,
+  closeWindow,
   flushBeforeNavigate,
   openPageTab,
   setActiveTabId,
@@ -58,6 +60,8 @@ export function useWorkspaceNavigation({
 
   async function closeActiveTab() {
     if (!activeTabId) {
+      await flushBeforeNavigate();
+      await closeWindow();
       return;
     }
 

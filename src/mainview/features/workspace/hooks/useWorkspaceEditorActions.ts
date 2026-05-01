@@ -1,7 +1,6 @@
 import { useEffect, useRef, type SyntheticEvent } from "react";
 import type { useNavigate } from "@tanstack/react-router";
 import type { Block, BlockProps, Page, PageDocument } from "@/shared/contracts";
-import { noteApi } from "@/mainview/lib/rpc";
 import {
   getMergedBlockUpdate,
   type CreateBlockDraft
@@ -14,6 +13,7 @@ import type {
   BlockEditorUpdate,
   CreateBlockOptions
 } from "@/mainview/features/page/types/blockEditorTypes";
+import { focusPageTitleEditor } from "@/mainview/features/page/web/pageTitleDom";
 import { navigateToPage } from "./useWorkspaceNavigation";
 
 type WorkspaceEditorActionsOptions = {
@@ -28,7 +28,7 @@ type WorkspaceEditorActionsOptions = {
       type?: Block["type"];
     }) => Promise<Block>;
   };
-  createLinkedPage: (title: string) => Promise<Page>;
+  createLinkedPage: (title: string, parentPageId: string) => Promise<Page>;
   createPageMutation: { mutate: (title: string) => void };
   deleteBlockMutation: {
     mutate: (block: Block) => void;
@@ -133,21 +133,22 @@ export function useWorkspaceEditorActions({
     updateBlockMutation.mutate({ block, ...changes });
   }
 
-  async function createPageLink(block: Block, query: string) {
-    const title = query.trim() || "Untitled";
-    const [existingPage] = await noteApi.searchPages({ query: title, limit: 1 });
-    const targetPage = existingPage
-      ? { id: existingPage.pageId, title: existingPage.title }
-      : await createLinkedPage(title);
+  async function createPageLink(block: Block) {
+    const targetPage = await createLinkedPage("", block.pageId);
 
-    await updateBlock(block, {
+    await flushQueuedTextDraft(block.id);
+    clearPendingText(block.id);
+    await updateBlockMutation.mutateAsync({
+      block,
       props: {
         targetPageId: targetPage.id,
-        targetTitle: targetPage.title
+        targetTitle: ""
       },
-      text: targetPage.title,
+      text: "",
       type: "page_link"
     });
+    await navigateToPage(navigate, targetPage.id);
+    focusPageTitleEditor();
   }
 
   function openPageLink(pageId: string) {
@@ -173,7 +174,7 @@ export function useWorkspaceEditorActions({
 
   function updatePageTitle(page: Page, title: string) {
     const nextTitle = title.trim();
-    if (nextTitle && nextTitle !== page.title) {
+    if (nextTitle !== page.title) {
       updatePageMutation.mutate({ page, title: nextTitle });
     }
   }

@@ -3,6 +3,7 @@ import type { DragEvent } from "react";
 import { Button } from "@/mainview/components/ui/button";
 import { cn } from "@/mainview/lib/utils";
 import type { Page } from "@/shared/contracts";
+import { getPageTitleDisplay } from "@/shared/pageDisplay";
 
 export const PAGE_DRAG_TYPE = "application/x-note-page-id";
 
@@ -120,7 +121,7 @@ export function SidebarPageItem({
           />
         </span>
       </span>
-      <span className="min-w-0 truncate">{page.title}</span>
+      <span className="min-w-0 truncate">{getPageTitleDisplay(page.title)}</span>
     </Button>
   );
 }

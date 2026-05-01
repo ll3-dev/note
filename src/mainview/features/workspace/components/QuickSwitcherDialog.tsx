@@ -1,4 +1,5 @@
 import type { SearchWorkspaceResult } from "@/shared/contracts";
+import { getPageTitleDisplay } from "@/shared/pageDisplay";
 
 type QuickSwitcherDialogProps = {
   activeIndex: number;
@@ -69,10 +70,14 @@ export function QuickSwitcherDialog({
               type="button"
             >
               <div className="font-medium">
-                {result.kind === "page" ? result.title : result.text || "Untitled block"}
+                {result.kind === "page"
+                  ? getPageTitleDisplay(result.title)
+                  : result.text || "Untitled block"}
               </div>
               <div className="text-xs text-muted-foreground">
-                {result.kind === "page" ? "Page" : result.pageTitle}
+                {result.kind === "page"
+                  ? "Page"
+                  : getPageTitleDisplay(result.pageTitle)}
               </div>
             </button>
           ))}

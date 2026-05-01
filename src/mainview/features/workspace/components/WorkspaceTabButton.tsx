@@ -3,6 +3,7 @@ import type { MouseEvent, PointerEvent } from "react";
 import { Button } from "@/mainview/components/ui/button";
 import { cn } from "@/mainview/lib/utils";
 import type { WorkspaceTab } from "@/mainview/store/useWorkspaceStore";
+import { getPageTitleDisplay } from "@/shared/pageDisplay";
 import type { TabDropPlacement } from "@/mainview/features/workspace/lib/tabDrag";
 
 type WorkspaceTabButtonProps = {
@@ -60,10 +61,10 @@ export function WorkspaceTabButton({
     >
       <TabDropIndicator placement={dropPlacement} />
       <FileText className="size-3.5 shrink-0" />
-      <span className="truncate">{tab.title}</span>
+      <span className="truncate">{getPageTitleDisplay(tab.title)}</span>
       <span aria-hidden="true" className="h-4 w-px shrink-0 bg-border/70" />
       <Button
-        aria-label={`${tab.title} 탭 닫기`}
+        aria-label={`${getPageTitleDisplay(tab.title)} 탭 닫기`}
         className="electrobun-webkit-app-region-no-drag h-5 w-5 shrink-0 rounded-sm"
         onClick={(event) => onClose(event, tab.id)}
         onPointerDown={(event) => event.stopPropagation()}

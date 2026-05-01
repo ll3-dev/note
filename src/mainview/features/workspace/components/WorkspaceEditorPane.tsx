@@ -8,17 +8,21 @@ import type {
   TextSelectionOffsets
 } from "@/mainview/features/page/types/blockEditorTypes";
 import { EmptyEditorState } from "./EmptyEditorState";
+import { WorkspaceHome } from "./WorkspaceHome";
+import { getPageTitleDisplay } from "@/shared/pageDisplay";
 
 type WorkspaceEditorPaneProps = {
   document: PageDocument | null;
   isLoading: boolean;
   backlinks: Backlink[];
+  isCreatingPage: boolean;
   onCreateBlockAfter: (
     block: Block,
     draft?: CreateBlockDraft,
     options?: CreateBlockOptions
   ) => Promise<void>;
-  onCreatePageLink: (block: Block, query: string) => Promise<void> | void;
+  onCreateUntitledPage: () => void;
+  onCreatePageLink: (block: Block) => Promise<void> | void;
   onDeleteBlock: (block: Block) => void;
   onDeleteBlocks: (blocks: Block[]) => void;
   onDuplicateBlocks: (blocks: Block[]) => void;
@@ -59,6 +63,9 @@ type WorkspaceEditorPaneProps = {
   onTextUndo: (block: Block) => Promise<Block | null>;
   onUpdateBlock: (block: Block, changes: BlockEditorUpdate) => void;
   onUpdatePageTitle: PageEditorTitleHandler;
+  onOpenQuickSwitcher: () => void;
+  onSelectPage: (page: PageDocument["page"]) => void;
+  pages: PageDocument["page"][];
 };
 
 type PageEditorTitleHandler = ComponentProps<typeof PageEditor>["onUpdatePageTitle"];
@@ -67,7 +74,9 @@ export function WorkspaceEditorPane({
   document,
   isLoading,
   backlinks,
+  isCreatingPage,
   onCreateBlockAfter,
+  onCreateUntitledPage,
   onCreatePageLink,
   onDeleteBlock,
   onDeleteBlocks,
@@ -87,7 +96,10 @@ export function WorkspaceEditorPane({
   onTextRedo,
   onTextUndo,
   onUpdateBlock,
-  onUpdatePageTitle
+  onUpdatePageTitle,
+  onOpenQuickSwitcher,
+  onSelectPage,
+  pages
 }: WorkspaceEditorPaneProps) {
   return (
     <div className="flex h-full w-full flex-col">
@@ -115,6 +127,15 @@ export function WorkspaceEditorPane({
           onTextUndo={onTextUndo}
           onUpdateBlock={onUpdateBlock}
           onUpdatePageTitle={onUpdatePageTitle}
+          pages={pages}
+        />
+      ) : !isLoading ? (
+        <WorkspaceHome
+          isCreatingPage={isCreatingPage}
+          onCreateUntitledPage={onCreateUntitledPage}
+          onOpenQuickSwitcher={onOpenQuickSwitcher}
+          onSelectPage={onSelectPage}
+          pages={pages}
         />
       ) : (
         <EmptyEditorState isLoading={isLoading} />
@@ -130,7 +151,7 @@ export function WorkspaceEditorPane({
                 onClick={() => onOpenPageLink(backlink.pageId)}
                 type="button"
               >
-                {backlink.pageTitle}
+                {getPageTitleDisplay(backlink.pageTitle)}
               </button>
             ))}
           </div>

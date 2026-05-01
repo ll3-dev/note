@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo } from "react";
 import { useGlobalKeyboardShortcuts } from "@/mainview/features/commands/useGlobalKeyboardShortcuts";
 import { useKeybindingStore } from "@/mainview/features/commands/keybindingStore";
+import { noteApi } from "@/mainview/lib/rpc";
 import { useWorkspaceStore } from "@/mainview/store/useWorkspaceStore";
 import type { Block, BlockProps } from "@/shared/contracts";
 import { useBlockFocus } from "@/mainview/features/page/hooks/useBlockFocus";
@@ -29,6 +30,7 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
   const closeTab = useWorkspaceStore((state) => state.closeTab);
   const openPageTab = useWorkspaceStore((state) => state.openPageTab);
   const pageTitleDraft = useWorkspaceStore((state) => state.pageTitleDraft);
+  const reconcilePages = useWorkspaceStore((state) => state.reconcilePages);
   const renamePageRefs = useWorkspaceStore((state) => state.renamePageRefs);
   const selectedPageId = useWorkspaceStore((state) => state.selectedPageId);
   const setActiveTabId = useWorkspaceStore((state) => state.setActiveTabId);
@@ -54,6 +56,11 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
   });
 
   const pages = pagesQuery.data ?? [];
+  useEffect(() => {
+    if (pagesQuery.isSuccess) {
+      reconcilePages(pages);
+    }
+  }, [pages, pagesQuery.isSuccess, reconcilePages]);
   const selectedDocument = pageDocumentQuery.data ?? null;
   const { setFocusBlockId } = useBlockFocus(selectedDocument);
   const { focusNextBlock, focusPreviousBlock } = useBlockKeyboardFocus(selectedDocument, setFocusBlockId);
@@ -66,7 +73,17 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
   const { clearPendingText, flushAllTextDrafts, flushQueuedTextDraft, flushTextDraft, queueTextDraft, status: saveStatus } =
     useBlockTextSync({ saveText: saveBlockText });
   const { closeActiveTab, closeWorkspaceTab, navigate, selectPage, selectTab } =
-    useWorkspaceNavigation({ activeTabId, closeTab, flushBeforeNavigate: flushAllTextDrafts, openPageTab, setActiveTabId, tabs });
+    useWorkspaceNavigation({
+      activeTabId,
+      closeTab,
+      closeWindow: async () => {
+        await noteApi.closeMainWindow();
+      },
+      flushBeforeNavigate: flushAllTextDrafts,
+      openPageTab,
+      setActiveTabId,
+      tabs
+    });
   const quickSwitcher = useQuickSwitcher({
     onSelectResult: (result) => {
       void flushAllTextDrafts().then(() => {
@@ -152,7 +169,7 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
     context: workspaceCommandContext,
     keybindings
   });
-  useInitialPageSelection({ activePageId, navigate, openPageTab, pages, routePageId, setSelectedPageId });
+  useInitialPageSelection({ openPageTab, pages, routePageId, setSelectedPageId });
 
   return (
     <WorkspaceLayout
@@ -162,7 +179,7 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
       onCloseTab={closeWorkspaceTab}
       onCopyCurrentPageMarkdown={() => void copyCurrentPageMarkdown()}
       onCreatePage={editorActions.handleCreatePage}
-      onCreateUntitledPage={() => createPageMutation.mutate("Untitled")}
+      onCreateUntitledPage={() => createPageMutation.mutate("")}
       onMovePage={(page, parentPageId, afterPageId) => {
         movePageMutation.mutate({ afterPageId, page, parentPageId });
       }}
@@ -179,8 +196,10 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
       <WorkspaceEditorPane
         backlinks={backlinksQuery.data ?? []}
         document={selectedDocument}
+        isCreatingPage={createPageMutation.isPending}
         isLoading={pagesQuery.isLoading}
         onCreateBlockAfter={editorActions.createBlockAfter}
+        onCreateUntitledPage={() => createPageMutation.mutate("")}
         onCreatePageLink={editorActions.createPageLink}
         onDeleteBlock={(target) => {
           void flushAllTextDrafts().then(() => deleteBlockMutation.mutate(target));
@@ -203,7 +222,9 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
         onMergeBlockWithPrevious={editorActions.mergeBlockWithPrevious}
         onMoveBlocks={editorActions.moveBlocksWithDescendants}
         onPasteMarkdown={pasteMarkdown}
+        onOpenQuickSwitcher={quickSwitcher.openQuickSwitcher}
         onOpenPageLink={editorActions.openPageLink}
+        onSelectPage={selectPage}
         onTextDraftChange={queueTextDraft}
         onTextDraftFlush={flushTextDraft}
         onTextHistoryApply={(block) => clearPendingText(block.id)}
@@ -211,6 +232,7 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
         onTextUndo={undoBlockText}
         onUpdateBlock={(target, changes) => void editorActions.updateBlock(target, changes)}
         onUpdatePageTitle={editorActions.updatePageTitle}
+        pages={pages}
       />
       <QuickSwitcherDialog
         activeIndex={quickSwitcher.activeIndex}

@@ -110,8 +110,8 @@ export function useWorkspaceMutations({
     return result;
   }
 
-  async function createLinkedPage(title: string) {
-    const document = await noteApi.createPage({ title, parentPageId: null });
+  async function createLinkedPage(title: string, parentPageId: string) {
+    const document = await noteApi.createPage({ title, parentPageId });
 
     onPageCreated(document.page);
     queryClient.setQueryData(queryKeys.pageDocument(document.page.id), document);
@@ -196,6 +196,7 @@ export function useWorkspaceMutations({
       updatePageInCache(queryClient, page);
       onPageUpdated(page);
       await queryClient.invalidateQueries({ queryKey: queryKeys.pages });
+      await queryClient.invalidateQueries({ queryKey: ["pageDocument"] });
     }
   });
 

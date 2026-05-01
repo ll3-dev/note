@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 const modKey = process.platform === "darwin" ? "Meta" : "Control";
 
@@ -6,8 +6,13 @@ test.beforeEach(async ({ context }) => {
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
 });
 
-test("moves from title to the first body block with Enter", async ({ page }) => {
+async function openInitialPage(page: Page) {
   await page.goto("/");
+  await page.getByRole("button", { exact: true, name: "Untitled" }).click();
+}
+
+test("moves from title to the first body block with Enter", async ({ page }) => {
+  await openInitialPage(page);
 
   const title = page.getByRole("heading", { name: "Untitled" });
   await title.click();
@@ -19,7 +24,7 @@ test("moves from title to the first body block with Enter", async ({ page }) => 
 });
 
 test("persists typed block text through the editor save path", async ({ page }) => {
-  await page.goto("/");
+  await openInitialPage(page);
 
   const firstBlock = page.getByRole("textbox", { name: "paragraph block" }).first();
   await firstBlock.click();
@@ -33,7 +38,7 @@ test("persists typed block text through the editor save path", async ({ page }) 
 });
 
 test("creates the next block with Enter", async ({ page }) => {
-  await page.goto("/");
+  await openInitialPage(page);
 
   const firstBlock = page.getByRole("textbox", { name: "paragraph block" }).first();
   await firstBlock.click();
@@ -44,8 +49,44 @@ test("creates the next block with Enter", async ({ page }) => {
   await expect(page.getByRole("textbox", { name: "paragraph block" }).nth(1)).toBeFocused();
 });
 
+test("creates page link targets as child pages", async ({ page }) => {
+  await openInitialPage(page);
+
+  const firstBlock = page.getByRole("textbox", { name: "paragraph block" }).first();
+  await firstBlock.click();
+  await page.keyboard.type("/page");
+  await page.keyboard.press("Enter");
+
+  await expect(page.getByRole("heading", { name: "Untitled" })).toBeFocused();
+
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const document = window.__noteE2E.getDocument("page-1");
+        const pageLinkBlock = document.blocks[0];
+        const targetPageId =
+          typeof pageLinkBlock?.props.targetPageId === "string"
+            ? pageLinkBlock.props.targetPageId
+            : null;
+
+        return {
+          blockType: pageLinkBlock?.type,
+          targetTitle: pageLinkBlock?.props.targetTitle,
+          targetParentPageId: targetPageId
+            ? window.__noteE2E.getDocument(targetPageId).page.parentPageId
+            : null
+        };
+      })
+    )
+    .toEqual({
+      blockType: "page_link",
+      targetTitle: "",
+      targetParentPageId: "page-1"
+    });
+});
+
 test("turns markdown shortcuts into block types", async ({ page }) => {
-  await page.goto("/");
+  await openInitialPage(page);
 
   const firstBlock = page.getByRole("textbox", { name: "paragraph block" }).first();
   await firstBlock.click();
@@ -55,7 +96,7 @@ test("turns markdown shortcuts into block types", async ({ page }) => {
 });
 
 test("pastes markdown from the system clipboard as multiple blocks", async ({ page }) => {
-  await page.goto("/");
+  await openInitialPage(page);
 
   const firstBlock = page.getByRole("textbox", { name: "paragraph block" }).first();
   await firstBlock.click();
@@ -67,7 +108,7 @@ test("pastes markdown from the system clipboard as multiple blocks", async ({ pa
 });
 
 test("copies a selected block range and supports repeated block paste", async ({ page }) => {
-  await page.goto("/");
+  await openInitialPage(page);
 
   const firstBlock = page.getByRole("textbox", { name: "paragraph block" }).first();
   await firstBlock.click();
@@ -82,6 +123,8 @@ test("copies a selected block range and supports repeated block paste", async ({
   await page.keyboard.press(`${modKey}+V`);
   await page.keyboard.press(`${modKey}+V`);
 
+  await expect(page.locator("[data-block-selection-overlay]")).toHaveCount(1);
+
   await expect
     .poll(() =>
       page
@@ -95,6 +138,8 @@ test("copies a selected block range and supports repeated block paste", async ({
     window.dispatchEvent(new CustomEvent("note-history-command", { detail: "undo" }))
   );
 
+  await expect(page.locator("[data-block-selection-overlay]")).toHaveCount(0);
+
   await expect
     .poll(() =>
       page
@@ -106,7 +151,7 @@ test("copies a selected block range and supports repeated block paste", async ({
 });
 
 test("keeps an editable block after deleting every selected block", async ({ page }) => {
-  await page.goto("/");
+  await openInitialPage(page);
 
   const firstBlock = page.getByRole("textbox", { name: "paragraph block" }).first();
   await firstBlock.click();
@@ -129,7 +174,7 @@ test("keeps an editable block after deleting every selected block", async ({ pag
 });
 
 test("selects the focused block with Escape and returns to editing with Enter", async ({ page }) => {
-  await page.goto("/");
+  await openInitialPage(page);
 
   const firstBlock = page.getByRole("textbox", { name: "paragraph block" }).first();
   await firstBlock.click();
@@ -143,7 +188,7 @@ test("selects the focused block with Escape and returns to editing with Enter", 
 });
 
 test("moves selected blocks with command shift arrows", async ({ page }) => {
-  await page.goto("/");
+  await openInitialPage(page);
 
   const firstBlock = page.getByRole("textbox", { name: "paragraph block" }).first();
   await firstBlock.click();
@@ -168,7 +213,7 @@ test("moves selected blocks with command shift arrows", async ({ page }) => {
 });
 
 test("formats selected inline text from the floating toolbar", async ({ page }) => {
-  await page.goto("/");
+  await openInitialPage(page);
 
   const firstBlock = page.getByRole("textbox", { name: "paragraph block" }).first();
   await firstBlock.click();
@@ -196,7 +241,7 @@ test("formats selected inline text from the floating toolbar", async ({ page }) 
 });
 
 test("undoes and redoes block text from the app history command", async ({ page }) => {
-  await page.goto("/");
+  await openInitialPage(page);
 
   const firstBlock = page.getByRole("textbox", { name: "paragraph block" }).first();
   await firstBlock.fill("Undo me");
