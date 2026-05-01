@@ -200,6 +200,17 @@ export const BLOCK_EDITOR_COMMANDS: Command<BlockShortcutContext>[] = [
     }
   },
   {
+    canRun: ({ block }) => block.type === "page_link",
+    defaultKeybindings: ["Backspace", "Delete"],
+    id: "editor.block.deletePageLink",
+    scope: "block",
+    title: "Delete page block",
+    run: ({ block, onDelete, onFocusPrevious }) => {
+      onFocusPrevious(block);
+      onDelete(block);
+    }
+  },
+  {
     canRun: ({ block, getCursorOffset }) =>
       block.type !== "paragraph" && getCursorOffset() === 0,
     defaultKeybindings: ["Backspace"],

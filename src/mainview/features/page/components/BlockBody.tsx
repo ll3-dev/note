@@ -33,7 +33,7 @@ type BlockBodyProps = {
   onBlur: () => Promise<void>;
   onBeforeInput: (event: FormEvent<HTMLDivElement>) => void;
   onChange: (value: string) => void;
-  onKeyDown: (event: KeyboardEvent<HTMLDivElement>) => void;
+  onKeyDown: (event: KeyboardEvent<HTMLElement>) => void;
   onDragStart: (event: DragEvent<HTMLDivElement>) => void;
   onHistoryInput: (inputType: "historyRedo" | "historyUndo") => void;
   onPasteMarkdown: (
@@ -211,6 +211,7 @@ export function BlockBody({
       ) : block.type === "page_link" ? (
         <button
           className="min-h-8 min-w-0 flex-1 rounded-sm px-1.5 py-1 text-left outline-none hover:bg-accent focus-visible:ring-1 focus-visible:ring-ring"
+          data-block-focus-target
           onClick={() => {
             const targetPageId = getStringProp(draftProps.targetPageId);
 
@@ -218,6 +219,7 @@ export function BlockBody({
               onOpenPageLink(targetPageId);
             }
           }}
+          onKeyDown={onKeyDown}
           type="button"
         >
           <span className="flex min-w-0 items-center gap-2">

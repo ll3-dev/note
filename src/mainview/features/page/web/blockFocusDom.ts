@@ -8,6 +8,15 @@ export function focusEditableBlockById(blockId: string) {
 
     if (editable) {
       placeCursorAtEnd(editable);
+      return;
+    }
+
+    const focusTarget = window.document.querySelector<HTMLElement>(
+      `[data-block-id="${blockId}"] [data-block-focus-target]`
+    );
+
+    if (focusTarget) {
+      focusTarget.focus();
     }
   });
 }

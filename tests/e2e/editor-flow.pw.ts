@@ -85,6 +85,33 @@ test("creates page link targets as child pages", async ({ page }) => {
     });
 });
 
+test("deletes a focused page block with Backspace", async ({ page }) => {
+  await openInitialPage(page);
+
+  const firstBlock = page.getByRole("textbox", { name: "paragraph block" }).first();
+  await firstBlock.click();
+  await page.keyboard.type("/page");
+  await page.keyboard.press("Enter");
+  await expect
+    .poll(() =>
+      page.evaluate(() => window.__noteE2E.getDocument("page-1").blocks[0]?.type)
+    )
+    .toBe("page_link");
+  await page.goBack();
+
+  const pageBlock = page
+    .locator("[data-block-id]")
+    .getByRole("button", { exact: true, name: "Untitled" });
+  await pageBlock.focus();
+  await page.keyboard.press("Backspace");
+
+  await expect
+    .poll(() =>
+      page.evaluate(() => window.__noteE2E.getDocument("page-1").blocks[0]?.type)
+    )
+    .toBe("paragraph");
+});
+
 test("turns markdown shortcuts into block types", async ({ page }) => {
   await openInitialPage(page);
 
