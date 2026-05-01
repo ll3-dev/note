@@ -102,10 +102,11 @@ export function BlockBody({
       ) : null}
       {block.type === "divider" ? (
         <button
-          className="my-4 h-px w-full rounded bg-border"
+          className="group/divider flex h-7 w-full items-center px-1 outline-none"
           onClick={() => void onApplyCommand(BLOCK_COMMANDS[0])}
           type="button"
         >
+          <span className="h-px w-full rounded-full bg-border transition-colors group-hover/divider:bg-muted-foreground/45 group-focus-visible/divider:bg-ring" />
           <span className="sr-only">텍스트 블록으로 변경</span>
         </button>
       ) : (
