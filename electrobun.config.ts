@@ -35,6 +35,9 @@ const config: ElectrobunConfig = {
     version: "0.1.0",
     description: "Block note app prototype",
   },
+  runtime: {
+    exitOnLastWindowClosed: false,
+  },
   build: {
     buildFolder: "build",
     artifactFolder: "artifacts",

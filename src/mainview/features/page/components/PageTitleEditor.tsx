@@ -3,6 +3,7 @@ import {
   useImperativeHandle,
 } from "react";
 import type { Page } from "@/shared/contracts";
+import { getPageTitleDisplay } from "@/shared/pageDisplay";
 import { usePageTitleEditing } from "@/mainview/features/page/hooks/usePageTitleEditing";
 import { placeCursorAtEnd } from "@/mainview/features/page/web/domSelection";
 
@@ -39,9 +40,11 @@ export const PageTitleEditor = forwardRef<
     <header className="mb-7 pl-10">
       <div
         aria-level={1}
-        aria-label={page.title}
-        className="rounded-sm text-[40px] font-bold leading-tight tracking-normal outline-none"
+        aria-label={getPageTitleDisplay(page.title)}
+        className="page-title-editor rounded-sm text-[40px] font-bold leading-tight tracking-normal outline-none"
         contentEditable="plaintext-only"
+        data-page-title-editor
+        data-placeholder={getPageTitleDisplay("")}
         onBlur={(event) => saveTitle(event.currentTarget)}
         onInput={(event) => queueTitleSave(event.currentTarget)}
         onKeyDown={handleTitleKeyDown}

@@ -26,8 +26,6 @@ export function editableClass(type: BlockType) {
       return "text-[17px] italic";
     case "toggle":
       return "font-medium text-[15px]";
-    case "page_link":
-      return "font-medium text-primary underline underline-offset-3";
     default:
       return "text-[15px]";
   }

@@ -1,4 +1,9 @@
-import { ApplicationMenu, BrowserView, BrowserWindow, Utils } from "electrobun/bun";
+import Electrobun, {
+  ApplicationMenu,
+  BrowserView,
+  BrowserWindow,
+  Utils
+} from "electrobun/bun";
 import type { NoteRPC } from "@/shared/contracts";
 import { getDatabaseStatus, openDatabase } from "./database";
 import { resolveMainviewUrl } from "./mainviewUrl";
@@ -38,12 +43,20 @@ import {
 } from "./rpcValidation";
 
 const databaseHandle = openDatabase(Utils.paths.userData);
+const mainviewUrl = resolveMainviewUrl();
+let mainWindow: BrowserWindow | null = null;
 
 const rpc = BrowserView.defineRPC<NoteRPC>({
   maxRequestTime: 5000,
   handlers: {
     requests: {
       getDatabaseStatus: () => getDatabaseStatus(databaseHandle),
+      closeMainWindow: () => {
+        const windowToClose = mainWindow;
+        mainWindow = null;
+        windowToClose?.close();
+        return { closed: true };
+      },
       listPages: () => listPages(databaseHandle),
       searchPages: (input) => searchPages(databaseHandle, validateSearchPagesInput(input)),
       listBacklinks: (input) => listBacklinks(databaseHandle, validateListBacklinksInput(input)),
@@ -65,23 +78,49 @@ const rpc = BrowserView.defineRPC<NoteRPC>({
   },
 });
 
-const mainviewUrl = resolveMainviewUrl();
+function createMainWindow() {
+  return new BrowserWindow({
+    title: "Note",
+    url: mainviewUrl,
+    frame: {
+      x: 80,
+      y: 80,
+      width: 1180,
+      height: 760,
+    },
+    titleBarStyle: "hiddenInset",
+    renderer: "native",
+    rpc,
+  });
+}
 
-const mainWindow = new BrowserWindow({
-  title: "Note",
-  url: mainviewUrl,
-  frame: {
-    x: 80,
-    y: 80,
-    width: 1180,
-    height: 760,
-  },
-  titleBarStyle: "hiddenInset",
-  renderer: "native",
-  rpc,
+mainWindow = createMainWindow();
+
+Electrobun.events.on("close", (event) => {
+  const windowId = (event as { data?: { id?: number } }).data?.id;
+
+  if (windowId === mainWindow?.id) {
+    mainWindow = null;
+  }
+});
+
+Electrobun.events.on("reopen", () => {
+  if (!mainWindow) {
+    mainWindow = createMainWindow();
+  }
 });
 
 ApplicationMenu.setApplicationMenu([
+  {
+    label: "Note",
+    submenu: [
+      {
+        accelerator: "CommandOrControl+Q",
+        action: "note.quit",
+        label: "Quit Note"
+      }
+    ]
+  },
   {
     label: "Edit",
     submenu: [
@@ -107,11 +146,16 @@ ApplicationMenu.setApplicationMenu([
 ApplicationMenu.on("application-menu-clicked", (event) => {
   const action = (event as { data?: { action?: string } }).data?.action;
 
+  if (action === "note.quit") {
+    Utils.quit();
+    return;
+  }
+
   if (action !== "note.undo" && action !== "note.redo") {
     return;
   }
 
-  mainWindow.webview.executeJavascript(
+  mainWindow?.webview.executeJavascript(
     `window.dispatchEvent(new CustomEvent("note-history-command", { detail: ${JSON.stringify(
       action === "note.undo" ? "undo" : "redo"
     )} }))`

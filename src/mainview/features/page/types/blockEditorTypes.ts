@@ -2,7 +2,8 @@ import type { PointerEvent } from "react";
 import type {
   Block,
   BlockProps,
-  BlockType
+  BlockType,
+  Page
 } from "@/shared/contracts";
 import type { CreateBlockDraft } from "@/mainview/features/page/lib/blockEditingBehavior";
 
@@ -32,13 +33,14 @@ export type BlockEditorProps = {
   numberedListMarker: number | null;
   numberedListStartAfterIndent: number | null;
   numberedListStartAfterOutdent: number | null;
+  linkedPage: Page | null;
   previousBlock: Block | null;
   onCreateAfter: (
     block: Block,
     draft?: CreateBlockDraft,
     options?: CreateBlockOptions
   ) => Promise<void>;
-  onCreatePageLink: (block: Block, query: string) => Promise<void> | void;
+  onCreatePageLink: (block: Block) => Promise<void> | void;
   onMergeWithPrevious: (
     previousBlock: Block,
     block: Block,

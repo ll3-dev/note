@@ -29,7 +29,7 @@ type PageEditorProps = {
     draft?: CreateBlockDraft,
     options?: CreateBlockOptions
   ) => Promise<void>;
-  onCreatePageLink: (block: Block, query: string) => Promise<void> | void;
+  onCreatePageLink: (block: Block) => Promise<void> | void;
   onDeleteBlock: (block: Block) => void;
   onDeleteBlocks: (blocks: Block[]) => void;
   onDuplicateBlocks: (blocks: Block[]) => void;
@@ -54,6 +54,7 @@ type PageEditorProps = {
   onTextUndo: (block: Block) => Promise<Block | null>;
   onUpdateBlock: (block: Block, changes: BlockEditorUpdate) => void;
   onUpdatePageTitle: (page: Page, title: string) => void;
+  pages: Page[];
 };
 
 type PasteMarkdownHandler = (
@@ -87,7 +88,8 @@ export function PageEditor({
   onTextRedo,
   onTextUndo,
   onUpdateBlock,
-  onUpdatePageTitle
+  onUpdatePageTitle,
+  pages
 }: PageEditorProps) {
   useInputMode();
   const focusLastBlock = useLastBlockFocus({ document, onCreateBlockAfter });
@@ -148,6 +150,22 @@ export function PageEditor({
   }, [selectedBlockIds]);
 
   useEffect(() => {
+    if (selectedBlockIds.length === 0) {
+      return;
+    }
+
+    function handleHistoryCommand() {
+      clearBlockSelection();
+    }
+
+    window.addEventListener("note-history-command", handleHistoryCommand);
+
+    return () => {
+      window.removeEventListener("note-history-command", handleHistoryCommand);
+    };
+  }, [clearBlockSelection, selectedBlockIds.length]);
+
+  useEffect(() => {
     scrollBlockIntoView(selectionFocusBlockId);
   }, [selectionFocusBlockId]);
 
@@ -200,6 +218,7 @@ export function PageEditor({
               onTextRedo={onTextRedo}
               onTextUndo={onTextUndo}
               onUpdateBlock={onUpdateBlock}
+              pages={pages}
             />
           </div>
         </div>

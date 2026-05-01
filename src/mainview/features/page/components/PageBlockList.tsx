@@ -1,4 +1,4 @@
-import type { Block, PageDocument } from "@/shared/contracts";
+import type { Block, Page, PageDocument } from "@/shared/contracts";
 import { BlockEditor } from "./BlockEditor";
 import type { CreateBlockDraft } from "@/mainview/features/page/lib/blockEditingBehavior";
 import {
@@ -23,7 +23,7 @@ type PageBlockListProps = {
     options?: CreateBlockOptions
   ) => Promise<void>;
   onDeleteBlock: (block: Block) => void;
-  onCreatePageLink: (block: Block, query: string) => Promise<void> | void;
+  onCreatePageLink: (block: Block) => Promise<void> | void;
   onDragEnd: () => void;
   onDragOver: (block: Block, placement: "before" | "after") => void;
   onDragPointerDown: (block: Block, event: React.PointerEvent<HTMLElement>) => void;
@@ -59,6 +59,7 @@ type PageBlockListProps = {
   onTextRedo: (block: Block) => Promise<Block | null>;
   onTextUndo: (block: Block) => Promise<Block | null>;
   onUpdateBlock: (block: Block, changes: BlockEditorUpdate) => void;
+  pages: Page[];
 };
 
 export function PageBlockList({
@@ -84,9 +85,11 @@ export function PageBlockList({
   onTextHistoryApply,
   onTextRedo,
   onTextUndo,
-  onUpdateBlock
+  onUpdateBlock,
+  pages
 }: PageBlockListProps) {
   const numberedListMarkers = getNumberedListMarkers(document.blocks);
+  const pagesById = new Map(pages.map((page) => [page.id, page]));
   const visibleBlocks = getVisibleBlocks(document.blocks);
 
   return (
@@ -117,6 +120,7 @@ export function PageBlockList({
               "out",
               numberedListMarkers
             )}
+            linkedPage={getLinkedPage(block, pagesById)}
             previousBlock={document.blocks[blockIndex - 1] ?? null}
             onCreateAfter={onCreateBlockAfter}
             onCreatePageLink={onCreatePageLink}
@@ -142,4 +146,11 @@ export function PageBlockList({
       })}
     </>
   );
+}
+
+function getLinkedPage(block: Block, pagesById: Map<string, Page>) {
+  const targetPageId =
+    typeof block.props.targetPageId === "string" ? block.props.targetPageId : null;
+
+  return targetPageId ? pagesById.get(targetPageId) ?? null : null;
 }

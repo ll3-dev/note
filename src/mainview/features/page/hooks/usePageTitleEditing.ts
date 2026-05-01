@@ -41,7 +41,7 @@ export function usePageTitleEditing({
     clearSaveTimer();
     const title = (target.textContent ?? "").trim();
 
-    if (title && title !== page.title) {
+    if (title !== page.title) {
       onUpdatePageTitle(page, title);
     } else {
       target.textContent = page.title;

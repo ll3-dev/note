@@ -48,6 +48,7 @@ export function BlockSelectionGroupRect({
       {boundsList.map((bounds) => (
         <div
           className="fixed z-20 cursor-grab rounded-[4px] active:cursor-grabbing"
+          data-block-selection-overlay
           draggable={!isDragging}
           key={`${bounds.left}:${bounds.top}:${bounds.right}:${bounds.bottom}`}
           onDragEnd={onDragEnd}

@@ -31,7 +31,7 @@ type UseBlockTextEditingOptions = {
     options?: CreateBlockOptions
   ) => Promise<void>;
   onDeleteBlock: (block: Block) => void;
-  onCreatePageLink: (block: Block, query: string) => Promise<void> | void;
+  onCreatePageLink: (block: Block) => Promise<void> | void;
   onTextHistoryApply: (block: Block, text: string) => void;
   onTextRedo: (block: Block) => Promise<Block | null>;
   onTextUndo: (block: Block) => Promise<Block | null>;
@@ -124,7 +124,7 @@ export function useBlockTextEditing({
 
     if (command.type === "page_link") {
       commandMenu.closeCommandMenu();
-      await onCreatePageLink(block, draft.replace(/^\//, "").trim());
+      await onCreatePageLink(block);
       return;
     }
 

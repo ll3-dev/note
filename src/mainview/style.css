@@ -74,6 +74,12 @@
     pointer-events: none;
   }
 
+  .page-title-editor:empty::before {
+    color: var(--muted-foreground);
+    content: attr(data-placeholder);
+    pointer-events: none;
+  }
+
   body[data-input-mode="keyboard"],
   body[data-input-mode="keyboard"] * {
     cursor: none;

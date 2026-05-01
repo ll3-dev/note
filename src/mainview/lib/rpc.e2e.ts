@@ -324,7 +324,7 @@ function resetState() {
   state.history.clear();
   state.pages = [];
 
-  const page = makePage("Untitled", null);
+  const page = makePage("", null);
   const block = makeBlock({ pageId: page.id });
 
   state.pages.push(page);

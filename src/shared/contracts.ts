@@ -162,6 +162,10 @@ export type NoteRPC = {
         params: void;
         response: DatabaseStatus;
       };
+      closeMainWindow: {
+        params: void;
+        response: { closed: true };
+      };
       listPages: {
         params: void;
         response: Page[];

@@ -24,6 +24,7 @@ export function BlockEditor({
   numberedListMarker,
   numberedListStartAfterIndent,
   numberedListStartAfterOutdent,
+  linkedPage,
   previousBlock,
   onCreateAfter,
   onDelete,
@@ -188,6 +189,7 @@ export function BlockEditor({
           draft={draft}
           draftProps={draftProps}
           isSelected={isSelected}
+          linkedPage={linkedPage}
           numberedListMarker={numberedListMarker}
           onApplyCommand={applyCommand}
           onBlur={commitDraft}

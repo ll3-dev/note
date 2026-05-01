@@ -5,9 +5,10 @@ import type {
   RefObject
 } from "react";
 import { useEffect } from "react";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight, FileText } from "lucide-react";
 import { cn } from "@/mainview/lib/utils";
-import type { Block } from "@/shared/contracts";
+import type { Block, Page } from "@/shared/contracts";
+import { getPageTitleDisplay } from "@/shared/pageDisplay";
 import { BLOCK_COMMANDS, type BlockCommand } from "@/mainview/features/page/lib/blockCommands";
 import { getBlockDepth } from "@/mainview/features/page/lib/blockEditingBehavior";
 import { blockShellClass, editableClass } from "@/mainview/features/page/lib/blockStyles";
@@ -27,6 +28,7 @@ type BlockBodyProps = {
   draftProps: Block["props"];
   numberedListMarker: number | null;
   isSelected: boolean;
+  linkedPage: Page | null;
   onApplyCommand: (command: BlockCommand) => Promise<void> | void;
   onBlur: () => Promise<void>;
   onBeforeInput: (event: FormEvent<HTMLDivElement>) => void;
@@ -54,6 +56,7 @@ export function BlockBody({
   draftProps,
   numberedListMarker,
   isSelected,
+  linkedPage,
   onApplyCommand,
   onBlur,
   onBeforeInput,
@@ -207,10 +210,7 @@ export function BlockBody({
         </button>
       ) : block.type === "page_link" ? (
         <button
-          className={cn(
-            "min-h-7 min-w-0 flex-1 truncate rounded-sm px-1 py-1 text-left outline-none hover:bg-accent focus-visible:ring-1 focus-visible:ring-ring",
-            editableClass(block.type)
-          )}
+          className="min-h-8 min-w-0 flex-1 rounded-sm px-1.5 py-1 text-left outline-none hover:bg-accent focus-visible:ring-1 focus-visible:ring-ring"
           onClick={() => {
             const targetPageId = getStringProp(draftProps.targetPageId);
 
@@ -220,7 +220,14 @@ export function BlockBody({
           }}
           type="button"
         >
-          {draft || getStringProp(draftProps.targetTitle) || "Untitled"}
+          <span className="flex min-w-0 items-center gap-2">
+            <FileText className="size-4 shrink-0 text-muted-foreground" />
+            <span className="min-w-0 truncate text-[15px] font-semibold text-foreground">
+              {getPageTitleDisplay(
+                linkedPage?.title ?? getStringProp(draftProps.targetTitle) ?? draft
+              )}
+            </span>
+          </span>
         </button>
       ) : (
         <div className="relative min-w-0 flex-1">
