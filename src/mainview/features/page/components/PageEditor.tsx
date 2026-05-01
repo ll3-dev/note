@@ -32,9 +32,9 @@ type PageEditorProps = {
   onDeleteBlocks: (blocks: Block[]) => void;
   onDuplicateBlocks: (blocks: Block[]) => void;
   onPasteBlocks: (afterBlock: Block) => Promise<Block[]> | Block[];
-  onFocusNextBlock: (block: Block) => void;
+  onFocusNextBlock: (block: Block) => boolean;
   onFocusFirstBlock: () => void;
-  onFocusPreviousBlock: (block: Block) => void;
+  onFocusPreviousBlock: (block: Block) => boolean;
   onMergeBlockWithPrevious: (
     previousBlock: Block,
     block: Block,

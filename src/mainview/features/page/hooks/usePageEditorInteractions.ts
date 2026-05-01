@@ -13,7 +13,7 @@ type UsePageEditorInteractionsOptions = {
   onClearBlockSelection: () => void;
   onConsumeCompletedBlockRangeSelection: () => boolean;
   onFocusLastBlock: (event: MouseEvent<HTMLDivElement>) => boolean;
-  onFocusPreviousBlock: (block: Block) => void;
+  onFocusPreviousBlock: (block: Block) => boolean;
   onStartDrag: (block: Block, event?: DragEvent<HTMLElement>) => void;
 };
 
@@ -75,10 +75,8 @@ export function usePageEditorInteractions({
   }
 
   function focusPreviousBlock(block: Block, blockIndex: number) {
-    if (blockIndex === 0) {
+    if (blockIndex === 0 || !onFocusPreviousBlock(block)) {
       titleRef.current?.focus();
-    } else {
-      onFocusPreviousBlock(block);
     }
   }
 

@@ -22,8 +22,8 @@ type WorkspaceEditorPaneProps = {
   onDuplicateBlocks: (blocks: Block[]) => void;
   onPasteBlocks: (afterBlock: Block) => Promise<Block[]> | Block[];
   onFocusFirstBlock: () => void;
-  onFocusNextBlock: (block: Block) => void;
-  onFocusPreviousBlock: (block: Block) => void;
+  onFocusNextBlock: (block: Block) => boolean;
+  onFocusPreviousBlock: (block: Block) => boolean;
   onMergeBlockWithPrevious: (
     previousBlock: Block,
     block: Block,
