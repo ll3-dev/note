@@ -6,6 +6,7 @@ import {
   getNumberedListStartAfterDepthChange
 } from "@/mainview/features/page/lib/blockIndentTargets";
 import { getNumberedListMarkers } from "@/mainview/features/page/lib/blockNumbering";
+import { getVisibleBlocks } from "@/mainview/features/page/lib/blockTree";
 import type {
   BlockEditorUpdate,
   CreateBlockOptions,
@@ -22,6 +23,7 @@ type PageBlockListProps = {
     options?: CreateBlockOptions
   ) => Promise<void>;
   onDeleteBlock: (block: Block) => void;
+  onCreatePageLink: (block: Block, query: string) => Promise<void> | void;
   onDragEnd: () => void;
   onDragOver: (block: Block, placement: "before" | "after") => void;
   onDragPointerDown: (block: Block, event: React.PointerEvent<HTMLElement>) => void;
@@ -41,6 +43,7 @@ type PageBlockListProps = {
     editableElement: HTMLElement,
     selection: TextSelectionOffsets
   ) => Promise<void> | void;
+  onOpenPageLink: (pageId: string) => void;
   selectedBlockIds: string[];
   onTextDraftChange: (
     block: Block,
@@ -63,6 +66,7 @@ export function PageBlockList({
   draggedBlockId,
   isBlockRangeSelecting,
   onCreateBlockAfter,
+  onCreatePageLink,
   onDeleteBlock,
   onDragEnd,
   onDragOver,
@@ -73,6 +77,7 @@ export function PageBlockList({
   onFocusPreviousBlock,
   onMergeBlockWithPrevious,
   onPasteMarkdown,
+  onOpenPageLink,
   selectedBlockIds,
   onTextDraftChange,
   onTextDraftFlush,
@@ -82,52 +87,59 @@ export function PageBlockList({
   onUpdateBlock
 }: PageBlockListProps) {
   const numberedListMarkers = getNumberedListMarkers(document.blocks);
+  const visibleBlocks = getVisibleBlocks(document.blocks);
 
   return (
     <>
-      {document.blocks.map((block, blockIndex) => (
-        <BlockEditor
-          block={block}
-          blockIndex={blockIndex}
-          blocksCount={document.blocks.length}
-          isDragging={draggedBlockId === block.id}
-          isBlockRangeSelecting={isBlockRangeSelecting}
-          isSelected={selectedBlockIds.includes(block.id)}
-          key={block.id}
-          maxIndentDepth={getMaxIndentDepth(document.blocks, blockIndex)}
-          numberedListMarker={numberedListMarkers.get(block.id) ?? null}
-          numberedListStartAfterIndent={getNumberedListStartAfterDepthChange(
-            document.blocks,
-            blockIndex,
-            "in",
-            numberedListMarkers
-          )}
-          numberedListStartAfterOutdent={getNumberedListStartAfterDepthChange(
-            document.blocks,
-            blockIndex,
-            "out",
-            numberedListMarkers
-          )}
-          previousBlock={document.blocks[blockIndex - 1] ?? null}
-          onCreateAfter={onCreateBlockAfter}
-          onDelete={onDeleteBlock}
-          onDragEnd={onDragEnd}
-          onDragOver={onDragOver}
-          onDragPointerDown={onDragPointerDown}
-          onDragStart={onDragStart}
-          onDrop={onDrop}
-          onFocusNext={onFocusNextBlock}
-          onFocusPrevious={(target) => onFocusPreviousBlock(target, blockIndex)}
-          onMergeWithPrevious={onMergeBlockWithPrevious}
-          onPasteMarkdown={onPasteMarkdown}
-          onTextDraftChange={onTextDraftChange}
-          onTextDraftFlush={onTextDraftFlush}
-          onTextHistoryApply={onTextHistoryApply}
-          onTextRedo={onTextRedo}
-          onTextUndo={onTextUndo}
-          onUpdate={onUpdateBlock}
-        />
-      ))}
+      {visibleBlocks.map((block) => {
+        const blockIndex = document.blocks.findIndex((item) => item.id === block.id);
+
+        return (
+          <BlockEditor
+            block={block}
+            blockIndex={blockIndex}
+            blocksCount={document.blocks.length}
+            isDragging={draggedBlockId === block.id}
+            isBlockRangeSelecting={isBlockRangeSelecting}
+            isSelected={selectedBlockIds.includes(block.id)}
+            key={block.id}
+            maxIndentDepth={getMaxIndentDepth(document.blocks, blockIndex)}
+            numberedListMarker={numberedListMarkers.get(block.id) ?? null}
+            numberedListStartAfterIndent={getNumberedListStartAfterDepthChange(
+              document.blocks,
+              blockIndex,
+              "in",
+              numberedListMarkers
+            )}
+            numberedListStartAfterOutdent={getNumberedListStartAfterDepthChange(
+              document.blocks,
+              blockIndex,
+              "out",
+              numberedListMarkers
+            )}
+            previousBlock={document.blocks[blockIndex - 1] ?? null}
+            onCreateAfter={onCreateBlockAfter}
+            onCreatePageLink={onCreatePageLink}
+            onDelete={onDeleteBlock}
+            onDragEnd={onDragEnd}
+            onDragOver={onDragOver}
+            onDragPointerDown={onDragPointerDown}
+            onDragStart={onDragStart}
+            onDrop={onDrop}
+            onFocusNext={onFocusNextBlock}
+            onFocusPrevious={(target) => onFocusPreviousBlock(target, blockIndex)}
+            onMergeWithPrevious={onMergeBlockWithPrevious}
+            onPasteMarkdown={onPasteMarkdown}
+            onOpenPageLink={onOpenPageLink}
+            onTextDraftChange={onTextDraftChange}
+            onTextDraftFlush={onTextDraftFlush}
+            onTextHistoryApply={onTextHistoryApply}
+            onTextRedo={onTextRedo}
+            onTextUndo={onTextUndo}
+            onUpdate={onUpdateBlock}
+          />
+        );
+      })}
     </>
   );
 }

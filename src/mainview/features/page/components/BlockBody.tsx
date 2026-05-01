@@ -4,6 +4,8 @@ import type {
   KeyboardEvent,
   RefObject
 } from "react";
+import { useEffect } from "react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import { cn } from "@/mainview/lib/utils";
 import type { Block } from "@/shared/contracts";
 import { BLOCK_COMMANDS, type BlockCommand } from "@/mainview/features/page/lib/blockCommands";
@@ -11,6 +13,7 @@ import { getBlockDepth } from "@/mainview/features/page/lib/blockEditingBehavior
 import { blockShellClass, editableClass } from "@/mainview/features/page/lib/blockStyles";
 import { useBlockClipboardEditing } from "@/mainview/features/page/hooks/useBlockClipboardEditing";
 import { InlineMarksViewer } from "./InlineMarksViewer";
+import { ImageBlock } from "./ImageBlock";
 import type {
   BlockEditorUpdate,
   TextSelectionOffsets
@@ -37,6 +40,7 @@ type BlockBodyProps = {
     editableElement: HTMLElement,
     selection: TextSelectionOffsets
   ) => Promise<void> | void;
+  onOpenPageLink: (pageId: string) => void;
   onSelectionChange: () => void;
   onUpdate: (block: Block, changes: BlockEditorUpdate) => void;
   editableRef: RefObject<HTMLDivElement | null>;
@@ -58,6 +62,7 @@ export function BlockBody({
   onDragStart,
   onHistoryInput,
   onPasteMarkdown,
+  onOpenPageLink,
   onSelectionChange,
   onUpdate,
   editableRef
@@ -69,6 +74,76 @@ export function BlockBody({
     onKeyDown,
     onPasteMarkdown
   });
+
+  useEffect(() => {
+    const editable = editableRef.current;
+
+    if (!editable) {
+      return;
+    }
+
+    function handleNativeBeforeInput(event: InputEvent) {
+      if (event.inputType !== "historyUndo" && event.inputType !== "historyRedo") {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+      onHistoryInput(event.inputType);
+    }
+
+    function handleNativeKeyDown(event: globalThis.KeyboardEvent) {
+      if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== "z") {
+        return;
+      }
+
+      if (document.activeElement !== editable) {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      onHistoryInput(event.shiftKey ? "historyRedo" : "historyUndo");
+    }
+
+    function handleMenuHistoryCommand(event: Event) {
+      if (document.activeElement !== editable) {
+        return;
+      }
+
+      const command = (event as CustomEvent<"redo" | "undo">).detail;
+
+      if (command !== "undo" && command !== "redo") {
+        return;
+      }
+
+      onHistoryInput(command === "undo" ? "historyUndo" : "historyRedo");
+    }
+
+    window.addEventListener("note-history-command", handleMenuHistoryCommand);
+    window.addEventListener("keydown", handleNativeKeyDown, {
+      capture: true
+    });
+    editable.addEventListener("keydown", handleNativeKeyDown, {
+      capture: true
+    });
+    editable.addEventListener("beforeinput", handleNativeBeforeInput, {
+      capture: true
+    });
+
+    return () => {
+      window.removeEventListener("note-history-command", handleMenuHistoryCommand);
+      window.removeEventListener("keydown", handleNativeKeyDown, {
+        capture: true
+      });
+      editable.removeEventListener("keydown", handleNativeKeyDown, {
+        capture: true
+      });
+      editable.removeEventListener("beforeinput", handleNativeBeforeInput, {
+        capture: true
+      });
+    };
+  }, [editableRef, onHistoryInput]);
 
   return (
     <div
@@ -100,7 +175,28 @@ export function BlockBody({
           {numberedListMarker ?? blockIndex + 1}.
         </span>
       ) : null}
-      {block.type === "divider" ? (
+      {block.type === "toggle" ? (
+        <button
+          aria-label={isToggleOpen(draftProps) ? "토글 닫기" : "토글 열기"}
+          className="mt-1 flex size-5 shrink-0 items-center justify-center rounded-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() =>
+            onUpdate(block, {
+              props: { ...draftProps, open: !isToggleOpen(draftProps) }
+            })
+          }
+          type="button"
+        >
+          {isToggleOpen(draftProps) ? (
+            <ChevronDown className="size-4" />
+          ) : (
+            <ChevronRight className="size-4" />
+          )}
+        </button>
+      ) : null}
+      {block.type === "image" ? (
+        <ImageBlock block={block} onUpdate={onUpdate} props={draftProps} />
+      ) : block.type === "divider" ? (
         <button
           className="group/divider flex h-7 w-full items-center px-1 outline-none"
           onClick={() => void onApplyCommand(BLOCK_COMMANDS[0])}
@@ -108,6 +204,23 @@ export function BlockBody({
         >
           <span className="h-px w-full rounded-full bg-border transition-colors group-hover/divider:bg-muted-foreground/45 group-focus-visible/divider:bg-ring" />
           <span className="sr-only">텍스트 블록으로 변경</span>
+        </button>
+      ) : block.type === "page_link" ? (
+        <button
+          className={cn(
+            "min-h-7 min-w-0 flex-1 truncate rounded-sm px-1 py-1 text-left outline-none hover:bg-accent focus-visible:ring-1 focus-visible:ring-ring",
+            editableClass(block.type)
+          )}
+          onClick={() => {
+            const targetPageId = getStringProp(draftProps.targetPageId);
+
+            if (targetPageId) {
+              onOpenPageLink(targetPageId);
+            }
+          }}
+          type="button"
+        >
+          {draft || getStringProp(draftProps.targetTitle) || "Untitled"}
         </button>
       ) : (
         <div className="relative min-w-0 flex-1">
@@ -189,6 +302,10 @@ function hasInlineMarks(props: Block["props"]) {
   return Array.isArray(props.inlineMarks) && props.inlineMarks.length > 0;
 }
 
+function isToggleOpen(props: Block["props"]) {
+  return props.open !== false;
+}
+
 function shouldSyncSelectionAfterKey(key: string) {
   return [
     "ArrowLeft",
@@ -200,4 +317,8 @@ function shouldSyncSelectionAfterKey(key: string) {
     "PageUp",
     "PageDown"
   ].includes(key);
+}
+
+function getStringProp(value: unknown) {
+  return typeof value === "string" ? value : null;
 }

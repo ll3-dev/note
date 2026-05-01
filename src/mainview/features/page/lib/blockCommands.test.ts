@@ -13,10 +13,20 @@ describe("block command shortcuts", () => {
       text: "",
       type: "heading_2"
     });
+    expect(getMarkdownShortcut("### ")).toEqual({
+      props: {},
+      text: "",
+      type: "heading_3"
+    });
   });
 
   test("converts list and todo shortcuts", () => {
     expect(getMarkdownShortcut("- ")).toEqual({
+      props: {},
+      text: "",
+      type: "bulleted_list"
+    });
+    expect(getMarkdownShortcut("+ ")).toEqual({
       props: {},
       text: "",
       type: "bulleted_list"
@@ -30,6 +40,14 @@ describe("block command shortcuts", () => {
       props: { checked: false },
       text: "",
       type: "todo"
+    });
+  });
+
+  test("converts Notion quote shortcut", () => {
+    expect(getMarkdownShortcut("\" ")).toEqual({
+      props: {},
+      text: "",
+      type: "quote"
     });
   });
 
@@ -56,6 +74,23 @@ describe("block command shortcuts", () => {
       text: "",
       type: "paragraph"
     });
+  });
+
+  test("includes insert and action slash commands", () => {
+    expect(BLOCK_COMMANDS.find((command) => command.id === "insert-paragraph-below"))
+      .toMatchObject({
+        action: "insertAfter",
+        type: "paragraph"
+      });
+    expect(BLOCK_COMMANDS.find((command) => command.id === "delete-current-block"))
+      .toMatchObject({
+        action: "delete"
+      });
+    expect(BLOCK_COMMANDS.find((command) => command.id === "turn-into-image"))
+      .toMatchObject({
+        action: "turnInto",
+        type: "image"
+      });
   });
 
   test("ignores regular paragraph text", () => {

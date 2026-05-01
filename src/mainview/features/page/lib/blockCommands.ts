@@ -3,10 +3,13 @@ import {
   Code2,
   Heading1,
   Heading2,
+  Heading3,
+  Image,
   Link,
   List,
   ListOrdered,
   Minus,
+  ListTree,
   Quote,
   Text
 } from "lucide-react";
@@ -14,6 +17,7 @@ import type { BlockProps, BlockType } from "@/shared/contracts";
 import type { CreateBlockDraft } from "./blockEditingBehavior";
 
 export type BlockCommand = {
+  action?: "delete" | "insertAfter" | "turnInto";
   aliases: string[];
   createBlockAfter?: CreateBlockDraft;
   description: string;
@@ -26,6 +30,7 @@ export type BlockCommand = {
 
 export const BLOCK_COMMANDS: BlockCommand[] = [
   {
+    action: "turnInto",
     aliases: ["plain"],
     description: "Plain text block",
     icon: Text,
@@ -34,6 +39,7 @@ export const BLOCK_COMMANDS: BlockCommand[] = [
     type: "paragraph"
   },
   {
+    action: "turnInto",
     aliases: ["h1", "#"],
     description: "Large section heading",
     icon: Heading1,
@@ -42,6 +48,7 @@ export const BLOCK_COMMANDS: BlockCommand[] = [
     type: "heading_1"
   },
   {
+    action: "turnInto",
     aliases: ["h2", "##"],
     description: "Medium section heading",
     icon: Heading2,
@@ -50,6 +57,16 @@ export const BLOCK_COMMANDS: BlockCommand[] = [
     type: "heading_2"
   },
   {
+    action: "turnInto",
+    aliases: ["h3", "###"],
+    description: "Small section heading",
+    icon: Heading3,
+    id: "turn-into-heading-3",
+    label: "Heading 3",
+    type: "heading_3"
+  },
+  {
+    action: "turnInto",
     aliases: ["check", "checkbox", "task"],
     description: "Checkbox task",
     icon: CheckSquare,
@@ -59,6 +76,7 @@ export const BLOCK_COMMANDS: BlockCommand[] = [
     type: "todo"
   },
   {
+    action: "turnInto",
     aliases: ["bullet", "ul", "list"],
     description: "Bulleted list item",
     icon: List,
@@ -67,6 +85,7 @@ export const BLOCK_COMMANDS: BlockCommand[] = [
     type: "bulleted_list"
   },
   {
+    action: "turnInto",
     aliases: ["number", "num", "ol", "list"],
     description: "Numbered list item",
     icon: ListOrdered,
@@ -75,6 +94,7 @@ export const BLOCK_COMMANDS: BlockCommand[] = [
     type: "numbered_list"
   },
   {
+    action: "turnInto",
     aliases: ["blockquote"],
     description: "Quoted callout text",
     icon: Quote,
@@ -83,6 +103,17 @@ export const BLOCK_COMMANDS: BlockCommand[] = [
     type: "quote"
   },
   {
+    action: "turnInto",
+    aliases: ["toggle", "disclosure"],
+    description: "Collapsible block with nested content",
+    icon: ListTree,
+    id: "turn-into-toggle",
+    label: "Toggle list",
+    props: { open: true },
+    type: "toggle"
+  },
+  {
+    action: "turnInto",
     aliases: ["pre", "fence"],
     description: "Monospace code block",
     icon: Code2,
@@ -91,6 +122,17 @@ export const BLOCK_COMMANDS: BlockCommand[] = [
     type: "code"
   },
   {
+    action: "turnInto",
+    aliases: ["image", "img", "media"],
+    description: "Image with caption",
+    icon: Image,
+    id: "turn-into-image",
+    label: "Image",
+    props: {},
+    type: "image"
+  },
+  {
+    action: "turnInto",
     aliases: ["div", "line", "hr"],
     createBlockAfter: { props: {}, text: "", type: "paragraph" },
     description: "Horizontal divider",
@@ -106,6 +148,34 @@ export const BLOCK_COMMANDS: BlockCommand[] = [
     id: "turn-into-page-link",
     label: "Page link",
     type: "page_link"
+  },
+  {
+    action: "insertAfter",
+    aliases: ["insert", "below", "new"],
+    description: "Insert a text block below",
+    icon: Text,
+    id: "insert-paragraph-below",
+    label: "Text below",
+    type: "paragraph"
+  },
+  {
+    action: "insertAfter",
+    aliases: ["insert", "below", "todo", "task"],
+    description: "Insert a to-do block below",
+    icon: CheckSquare,
+    id: "insert-todo-below",
+    label: "To-do below",
+    props: { checked: false },
+    type: "todo"
+  },
+  {
+    action: "delete",
+    aliases: ["remove", "trash"],
+    description: "Delete this block",
+    icon: Minus,
+    id: "delete-current-block",
+    label: "Delete block",
+    type: "paragraph"
   }
 ];
 
@@ -144,9 +214,12 @@ export function getMarkdownShortcut(value: string): MarkdownShortcut | null {
   const shortcuts: Array<[RegExp, MarkdownShortcut]> = [
     [/^#\s$/, { props: {}, text: "", type: "heading_1" }],
     [/^##\s$/, { props: {}, text: "", type: "heading_2" }],
-    [/^-\s$/, { props: {}, text: "", type: "bulleted_list" }],
+    [/^[-+]\s$/, { props: {}, text: "", type: "bulleted_list" }],
     [/^>\s$/, { props: {}, text: "", type: "quote" }],
+    [/^"\s$/, { props: {}, text: "", type: "quote" }],
+    [/^>\s>\s$/, { props: { open: true }, text: "", type: "toggle" }],
     [/^```\s?$/, { props: {}, text: "", type: "code" }],
+    [/^###\s$/, { props: {}, text: "", type: "heading_3" }],
     [/^\[\]\s$|^\[ \]\s$/, { props: { checked: false }, text: "", type: "todo" }],
     [
       /^---$/,

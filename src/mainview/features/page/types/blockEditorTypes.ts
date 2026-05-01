@@ -38,6 +38,7 @@ export type BlockEditorProps = {
     draft?: CreateBlockDraft,
     options?: CreateBlockOptions
   ) => Promise<void>;
+  onCreatePageLink: (block: Block, query: string) => Promise<void> | void;
   onMergeWithPrevious: (
     previousBlock: Block,
     block: Block,
@@ -58,6 +59,7 @@ export type BlockEditorProps = {
     editableElement: HTMLElement,
     selection: TextSelectionOffsets
   ) => Promise<void> | void;
+  onOpenPageLink: (pageId: string) => void;
   onSelectionChange?: () => void;
   onTextDraftChange: (block: Block, text: string, props?: BlockProps) => void;
   onTextDraftFlush: (

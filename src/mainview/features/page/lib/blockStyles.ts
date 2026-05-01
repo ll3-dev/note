@@ -18,10 +18,14 @@ export function editableClass(type: BlockType) {
       return "text-[30px] font-bold leading-9";
     case "heading_2":
       return "text-[22px] font-semibold leading-8";
+    case "heading_3":
+      return "text-[18px] font-semibold leading-7";
     case "code":
       return "font-mono text-[14px]";
     case "quote":
       return "text-[17px] italic";
+    case "toggle":
+      return "font-medium text-[15px]";
     case "page_link":
       return "font-medium text-primary underline underline-offset-3";
     default:

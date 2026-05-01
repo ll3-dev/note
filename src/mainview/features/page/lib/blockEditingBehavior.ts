@@ -29,6 +29,7 @@ const CONTINUING_BLOCK_TYPES = new Set<BlockType>([
   "numbered_list",
   "todo",
   "quote",
+  "toggle",
   "code"
 ]);
 

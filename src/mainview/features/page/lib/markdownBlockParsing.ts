@@ -6,8 +6,8 @@ import {
 
 const MAX_MARKDOWN_DEPTH = 6;
 const BLOCK_MARKDOWN_PATTERNS = [
-  /^#{1,2}\s+/,
-  /^\s*[-*]\s+/,
+  /^#{1,3}\s+/,
+  /^\s*[-*+]\s+/,
   /^\s*\d+\.\s+/,
   /^\s*>\s+/,
   /^\s*[-*]\s+\[[ xX]\]\s+/,
@@ -95,12 +95,12 @@ export function shouldHandleMarkdownPaste(text: string) {
 }
 
 function parseMarkdownLine(line: string): ImportBlock | null {
-  const heading = /^(#{1,2})\s+(.+)$/.exec(line);
+  const heading = /^(#{1,3})\s+(.+)$/.exec(line);
 
   if (heading) {
     return {
       children: parseMarkdownInlineText(heading[2]),
-      type: heading[1].length === 1 ? "heading_1" : "heading_2"
+      type: getHeadingBlockType(heading[1].length)
     };
   }
 
@@ -119,7 +119,7 @@ function parseMarkdownLine(line: string): ImportBlock | null {
     };
   }
 
-  const bullet = /^(\s*)[-*]\s+(.+)$/.exec(line);
+  const bullet = /^(\s*)[-*+]\s+(.+)$/.exec(line);
 
   if (bullet) {
     return {
@@ -152,4 +152,16 @@ function getDepth(indentation: string) {
     MAX_MARKDOWN_DEPTH,
     Math.floor(indentation.replace(/\t/g, "  ").length / 2)
   );
+}
+
+function getHeadingBlockType(depth: number) {
+  if (depth === 1) {
+    return "heading_1";
+  }
+
+  if (depth === 2) {
+    return "heading_2";
+  }
+
+  return "heading_3";
 }

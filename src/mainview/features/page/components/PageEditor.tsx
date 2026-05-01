@@ -14,6 +14,7 @@ import { usePageEditorInteractions } from "@/mainview/features/page/hooks/usePag
 import { useSelectedBlockShortcuts } from "@/mainview/features/page/hooks/useSelectedBlockShortcuts";
 import type { CreateBlockDraft } from "@/mainview/features/page/lib/blockEditingBehavior";
 import { clearEditableFocusForBlockSelection } from "@/mainview/features/page/web/blockSelectionFocus";
+import { focusEditableBlockById } from "@/mainview/features/page/web/blockFocusDom";
 import { scrollBlockIntoView } from "@/mainview/features/page/web/blockScroll";
 import type {
   BlockEditorUpdate,
@@ -28,6 +29,7 @@ type PageEditorProps = {
     draft?: CreateBlockDraft,
     options?: CreateBlockOptions
   ) => Promise<void>;
+  onCreatePageLink: (block: Block, query: string) => Promise<void> | void;
   onDeleteBlock: (block: Block) => void;
   onDeleteBlocks: (blocks: Block[]) => void;
   onDuplicateBlocks: (blocks: Block[]) => void;
@@ -35,6 +37,7 @@ type PageEditorProps = {
   onFocusNextBlock: (block: Block) => boolean;
   onFocusFirstBlock: () => void;
   onFocusPreviousBlock: (block: Block) => boolean;
+  onIndentBlocks: (blocks: Array<{ block: Block; props: Block["props"] }>) => void;
   onMergeBlockWithPrevious: (
     previousBlock: Block,
     block: Block,
@@ -43,6 +46,7 @@ type PageEditorProps = {
   ) => Promise<void> | void;
   onMoveBlocks: (blocks: Block[], afterBlockId: string | null) => Promise<void> | void;
   onPasteMarkdown: PasteMarkdownHandler;
+  onOpenPageLink: (pageId: string) => void;
   onTextDraftChange: TextDraftChangeHandler;
   onTextDraftFlush: TextDraftFlushHandler;
   onTextHistoryApply: (block: Block, text: string) => void;
@@ -64,6 +68,7 @@ type TextDraftFlushHandler = (block: Block, text: string, props?: Block["props"]
 export function PageEditor({
   document,
   onCreateBlockAfter,
+  onCreatePageLink,
   onDeleteBlock,
   onDeleteBlocks,
   onDuplicateBlocks,
@@ -71,9 +76,11 @@ export function PageEditor({
   onFocusFirstBlock,
   onFocusNextBlock,
   onFocusPreviousBlock,
+  onIndentBlocks,
   onMergeBlockWithPrevious,
   onMoveBlocks,
   onPasteMarkdown,
+  onOpenPageLink,
   onTextDraftChange,
   onTextDraftFlush,
   onTextHistoryApply,
@@ -124,8 +131,11 @@ export function PageEditor({
     document,
     onDeleteBlocks,
     onDuplicateBlocks,
+    onFocusBlock: focusEditableBlockById,
     onFocusTitle: () => titleRef.current?.focus(),
+    onIndentBlocks,
     onKeyboardSelection: applyKeyboardBlockSelection,
+    onMoveBlocks,
     onPasteBlocks,
     selectionAnchorBlockId,
     selectionFocusBlockId,
@@ -171,6 +181,7 @@ export function PageEditor({
               draggedBlockId={draggedBlockId}
               isBlockRangeSelecting={isBlockRangeSelecting}
               onCreateBlockAfter={onCreateBlockAfter}
+              onCreatePageLink={onCreatePageLink}
               onDeleteBlock={onDeleteBlock}
               onDragEnd={clearDragState}
               onDragOver={setDropPlacement}
@@ -181,6 +192,7 @@ export function PageEditor({
               onFocusPreviousBlock={focusPreviousBlock}
               onMergeBlockWithPrevious={onMergeBlockWithPrevious}
               onPasteMarkdown={onPasteMarkdown}
+              onOpenPageLink={onOpenPageLink}
               selectedBlockIds={selectedBlockIds}
               onTextDraftChange={onTextDraftChange}
               onTextDraftFlush={onTextDraftFlush}

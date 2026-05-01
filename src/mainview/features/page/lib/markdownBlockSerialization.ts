@@ -26,6 +26,8 @@ function serializeBlock(block: Block) {
       return [`# ${text}`];
     case "heading_2":
       return [`## ${text}`];
+    case "heading_3":
+      return [`### ${text}`];
     case "bulleted_list":
       return [`${depthPrefix}- ${text}`];
     case "numbered_list":
@@ -34,11 +36,14 @@ function serializeBlock(block: Block) {
       return [`${depthPrefix}- [${block.props.checked ? "x" : " "}] ${text}`];
     case "quote":
       return [`> ${text}`];
+    case "toggle":
+      return [`> ${block.props.open === false ? "" : "> "}${text}`];
     case "code":
       return [`\`\`\`${getLanguage(block.props)}`, text, "```"];
     case "divider":
       return ["---"];
     case "image":
+      return [`![${getImageAlt(block.props)}](${getImageSrc(block.props)})`];
     case "page_link":
     case "paragraph":
       return [text];
@@ -49,6 +54,7 @@ function shouldSeparateBlocks(block: Block) {
   return (
     block.type === "heading_1" ||
     block.type === "heading_2" ||
+    block.type === "heading_3" ||
     block.type === "paragraph"
   );
 }
@@ -69,4 +75,12 @@ function getNumberStart(props: BlockProps) {
 
 function getLanguage(props: BlockProps) {
   return typeof props.language === "string" ? props.language : "";
+}
+
+function getImageSrc(props: BlockProps) {
+  return typeof props.src === "string" ? props.src : "";
+}
+
+function getImageAlt(props: BlockProps) {
+  return typeof props.alt === "string" ? props.alt : "";
 }

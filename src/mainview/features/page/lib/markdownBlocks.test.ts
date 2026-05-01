@@ -23,7 +23,9 @@ describe("markdown blocks", () => {
         [
           "# Heading",
           "## Subheading",
+          "### Minor heading",
           "- Bullet",
+          "+ Plus bullet",
           "  - Nested bullet",
           "1. First",
           "> Quote",
@@ -39,7 +41,9 @@ describe("markdown blocks", () => {
     ).toEqual([
       { props: {}, text: "Heading", type: "heading_1" },
       { props: {}, text: "Subheading", type: "heading_2" },
+      { props: {}, text: "Minor heading", type: "heading_3" },
       { props: {}, text: "Bullet", type: "bulleted_list" },
+      { props: {}, text: "Plus bullet", type: "bulleted_list" },
       { props: { depth: 1 }, text: "Nested bullet", type: "bulleted_list" },
       { props: { start: 1 }, text: "First", type: "numbered_list" },
       { props: {}, text: "Quote", type: "quote" },
@@ -85,6 +89,7 @@ describe("markdown blocks", () => {
       serializePageToMarkdown({
         blocks: [
           block("heading_1", "Title"),
+          block("heading_3", "Minor title"),
           block("paragraph", "Intro link", {
             inlineMarks: [
               { end: 10, href: "https://example.com", start: 6, type: "link" }
@@ -112,6 +117,8 @@ describe("markdown blocks", () => {
     ).toBe(
       [
         "# Title",
+        "",
+        "### Minor title",
         "",
         "Intro [link](https://example.com)",
         "",
