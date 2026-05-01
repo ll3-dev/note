@@ -7,6 +7,10 @@ import { getBlock } from "./blockReadRepository";
 import { recordOperation } from "./noteOperations";
 import { touchPage } from "./pageTouch";
 import {
+  deleteBlockFromSearchIndex,
+  indexBlock
+} from "./searchIndexRepository";
+import {
   capturePageHistoryBeforeChange,
   syncPageHistoryAfterChange
 } from "@/bun/sync/pageHistory";
@@ -129,6 +133,7 @@ export function updateBlock(
   touchPage(handle, current.pageId);
 
   const block = getBlock(handle, input.blockId);
+  indexBlock(handle, block);
   syncPageHistoryAfterChange(handle, current.pageId);
   recordOperation(handle, "block", block.id, "update", {
     type: nextType,
@@ -146,6 +151,7 @@ export function deleteBlock(
   const current = getBlock(handle, input.blockId);
 
   capturePageHistoryBeforeChange(handle, current.pageId);
+  deleteBlockFromSearchIndex(handle, input.blockId);
   handle.orm.delete(blocks).where(eq(blocks.id, input.blockId)).run();
   touchPage(handle, current.pageId);
   syncPageHistoryAfterChange(handle, current.pageId);
@@ -173,6 +179,7 @@ export function deleteBlocks(
       }
 
       handle.orm.delete(blocks).where(eq(blocks.id, blockId)).run();
+      deleteBlockFromSearchIndex(handle, blockId);
       recordOperation(handle, "block", blockId, "delete", {});
     }
 
@@ -225,5 +232,8 @@ export function insertBlock(
     })
     .run();
 
-  return getBlock(handle, blockId);
+  const block = getBlock(handle, blockId);
+  indexBlock(handle, block);
+
+  return block;
 }

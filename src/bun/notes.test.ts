@@ -13,6 +13,8 @@ import {
   listPages,
   moveBlock,
   movePage,
+  searchPages,
+  searchWorkspace,
   undoPageHistory,
   updatePage,
   updateBlock
@@ -112,6 +114,37 @@ describe("notes repository", () => {
     );
   });
 
+  test("allows empty page titles", () => {
+    const handle = openTempDatabase();
+    const page = createPage(handle, { title: "" }).page;
+
+    expect(page.title).toBe("");
+
+    const updated = updatePage(handle, {
+      pageId: page.id,
+      title: "   "
+    });
+
+    expect(updated.title).toBe("");
+  });
+
+  test("searches pages through the FTS index", () => {
+    const handle = openTempDatabase();
+    const page = createPage(handle, { title: "Project Alpha" }).page;
+
+    expect(searchPages(handle, { query: "Alpha" })).toEqual([
+      {
+        pageId: page.id,
+        title: "Project Alpha"
+      }
+    ]);
+
+    updatePage(handle, { pageId: page.id, title: "Project Beta" });
+
+    expect(searchPages(handle, { query: "Alpha" })).toEqual([]);
+    expect(searchPages(handle, { query: "Beta" })[0]?.pageId).toBe(page.id);
+  });
+
   test("creates, updates, and deletes blocks in a page document", () => {
     const handle = openTempDatabase();
     const page = createPage(handle, { title: "Daily" }).page;
@@ -135,6 +168,34 @@ describe("notes repository", () => {
 
     const document = getPageDocument(handle, { pageId: page.id });
     expect(document.blocks.map((item) => item.id)).not.toContain(block.id);
+  });
+
+  test("searches blocks through the FTS index", () => {
+    const handle = openTempDatabase();
+    const page = createPage(handle, { title: "Daily" }).page;
+    const block = createBlock(handle, {
+      pageId: page.id,
+      text: "Ship local search"
+    });
+
+    expect(searchWorkspace(handle, { query: "local" })).toContainEqual({
+      blockId: block.id,
+      kind: "block",
+      pageId: page.id,
+      pageTitle: "Daily",
+      text: "Ship local search"
+    });
+
+    updateBlock(handle, { blockId: block.id, text: "Ship sync" });
+
+    expect(searchWorkspace(handle, { query: "local" })).toEqual([]);
+    expect(searchWorkspace(handle, { query: "sync" })).toContainEqual({
+      blockId: block.id,
+      kind: "block",
+      pageId: page.id,
+      pageTitle: "Daily",
+      text: "Ship sync"
+    });
   });
 
   test("normalizes inline marks before storing block props", () => {

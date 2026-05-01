@@ -5,6 +5,7 @@ import { DEFAULT_BLOCK_TYPE, insertBlock } from "./blockRepository";
 import { listBlocksForPage } from "./blockReadRepository";
 import { makeSortKey } from "./blockOrdering";
 import { mapPage } from "./noteRows";
+import { indexPage } from "./searchIndexRepository";
 import {
   capturePageHistoryBeforeChange,
   syncPageHistoryAfterChange
@@ -33,10 +34,6 @@ export function createPage(
 ): PageDocument {
   const title = input.title.trim();
 
-  if (!title) {
-    throw new Error("page title must not be empty");
-  }
-
   const pageId = crypto.randomUUID();
 
   runInTransaction(handle, () => {
@@ -49,6 +46,8 @@ export function createPage(
         title
       })
       .run();
+
+    indexPage(handle, getPage(handle, pageId));
 
     insertBlock(handle, {
       pageId,
@@ -88,10 +87,6 @@ export function updatePage(
     capturePageHistoryBeforeChange(handle, input.pageId);
     const title = input.title.trim();
 
-    if (!title) {
-      throw new Error("page title must not be empty");
-    }
-
     handle.orm
       .update(pages)
       .set({
@@ -100,6 +95,7 @@ export function updatePage(
       })
       .where(eq(pages.id, input.pageId))
       .run();
+    indexPage(handle, getPage(handle, input.pageId));
     syncPageHistoryAfterChange(handle, input.pageId);
   }
 

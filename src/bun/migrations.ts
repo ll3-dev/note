@@ -2,7 +2,7 @@ import { sql } from "drizzle-orm";
 import type { BunSQLiteDatabase } from "drizzle-orm/bun-sqlite";
 import { schema, schemaMigrations } from "./schema";
 
-const CURRENT_SCHEMA_VERSION = 4;
+const CURRENT_SCHEMA_VERSION = 5;
 
 const migrationTableSql = `CREATE TABLE IF NOT EXISTS schema_migrations (
   version INTEGER PRIMARY KEY, name TEXT NOT NULL,
@@ -151,6 +151,37 @@ const migrations = [
         created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
       `CREATE INDEX IF NOT EXISTS idx_page_history_page_local_undo
       ON page_history_entries(page_id, origin, actor_id, undone_at, discarded_at, created_at)`
+    ]
+  },
+  {
+    version: 5,
+    name: "add page fts index and backfill search",
+    statements: [
+      `
+      CREATE VIRTUAL TABLE IF NOT EXISTS pages_fts
+      USING fts5(
+        page_id UNINDEXED,
+        title
+      )
+      `,
+      `
+      CREATE VIRTUAL TABLE IF NOT EXISTS blocks_fts
+      USING fts5(
+        block_id UNINDEXED,
+        page_id UNINDEXED,
+        text
+      )
+      `,
+      `DELETE FROM pages_fts`,
+      `
+      INSERT INTO pages_fts(page_id, title)
+      SELECT id, title FROM pages WHERE archived_at IS NULL
+      `,
+      `DELETE FROM blocks_fts`,
+      `
+      INSERT INTO blocks_fts(block_id, page_id, text)
+      SELECT id, page_id, text FROM blocks WHERE trim(text) != ''
+      `
     ]
   }
 ] as const;

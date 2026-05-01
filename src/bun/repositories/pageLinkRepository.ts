@@ -1,6 +1,7 @@
-import { and, eq, isNull, like, ne, sql } from "drizzle-orm";
+import { and, eq, isNull, ne } from "drizzle-orm";
 import type { DatabaseHandle } from "@/bun/database";
 import { blocks, pages } from "@/bun/schema";
+import { buildFtsQuery } from "./searchIndexRepository";
 import type {
   Backlink,
   ListBacklinksInput,
@@ -21,16 +22,26 @@ export function searchPages(
     return [];
   }
 
-  return handle.orm
-    .select({
-      pageId: pages.id,
-      title: pages.title
-    })
-    .from(pages)
-    .where(and(isNull(pages.archived_at), like(pages.title, `%${escapeLike(query)}%`)))
-    .orderBy(sql`CASE WHEN ${pages.title} = ${query} THEN 0 ELSE 1 END`, pages.title)
-    .limit(limit)
-    .all();
+  const ftsQuery = buildFtsQuery(query);
+
+  if (!ftsQuery) {
+    return [];
+  }
+
+  return handle.db
+    .query<PageSearchResult, [string, string, number]>(`
+      SELECT pages.id AS pageId, pages.title AS title
+      FROM pages_fts
+      INNER JOIN pages ON pages.id = pages_fts.page_id
+      WHERE pages.archived_at IS NULL
+        AND pages_fts MATCH ?
+      ORDER BY
+        CASE WHEN pages.title = ? THEN 0 ELSE 1 END,
+        bm25(pages_fts),
+        pages.title
+      LIMIT ?
+    `)
+    .all(ftsQuery, query, limit);
 }
 
 export function listBacklinks(
@@ -93,20 +104,34 @@ export function searchWorkspace(
     title: page.title
   }));
 
-  const blockResults: SearchWorkspaceResult[] = handle.orm
-    .select({
-      blockId: blocks.id,
-      pageId: blocks.page_id,
-      pageTitle: pages.title,
-      text: blocks.text
-    })
-    .from(blocks)
-    .innerJoin(pages, eq(pages.id, blocks.page_id))
-    .where(and(isNull(pages.archived_at), like(blocks.text, `%${escapeLike(query)}%`)))
-    .orderBy(pages.title, blocks.sort_key)
-    .limit(limit)
-    .all()
-    .map((row) => ({ kind: "block", ...row }));
+  const ftsQuery = buildFtsQuery(query);
+  const blockResults: SearchWorkspaceResult[] = ftsQuery
+    ? handle.db
+        .query<
+          {
+            blockId: string;
+            pageId: string;
+            pageTitle: string;
+            text: string;
+          },
+          [string, number]
+        >(`
+          SELECT
+            blocks.id AS blockId,
+            blocks.page_id AS pageId,
+            pages.title AS pageTitle,
+            blocks.text AS text
+          FROM blocks_fts
+          INNER JOIN blocks ON blocks.id = blocks_fts.block_id
+          INNER JOIN pages ON pages.id = blocks.page_id
+          WHERE pages.archived_at IS NULL
+            AND blocks_fts MATCH ?
+          ORDER BY bm25(blocks_fts), pages.title, blocks.sort_key
+          LIMIT ?
+        `)
+        .all(ftsQuery, limit)
+        .map((row) => ({ kind: "block", ...row }))
+    : [];
 
   return [...pageResults, ...blockResults].slice(0, limit);
 }
@@ -121,8 +146,4 @@ function parseProps(value: string) {
   } catch {
     return {};
   }
-}
-
-function escapeLike(value: string) {
-  return value.replaceAll("%", "\\%").replaceAll("_", "\\_");
 }
