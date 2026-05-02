@@ -1,105 +1,37 @@
 import type { ComponentProps } from "react";
-import type { Backlink, Block, PageDocument } from "@/shared/contracts";
+import type { Backlink, PageDocument } from "@/shared/contracts";
 import { PageEditor } from "@/mainview/features/page/components/PageEditor";
-import type { CreateBlockDraft } from "@/mainview/features/page/lib/blockEditingBehavior";
-import type {
-  BlockEditorUpdate,
-  CreateBlockOptions,
-  OpenPageLinkOptions,
-  TextSelectionOffsets
-} from "@/mainview/features/page/types/blockEditorTypes";
 import { EmptyEditorState } from "./EmptyEditorState";
 import { WorkspaceHome } from "./WorkspaceHome";
 import { getPageTitleDisplay } from "@/shared/pageDisplay";
+
+export type WorkspacePageEditorProps = Omit<
+  ComponentProps<typeof PageEditor>,
+  "document" | "pages"
+>;
 
 type WorkspaceEditorPaneProps = {
   document: PageDocument | null;
   isLoading: boolean;
   backlinks: Backlink[];
   isCreatingPage: boolean;
-  onCreateBlockAfter: (
-    block: Block,
-    draft?: CreateBlockDraft,
-    options?: CreateBlockOptions
-  ) => Promise<void>;
   onCreateUntitledPage: () => void;
-  onCreatePageLink: (block: Block) => Promise<void> | void;
-  onDeleteBlock: (block: Block) => void;
-  onDeleteBlocks: (blocks: Block[]) => void;
-  onDuplicateBlocks: (blocks: Block[]) => void;
-  onPasteBlocks: (afterBlock: Block) => Promise<Block[]> | Block[];
-  onFocusFirstBlock: () => void;
-  onFocusNextBlock: (block: Block) => boolean;
-  onFocusPreviousBlock: (block: Block) => boolean;
-  onIndentBlocks: (blocks: Array<{ block: Block; props: Block["props"] }>) => void;
-  onMergeBlockWithPrevious: (
-    previousBlock: Block,
-    block: Block,
-    text: string,
-    props: Block["props"]
-  ) => Promise<void> | void;
-  onMoveBlocks: (
-    blocks: Block[],
-    afterBlockId: string | null
-  ) => Promise<void> | void;
-  onPasteMarkdown: (
-    block: Block,
-    markdown: string,
-    editableElement: HTMLElement,
-    selection: TextSelectionOffsets
-  ) => Promise<void> | void;
-  onOpenPageLink: (pageId: string, options?: OpenPageLinkOptions) => void;
-  onTextDraftChange: (
-    block: Block,
-    text: string,
-    props?: Block["props"]
-  ) => void;
-  onTextDraftFlush: (
-    block: Block,
-    text: string,
-    props?: Block["props"]
-  ) => Promise<void>;
-  onTextHistoryApply: (block: Block, text: string) => void;
-  onTextRedo: (block: Block) => Promise<Block | null>;
-  onTextUndo: (block: Block) => Promise<Block | null>;
-  onUpdateBlock: (block: Block, changes: BlockEditorUpdate) => void;
-  onUpdatePageTitle: PageEditorTitleHandler;
   onOpenQuickSwitcher: () => void;
+  onRestorePageLink?: (pageId: string) => void;
   onSelectPage: (page: PageDocument["page"]) => void;
+  pageEditorProps: WorkspacePageEditorProps;
   pages: PageDocument["page"][];
 };
-
-type PageEditorTitleHandler = ComponentProps<typeof PageEditor>["onUpdatePageTitle"];
 
 export function WorkspaceEditorPane({
   document,
   isLoading,
   backlinks,
   isCreatingPage,
-  onCreateBlockAfter,
   onCreateUntitledPage,
-  onCreatePageLink,
-  onDeleteBlock,
-  onDeleteBlocks,
-  onDuplicateBlocks,
-  onPasteBlocks,
-  onFocusFirstBlock,
-  onFocusNextBlock,
-  onFocusPreviousBlock,
-  onIndentBlocks,
-  onMergeBlockWithPrevious,
-  onMoveBlocks,
-  onPasteMarkdown,
-  onOpenPageLink,
-  onTextDraftChange,
-  onTextDraftFlush,
-  onTextHistoryApply,
-  onTextRedo,
-  onTextUndo,
-  onUpdateBlock,
-  onUpdatePageTitle,
   onOpenQuickSwitcher,
   onSelectPage,
+  pageEditorProps,
   pages
 }: WorkspaceEditorPaneProps) {
   return (
@@ -107,28 +39,8 @@ export function WorkspaceEditorPane({
       {document ? (
         <PageEditor
           document={document}
-          onCreateBlockAfter={onCreateBlockAfter}
-          onCreatePageLink={onCreatePageLink}
-          onDeleteBlock={onDeleteBlock}
-          onDeleteBlocks={onDeleteBlocks}
-          onDuplicateBlocks={onDuplicateBlocks}
-          onPasteBlocks={onPasteBlocks}
-          onFocusFirstBlock={onFocusFirstBlock}
-          onFocusNextBlock={onFocusNextBlock}
-          onFocusPreviousBlock={onFocusPreviousBlock}
-          onIndentBlocks={onIndentBlocks}
-          onMergeBlockWithPrevious={onMergeBlockWithPrevious}
-          onMoveBlocks={onMoveBlocks}
-          onPasteMarkdown={onPasteMarkdown}
-          onOpenPageLink={onOpenPageLink}
-          onTextDraftChange={onTextDraftChange}
-          onTextDraftFlush={onTextDraftFlush}
-          onTextHistoryApply={onTextHistoryApply}
-          onTextRedo={onTextRedo}
-          onTextUndo={onTextUndo}
-          onUpdateBlock={onUpdateBlock}
-          onUpdatePageTitle={onUpdatePageTitle}
           pages={pages}
+          {...pageEditorProps}
         />
       ) : !isLoading ? (
         <WorkspaceHome
@@ -149,7 +61,7 @@ export function WorkspaceEditorPane({
               <button
                 className="rounded-sm border border-border/80 px-2 py-1 hover:bg-accent hover:text-accent-foreground"
                 key={backlink.blockId}
-                onClick={() => onOpenPageLink(backlink.pageId)}
+                onClick={() => pageEditorProps.onOpenPageLink(backlink.pageId)}
                 type="button"
               >
                 {getPageTitleDisplay(backlink.pageTitle)}

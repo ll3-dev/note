@@ -1,6 +1,6 @@
-import { useEffect, type ComponentProps } from "react";
+import { useEffect } from "react";
 import type { Block, BlockProps, Page, PageDocument } from "@/shared/contracts";
-import type { WorkspaceEditorPane } from "@/mainview/features/workspace/components/WorkspaceEditorPane";
+import type { WorkspacePageEditorProps } from "@/mainview/features/workspace/components/WorkspaceEditorPane";
 import { useBlockBatchActions } from "./useBlockBatchActions";
 import type { TextSyncStatus } from "./useBlockTextSync";
 import { useMarkdownClipboard } from "./useMarkdownClipboard";
@@ -10,7 +10,6 @@ import type { useWorkspaceMutations } from "./useWorkspaceMutations";
 import type { OpenPageLinkOptions } from "@/mainview/features/page/types/blockEditorTypes";
 
 type WorkspaceMutations = ReturnType<typeof useWorkspaceMutations>;
-type WorkspaceEditorPaneProps = ComponentProps<typeof WorkspaceEditorPane>;
 
 type WorkspacePageEditorControllerOptions = {
   createBlockMutation: WorkspaceMutations["createBlockMutation"];
@@ -129,7 +128,7 @@ export function useWorkspacePageEditorController({
     updatePageMutation
   });
 
-  const editorPaneProps = {
+  const pageEditorProps = {
     onCreateBlockAfter: editorActions.createBlockAfter,
     onCreatePageLink: editorActions.createPageLink,
     onDeleteBlock: (target) => {
@@ -159,14 +158,13 @@ export function useWorkspacePageEditorController({
     onTextUndo: undoBlockText,
     onUpdateBlock: (target, changes) =>
       void editorActions.updateBlock(target, changes),
-    onUpdatePageTitle: editorActions.updatePageTitle,
-    pages
-  } satisfies Partial<WorkspaceEditorPaneProps>;
+    onUpdatePageTitle: editorActions.updatePageTitle
+  } satisfies WorkspacePageEditorProps;
 
   return {
     copyCurrentPageMarkdown,
     editorActions,
-    editorPaneProps,
+    pageEditorProps,
     flushAllTextDrafts,
     saveStatus,
     setFocusBlockId

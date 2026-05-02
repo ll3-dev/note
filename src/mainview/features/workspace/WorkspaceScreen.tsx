@@ -227,7 +227,8 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
         onCreateUntitledPage={() => createPageMutation.mutate("")}
         onOpenQuickSwitcher={quickSwitcher.openQuickSwitcher}
         onSelectPage={selectPage}
-        {...editorController.editorPaneProps}
+        pageEditorProps={editorController.pageEditorProps}
+        pages={pages}
       />
       <QuickSwitcherDialog
         activeIndex={quickSwitcher.activeIndex}
