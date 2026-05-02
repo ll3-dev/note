@@ -7,7 +7,13 @@ type WorkspacePageRef = {
   title: string;
 };
 
+type WorkspaceTabHistory = {
+  back: WorkspacePageRef[];
+  forward: WorkspacePageRef[];
+};
+
 export type WorkspaceTab = {
+  history?: WorkspaceTabHistory;
   id: string;
   pageId: string;
   title: string;
@@ -22,6 +28,7 @@ type WorkspaceState = {
   sidebarWidth: number;
   tabs: WorkspaceTab[];
   closeTab: (tabId: string) => void;
+  navigateActiveTabToPage: (page: WorkspacePageRef) => void;
   openPageTab: (page: WorkspacePageRef) => void;
   reorderTabs: (
     sourceTabId: string,
@@ -33,6 +40,7 @@ type WorkspaceState = {
   toggleExpandedPage: (pageId: string) => void;
   setSelectedPageId: (pageId: string | null) => void;
   setActiveTabId: (tabId: string) => void;
+  syncActiveTabToPage: (page: WorkspacePageRef) => void;
   setPageTitleDraft: (title: string) => void;
   setSidebarWidth: (width: number) => void;
   toggleSidebar: () => void;
@@ -67,6 +75,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
       openPageTab: (page) =>
         set((state) => {
           const tab: WorkspaceTab = {
+            history: { back: [], forward: [] },
             id: page.id,
             pageId: page.id,
             title: page.title
@@ -80,6 +89,51 @@ export const useWorkspaceStore = create<WorkspaceState>()(
             activeTabId: tab.id,
             selectedPageId: page.id,
             tabs
+          };
+        }),
+      navigateActiveTabToPage: (page) =>
+        set((state) => {
+          if (!state.activeTabId) {
+            const tab: WorkspaceTab = {
+              history: { back: [], forward: [] },
+              id: page.id,
+              pageId: page.id,
+              title: page.title
+            };
+
+            return {
+              activeTabId: tab.id,
+              selectedPageId: page.id,
+              tabs: [...state.tabs, tab]
+            };
+          }
+
+          return {
+            selectedPageId: page.id,
+            tabs: state.tabs.map((tab) => {
+              if (tab.id !== state.activeTabId) {
+                return tab;
+              }
+
+              if (tab.pageId === page.id) {
+                return { ...tab, title: page.title };
+              }
+
+              const history = tab.history ?? { back: [], forward: [] };
+
+              return {
+                ...tab,
+                history: {
+                  back: [
+                    ...history.back,
+                    { id: tab.pageId, title: tab.title }
+                  ],
+                  forward: []
+                },
+                pageId: page.id,
+                title: page.title
+              };
+            })
           };
         }),
       reorderTabs: (sourceTabId, targetTabId, placement) =>
@@ -137,6 +191,68 @@ export const useWorkspaceStore = create<WorkspaceState>()(
           return {
             activeTabId: tab.id,
             selectedPageId: tab.pageId
+          };
+        }),
+      syncActiveTabToPage: (page) =>
+        set((state) => {
+          if (!state.activeTabId) {
+            const tab: WorkspaceTab = {
+              history: { back: [], forward: [] },
+              id: page.id,
+              pageId: page.id,
+              title: page.title
+            };
+
+            return {
+              activeTabId: tab.id,
+              selectedPageId: page.id,
+              tabs: [...state.tabs, tab]
+            };
+          }
+
+          return {
+            selectedPageId: page.id,
+            tabs: state.tabs.map((tab) => {
+              if (tab.id !== state.activeTabId) {
+                return tab;
+              }
+
+              const history = tab.history ?? { back: [], forward: [] };
+              const previousPage = history.back[history.back.length - 1] ?? null;
+              const nextPage = history.forward[0] ?? null;
+
+              if (previousPage?.id === page.id) {
+                return {
+                  ...tab,
+                  history: {
+                    back: history.back.slice(0, -1),
+                    forward: [
+                      { id: tab.pageId, title: tab.title },
+                      ...history.forward
+                    ]
+                  },
+                  pageId: page.id,
+                  title: page.title
+                };
+              }
+
+              if (nextPage?.id === page.id) {
+                return {
+                  ...tab,
+                  history: {
+                    back: [
+                      ...history.back,
+                      { id: tab.pageId, title: tab.title }
+                    ],
+                    forward: history.forward.slice(1)
+                  },
+                  pageId: page.id,
+                  title: page.title
+                };
+              }
+
+              return { ...tab, pageId: page.id, title: page.title };
+            })
           };
         }),
       setPageTitleDraft: (title) => set({ pageTitleDraft: title }),

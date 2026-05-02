@@ -2,11 +2,13 @@ import Electrobun, {
   ApplicationMenu,
   BrowserView,
   BrowserWindow,
+  Screen,
   Utils
 } from "electrobun/bun";
 import type { NoteRPC } from "@/shared/contracts";
 import { getDatabaseStatus, openDatabase } from "./database";
 import { resolveMainviewUrl } from "./mainviewUrl";
+import { getNavigationDirectionFromMouseButtons } from "./navigationMouseButtons";
 import {
   createBlock,
   createBlocks,
@@ -45,6 +47,17 @@ import {
 const databaseHandle = openDatabase(Utils.paths.userData);
 const mainviewUrl = resolveMainviewUrl();
 let mainWindow: BrowserWindow | null = null;
+let navigationMouseButtons = 0n;
+const shouldLogNavigationMouseButtons =
+  process.env["NOTE_DEBUG_MOUSE_BUTTONS"] === "1";
+
+function dispatchMainviewEvent(name: string, detail: unknown) {
+  mainWindow?.webview.executeJavascript(
+    `window.dispatchEvent(new CustomEvent(${JSON.stringify(name)}, { detail: ${JSON.stringify(
+      detail
+    )} }))`
+  );
+}
 
 const rpc = BrowserView.defineRPC<NoteRPC>({
   maxRequestTime: 5000,
@@ -96,6 +109,29 @@ function createMainWindow() {
 
 mainWindow = createMainWindow();
 
+setInterval(() => {
+  const currentButtons = Screen.getMouseButtons();
+  const direction = getNavigationDirectionFromMouseButtons(
+    navigationMouseButtons,
+    currentButtons
+  );
+
+  if (
+    shouldLogNavigationMouseButtons &&
+    currentButtons !== navigationMouseButtons
+  ) {
+    console.info(`[navigation] mouse buttons: ${currentButtons.toString(2)}`);
+  }
+
+  navigationMouseButtons = currentButtons;
+
+  if (!direction || !mainWindow) {
+    return;
+  }
+
+  dispatchMainviewEvent("note-navigation-command", direction);
+}, 16);
+
 Electrobun.events.on("close", (event) => {
   const windowId = (event as { data?: { id?: number } }).data?.id;
 
@@ -118,6 +154,21 @@ ApplicationMenu.setApplicationMenu([
         accelerator: "CommandOrControl+Q",
         action: "note.quit",
         label: "Quit Note"
+      }
+    ]
+  },
+  {
+    label: "Navigate",
+    submenu: [
+      {
+        accelerator: "CommandOrControl+Left",
+        action: "note.navigateBack",
+        label: "Back"
+      },
+      {
+        accelerator: "CommandOrControl+Right",
+        action: "note.navigateForward",
+        label: "Forward"
       }
     ]
   },
@@ -151,13 +202,20 @@ ApplicationMenu.on("application-menu-clicked", (event) => {
     return;
   }
 
+  if (action === "note.navigateBack" || action === "note.navigateForward") {
+    dispatchMainviewEvent(
+      "note-navigation-command",
+      action === "note.navigateBack" ? "back" : "forward"
+    );
+    return;
+  }
+
   if (action !== "note.undo" && action !== "note.redo") {
     return;
   }
 
-  mainWindow?.webview.executeJavascript(
-    `window.dispatchEvent(new CustomEvent("note-history-command", { detail: ${JSON.stringify(
-      action === "note.undo" ? "undo" : "redo"
-    )} }))`
+  dispatchMainviewEvent(
+    "note-history-command",
+    action === "note.undo" ? "undo" : "redo"
   );
 });

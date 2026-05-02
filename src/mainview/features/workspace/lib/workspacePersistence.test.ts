@@ -53,4 +53,39 @@ describe("reconcileWorkspacePersistence", () => {
     expect(state.expandedPageIds).toEqual([]);
     expect(state.tabs).toEqual([]);
   });
+
+  test("drops stale pages from tab history", () => {
+    const state = reconcileWorkspacePersistence(
+      {
+        activeTabId: "tab-a",
+        expandedPageIds: [],
+        isSidebarCollapsed: false,
+        selectedPageId: "page-a",
+        sidebarWidth: 320,
+        tabs: [
+          {
+            history: {
+              back: [
+                { id: "page-b", title: "Old B" },
+                { id: "missing-page", title: "Missing" }
+              ],
+              forward: [{ id: "page-c", title: "Old C" }]
+            },
+            id: "tab-a",
+            pageId: "page-a",
+            title: "Old A"
+          }
+        ]
+      },
+      [
+        { id: "page-a", title: "New A" },
+        { id: "page-b", title: "New B" }
+      ]
+    );
+
+    expect(state.tabs[0]?.history).toEqual({
+      back: [{ id: "page-b", title: "Old B" }],
+      forward: []
+    });
+  });
 });

@@ -1,4 +1,4 @@
-import { PanelLeft, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, PanelLeft, Plus } from "lucide-react";
 import { useCallback, type MouseEvent } from "react";
 import { Button } from "@/mainview/components/ui/button";
 import { cn } from "@/mainview/lib/utils";
@@ -14,6 +14,7 @@ import { WorkspaceTabButton } from "./WorkspaceTabButton";
 
 type WorkspaceTitleBarProps = {
   activeTabId: string | null;
+  historyNavigation: WorkspaceHistoryNavigation;
   isCreatingPage: boolean;
   isSidebarCollapsed: boolean;
   onCloseTab: (event: MouseEvent<HTMLButtonElement>, tabId: string) => void;
@@ -29,8 +30,16 @@ type WorkspaceTitleBarProps = {
   tabs: WorkspaceTab[];
 };
 
+export type WorkspaceHistoryNavigation = {
+  canGoBack: boolean;
+  canGoForward: boolean;
+  goBack: () => void;
+  goForward: () => void;
+};
+
 export function WorkspaceTitleBar({
   activeTabId,
+  historyNavigation,
   isCreatingPage,
   isSidebarCollapsed,
   onCloseTab,
@@ -71,6 +80,31 @@ export function WorkspaceTitleBar({
             <PanelLeft className="size-3.5" />
           </Button>
         ) : null}
+
+        <div className="electrobun-webkit-app-region-no-drag flex items-center gap-0.5">
+          <Button
+            aria-label="뒤로 가기"
+            className="electrobun-webkit-app-region-no-drag"
+            disabled={!historyNavigation.canGoBack}
+            onClick={historyNavigation.goBack}
+            size="icon-xs"
+            title="뒤로 가기 (⌘←)"
+            variant="ghost"
+          >
+            <ChevronLeft className="size-3.5" />
+          </Button>
+          <Button
+            aria-label="앞으로 가기"
+            className="electrobun-webkit-app-region-no-drag"
+            disabled={!historyNavigation.canGoForward}
+            onClick={historyNavigation.goForward}
+            size="icon-xs"
+            title="앞으로 가기 (⌘→)"
+            variant="ghost"
+          >
+            <ChevronRight className="size-3.5" />
+          </Button>
+        </div>
 
         <div
           className="electrobun-webkit-app-region-no-drag flex min-w-0 max-w-[calc(100%-2rem)] flex-none items-center gap-1 overflow-x-auto"

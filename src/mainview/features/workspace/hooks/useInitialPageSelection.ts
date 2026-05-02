@@ -2,17 +2,17 @@ import { useLayoutEffect } from "react";
 import type { Page } from "@/shared/contracts";
 
 type UseInitialPageSelectionOptions = {
-  openPageTab: (page: Page) => void;
   pages: Page[];
   routePageId: string | null;
   setSelectedPageId: (pageId: string | null) => void;
+  syncActiveTabToPage: (page: Page) => void;
 };
 
 export function useInitialPageSelection({
-  openPageTab,
   pages,
   routePageId,
-  setSelectedPageId
+  setSelectedPageId,
+  syncActiveTabToPage
 }: UseInitialPageSelectionOptions) {
   useLayoutEffect(() => {
     if (routePageId) {
@@ -20,8 +20,8 @@ export function useInitialPageSelection({
       const routePage = pages.find((page) => page.id === routePageId);
 
       if (routePage) {
-        openPageTab(routePage);
+        syncActiveTabToPage(routePage);
       }
     }
-  }, [openPageTab, pages, routePageId, setSelectedPageId]);
+  }, [pages, routePageId, setSelectedPageId, syncActiveTabToPage]);
 }

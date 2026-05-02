@@ -1,5 +1,4 @@
 import { useEffect, useRef, type SyntheticEvent } from "react";
-import type { useNavigate } from "@tanstack/react-router";
 import type { Block, BlockProps, Page, PageDocument } from "@/shared/contracts";
 import {
   getMergedBlockUpdate,
@@ -11,10 +10,10 @@ import {
 } from "@/mainview/features/page/lib/blockTree";
 import type {
   BlockEditorUpdate,
-  CreateBlockOptions
+  CreateBlockOptions,
+  OpenPageLinkOptions
 } from "@/mainview/features/page/types/blockEditorTypes";
 import { focusPageTitleEditor } from "@/mainview/features/page/web/pageTitleDom";
-import { navigateToPage } from "./useWorkspaceNavigation";
 
 type WorkspaceEditorActionsOptions = {
   clearPendingText: (blockId: string) => void;
@@ -37,7 +36,8 @@ type WorkspaceEditorActionsOptions = {
   flushAllTextDrafts: () => Promise<void>;
   flushQueuedTextDraft: (blockId: string) => Promise<void>;
   moveBlocks: (input: { afterBlockId: string | null; blocks: Block[] }) => Promise<void>;
-  navigate: ReturnType<typeof useNavigate>;
+  openPage: (page: Page, options?: OpenPageLinkOptions) => Promise<void>;
+  openPageById: (pageId: string, options?: OpenPageLinkOptions) => Promise<void>;
   pageTitleDraft: string;
   selectedDocument: PageDocument | null;
   setFocusBlockId: (blockId: string, placement?: "start" | "end") => void;
@@ -57,7 +57,8 @@ export function useWorkspaceEditorActions({
   flushAllTextDrafts,
   flushQueuedTextDraft,
   moveBlocks,
-  navigate,
+  openPage,
+  openPageById,
   pageTitleDraft,
   selectedDocument,
   setFocusBlockId,
@@ -147,12 +148,12 @@ export function useWorkspaceEditorActions({
       text: "",
       type: "page_link"
     });
-    await navigateToPage(navigate, targetPage.id);
+    await openPage(targetPage);
     focusPageTitleEditor();
   }
 
-  function openPageLink(pageId: string) {
-    void flushAllTextDrafts().then(() => navigateToPage(navigate, pageId));
+  function openPageLink(pageId: string, options?: OpenPageLinkOptions) {
+    void openPageById(pageId, options);
   }
 
   async function mergeBlockWithPrevious(

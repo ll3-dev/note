@@ -9,7 +9,6 @@ import { ChevronDown, ChevronRight, FileText } from "lucide-react";
 import { cn } from "@/mainview/lib/utils";
 import type { Block, Page } from "@/shared/contracts";
 import { getPageTitleDisplay } from "@/shared/pageDisplay";
-import { BLOCK_COMMANDS, type BlockCommand } from "@/mainview/features/page/lib/blockCommands";
 import { getBlockDepth } from "@/mainview/features/page/lib/blockEditingBehavior";
 import { blockShellClass, editableClass } from "@/mainview/features/page/lib/blockStyles";
 import { useBlockClipboardEditing } from "@/mainview/features/page/hooks/useBlockClipboardEditing";
@@ -17,6 +16,7 @@ import { InlineMarksViewer } from "./InlineMarksViewer";
 import { ImageBlock } from "./ImageBlock";
 import type {
   BlockEditorUpdate,
+  OpenPageLinkOptions,
   TextSelectionOffsets
 } from "@/mainview/features/page/types/blockEditorTypes";
 
@@ -29,7 +29,6 @@ type BlockBodyProps = {
   numberedListMarker: number | null;
   isSelected: boolean;
   linkedPage: Page | null;
-  onApplyCommand: (command: BlockCommand) => Promise<void> | void;
   onBlur: () => Promise<void>;
   onBeforeInput: (event: FormEvent<HTMLDivElement>) => void;
   onChange: (value: string) => void;
@@ -42,7 +41,7 @@ type BlockBodyProps = {
     editableElement: HTMLElement,
     selection: TextSelectionOffsets
   ) => Promise<void> | void;
-  onOpenPageLink: (pageId: string) => void;
+  onOpenPageLink: (pageId: string, options?: OpenPageLinkOptions) => void;
   onSelectionChange: () => void;
   onUpdate: (block: Block, changes: BlockEditorUpdate) => void;
   editableRef: RefObject<HTMLDivElement | null>;
@@ -57,7 +56,6 @@ export function BlockBody({
   numberedListMarker,
   isSelected,
   linkedPage,
-  onApplyCommand,
   onBlur,
   onBeforeInput,
   onChange,
@@ -200,18 +198,29 @@ export function BlockBody({
       {block.type === "image" ? (
         <ImageBlock block={block} onUpdate={onUpdate} props={draftProps} />
       ) : block.type === "divider" ? (
-        <button
+        <div
+          aria-orientation="horizontal"
           className="group/divider flex h-7 w-full items-center px-1 outline-none"
-          onClick={() => void onApplyCommand(BLOCK_COMMANDS[0])}
-          type="button"
+          role="separator"
         >
-          <span className="h-px w-full rounded-full bg-border transition-colors group-hover/divider:bg-muted-foreground/45 group-focus-visible/divider:bg-ring" />
-          <span className="sr-only">텍스트 블록으로 변경</span>
-        </button>
+          <span className="h-px w-full rounded-full bg-border transition-colors group-hover/divider:bg-muted-foreground/45" />
+        </div>
       ) : block.type === "page_link" ? (
         <button
           className="min-h-8 min-w-0 flex-1 rounded-sm px-1.5 py-1 text-left outline-none hover:bg-accent focus-visible:ring-1 focus-visible:ring-ring"
           data-block-focus-target
+          onAuxClick={(event) => {
+            if (event.button !== 1) {
+              return;
+            }
+
+            const targetPageId = getStringProp(draftProps.targetPageId);
+
+            if (targetPageId) {
+              event.preventDefault();
+              onOpenPageLink(targetPageId, { newTab: true });
+            }
+          }}
           onClick={() => {
             const targetPageId = getStringProp(draftProps.targetPageId);
 
@@ -220,6 +229,11 @@ export function BlockBody({
             }
           }}
           onKeyDown={onKeyDown}
+          onMouseDown={(event) => {
+            if (event.button === 1) {
+              event.preventDefault();
+            }
+          }}
           type="button"
         >
           <span className="flex min-w-0 items-center gap-2">

@@ -5,6 +5,7 @@ import type { CreateBlockDraft } from "@/mainview/features/page/lib/blockEditing
 import type {
   BlockEditorUpdate,
   CreateBlockOptions,
+  OpenPageLinkOptions,
   TextSelectionOffsets
 } from "@/mainview/features/page/types/blockEditorTypes";
 import { EmptyEditorState } from "./EmptyEditorState";
@@ -47,7 +48,7 @@ type WorkspaceEditorPaneProps = {
     editableElement: HTMLElement,
     selection: TextSelectionOffsets
   ) => Promise<void> | void;
-  onOpenPageLink: (pageId: string) => void;
+  onOpenPageLink: (pageId: string, options?: OpenPageLinkOptions) => void;
   onTextDraftChange: (
     block: Block,
     text: string,

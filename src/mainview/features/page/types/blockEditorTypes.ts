@@ -17,6 +17,10 @@ export type CreateBlockOptions = {
   focusPlacement?: "end" | "start";
 };
 
+export type OpenPageLinkOptions = {
+  newTab?: boolean;
+};
+
 export type TextSelectionOffsets = {
   end: number;
   start: number;
@@ -61,7 +65,7 @@ export type BlockEditorProps = {
     editableElement: HTMLElement,
     selection: TextSelectionOffsets
   ) => Promise<void> | void;
-  onOpenPageLink: (pageId: string) => void;
+  onOpenPageLink: (pageId: string, options?: OpenPageLinkOptions) => void;
   onSelectionChange?: () => void;
   onTextDraftChange: (block: Block, text: string, props?: BlockProps) => void;
   onTextDraftFlush: (

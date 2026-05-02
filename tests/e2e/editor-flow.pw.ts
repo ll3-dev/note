@@ -85,6 +85,173 @@ test("creates page link targets as child pages", async ({ page }) => {
     });
 });
 
+test("selects slash menu commands on pointer hover without scrolling the menu", async ({ page }) => {
+  await openInitialPage(page);
+
+  const firstBlock = page.getByRole("textbox", { name: "paragraph block" }).first();
+  await firstBlock.click();
+  await page.keyboard.type("/");
+
+  const menu = page.getByRole("listbox");
+  const headingCommand = page.getByRole("option", { name: /Heading 3/ });
+  await headingCommand.hover();
+
+  await expect(headingCommand).toHaveAttribute("aria-selected", "true");
+  await expect.poll(() => menu.evaluate((element) => element.scrollTop)).toBe(0);
+
+  await page.keyboard.press("Enter");
+
+  await expect(page.getByRole("textbox", { name: "heading_3 block" }).first()).toBeFocused();
+});
+
+test("opens page blocks in the current tab and supports browser back", async ({ page }) => {
+  await openInitialPage(page);
+
+  const firstBlock = page.getByRole("textbox", { name: "paragraph block" }).first();
+  await firstBlock.click();
+  await page.keyboard.type("/page");
+  await page.keyboard.press("Enter");
+
+  const targetPageId = await page.evaluate(() => {
+    const pageLinkBlock = window.__noteE2E.getDocument("page-1").blocks[0];
+
+    return typeof pageLinkBlock?.props.targetPageId === "string"
+      ? pageLinkBlock.props.targetPageId
+      : null;
+  });
+
+  expect(targetPageId).toBeTruthy();
+  await expect(page.getByRole("tab")).toHaveCount(1);
+  await expect(page).toHaveURL(new RegExp(`/pages/${targetPageId}$`));
+
+  await page.goBack();
+  await expect(page).toHaveURL(/\/pages\/page-1$/);
+
+  const pageBlock = page
+    .locator("[data-block-id]")
+    .getByRole("button", { exact: true, name: "Untitled" });
+  await pageBlock.click();
+
+  await expect(page.getByRole("tab")).toHaveCount(1);
+  await expect(page).toHaveURL(new RegExp(`/pages/${targetPageId}$`));
+});
+
+test("uses the app tab history for mouse back and forward buttons", async ({ page }) => {
+  await openInitialPage(page);
+
+  const firstBlock = page.getByRole("textbox", { name: "paragraph block" }).first();
+  await firstBlock.click();
+  await page.keyboard.type("/page");
+  await page.keyboard.press("Enter");
+
+  const targetPageId = await page.evaluate(() => {
+    const pageLinkBlock = window.__noteE2E.getDocument("page-1").blocks[0];
+
+    return typeof pageLinkBlock?.props.targetPageId === "string"
+      ? pageLinkBlock.props.targetPageId
+      : null;
+  });
+
+  expect(targetPageId).toBeTruthy();
+  await expect(page).toHaveURL(new RegExp(`/pages/${targetPageId}$`));
+
+  await page.evaluate(() => {
+    window.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, button: 3 }));
+  });
+
+  await expect(page).toHaveURL(/\/pages\/page-1$/);
+
+  await page.evaluate(() => {
+    window.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, button: 4 }));
+  });
+
+  await expect(page).toHaveURL(new RegExp(`/pages/${targetPageId}$`));
+});
+
+test("uses the app tab history for command arrow shortcuts", async ({ page }) => {
+  await openInitialPage(page);
+
+  const firstBlock = page.getByRole("textbox", { name: "paragraph block" }).first();
+  await firstBlock.click();
+  await page.keyboard.type("/page");
+  await page.keyboard.press("Enter");
+
+  const targetPageId = await page.evaluate(() => {
+    const pageLinkBlock = window.__noteE2E.getDocument("page-1").blocks[0];
+
+    return typeof pageLinkBlock?.props.targetPageId === "string"
+      ? pageLinkBlock.props.targetPageId
+      : null;
+  });
+
+  expect(targetPageId).toBeTruthy();
+  await expect(page).toHaveURL(new RegExp(`/pages/${targetPageId}$`));
+
+  await page.keyboard.press(`${modKey}+ArrowLeft`);
+  await expect(page).toHaveURL(/\/pages\/page-1$/);
+
+  await page.keyboard.press(`${modKey}+ArrowRight`);
+  await expect(page).toHaveURL(new RegExp(`/pages/${targetPageId}$`));
+});
+
+test("uses the app tab history from the main navigation bridge", async ({ page }) => {
+  await openInitialPage(page);
+
+  const firstBlock = page.getByRole("textbox", { name: "paragraph block" }).first();
+  await firstBlock.click();
+  await page.keyboard.type("/page");
+  await page.keyboard.press("Enter");
+
+  const targetPageId = await page.evaluate(() => {
+    const pageLinkBlock = window.__noteE2E.getDocument("page-1").blocks[0];
+
+    return typeof pageLinkBlock?.props.targetPageId === "string"
+      ? pageLinkBlock.props.targetPageId
+      : null;
+  });
+
+  expect(targetPageId).toBeTruthy();
+  await expect(page).toHaveURL(new RegExp(`/pages/${targetPageId}$`));
+
+  await page.evaluate(() => {
+    window.dispatchEvent(new CustomEvent("note-navigation-command", { detail: "back" }));
+  });
+  await expect(page).toHaveURL(/\/pages\/page-1$/);
+
+  await page.evaluate(() => {
+    window.dispatchEvent(new CustomEvent("note-navigation-command", { detail: "forward" }));
+  });
+  await expect(page).toHaveURL(new RegExp(`/pages/${targetPageId}$`));
+});
+
+test("opens page blocks in a new tab with the middle mouse button", async ({ page }) => {
+  await openInitialPage(page);
+
+  const firstBlock = page.getByRole("textbox", { name: "paragraph block" }).first();
+  await firstBlock.click();
+  await page.keyboard.type("/page");
+  await page.keyboard.press("Enter");
+
+  const targetPageId = await page.evaluate(() => {
+    const pageLinkBlock = window.__noteE2E.getDocument("page-1").blocks[0];
+
+    return typeof pageLinkBlock?.props.targetPageId === "string"
+      ? pageLinkBlock.props.targetPageId
+      : null;
+  });
+
+  expect(targetPageId).toBeTruthy();
+  await page.goBack();
+
+  const pageBlock = page
+    .locator("[data-block-id]")
+    .getByRole("button", { exact: true, name: "Untitled" });
+  await pageBlock.click({ button: "middle" });
+
+  await expect(page.getByRole("tab")).toHaveCount(2);
+  await expect(page).toHaveURL(new RegExp(`/pages/${targetPageId}$`));
+});
+
 test("deletes a focused page block with Backspace", async ({ page }) => {
   await openInitialPage(page);
 
@@ -104,6 +271,42 @@ test("deletes a focused page block with Backspace", async ({ page }) => {
     .getByRole("button", { exact: true, name: "Untitled" });
   await pageBlock.focus();
   await page.keyboard.press("Backspace");
+
+  await expect
+    .poll(() =>
+      page.evaluate(() => window.__noteE2E.getDocument("page-1").blocks[0]?.type)
+    )
+    .toBe("paragraph");
+});
+
+test("deletes a drag-selected page block with Delete", async ({ page }) => {
+  await openInitialPage(page);
+
+  const firstBlock = page.getByRole("textbox", { name: "paragraph block" }).first();
+  await firstBlock.click();
+  await page.keyboard.type("/page");
+  await page.keyboard.press("Enter");
+  await expect
+    .poll(() =>
+      page.evaluate(() => window.__noteE2E.getDocument("page-1").blocks[0]?.type)
+    )
+    .toBe("page_link");
+  await page.goBack();
+
+  const pageBlock = page
+    .locator("[data-block-id]")
+    .getByRole("button", { exact: true, name: "Untitled" });
+  const box = await pageBlock.boundingBox();
+  expect(box).toBeTruthy();
+
+  await page.mouse.move(box!.x - 16, box!.y - 6);
+  await page.mouse.down();
+  await page.mouse.move(box!.x + box!.width + 16, box!.y + box!.height + 6);
+  await page.mouse.up();
+
+  await expect(page.locator("[data-block-selection-overlay]")).toHaveCount(1);
+
+  await page.keyboard.press("Delete");
 
   await expect
     .poll(() =>

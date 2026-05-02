@@ -21,10 +21,20 @@ export function reconcileWorkspacePersistence(
   const pagesById = new Map(pages.map((page) => [page.id, page]));
   const tabs = state.tabs
     .filter((tab) => pagesById.has(tab.pageId))
-    .map((tab) => ({
-      ...tab,
-      title: pagesById.get(tab.pageId)?.title ?? tab.title
-    }));
+    .map((tab) => {
+      const history = tab.history
+        ? {
+            back: tab.history.back.filter((page) => pagesById.has(page.id)),
+            forward: tab.history.forward.filter((page) => pagesById.has(page.id))
+          }
+        : null;
+
+      return {
+        ...tab,
+        ...(history ? { history } : {}),
+        title: pagesById.get(tab.pageId)?.title ?? tab.title
+      };
+    });
   const activeTab = tabs.find((tab) => tab.id === state.activeTabId) ?? null;
   const fallbackTab = tabs[tabs.length - 1] ?? null;
   const nextActiveTab = activeTab ?? fallbackTab;

@@ -4,12 +4,16 @@ import type { Page } from "@/shared/contracts";
 import { useSidebarResize } from "@/mainview/features/workspace/hooks/useSidebarResize";
 import type { TextSyncStatus } from "@/mainview/features/workspace/hooks/useBlockTextSync";
 import { WorkspaceSidebar } from "./WorkspaceSidebar";
-import { WorkspaceTitleBar } from "./WorkspaceTitleBar";
+import {
+  WorkspaceTitleBar,
+  type WorkspaceHistoryNavigation
+} from "./WorkspaceTitleBar";
 
 type WorkspaceLayoutProps = {
   activePageId: string | null;
   blocksCount: number;
   children: ReactNode;
+  historyNavigation: WorkspaceHistoryNavigation;
   isCreatingPage: boolean;
   onCloseTab: (event: MouseEvent<HTMLButtonElement>, tabId: string) => void;
   onCopyCurrentPageMarkdown: () => void;
@@ -33,6 +37,7 @@ export function WorkspaceLayout({
   activePageId,
   blocksCount,
   children,
+  historyNavigation,
   isCreatingPage,
   onCloseTab,
   onCopyCurrentPageMarkdown,
@@ -65,6 +70,7 @@ export function WorkspaceLayout({
     <main className="relative h-screen min-h-[640px] bg-background text-foreground">
       <WorkspaceTitleBar
         activeTabId={activeTabId}
+        historyNavigation={historyNavigation}
         isCreatingPage={isCreatingPage}
         isSidebarCollapsed={isSidebarCollapsed}
         onCloseTab={onCloseTab}

@@ -10,6 +10,7 @@ import { getVisibleBlocks } from "@/mainview/features/page/lib/blockTree";
 import type {
   BlockEditorUpdate,
   CreateBlockOptions,
+  OpenPageLinkOptions,
   TextSelectionOffsets
 } from "@/mainview/features/page/types/blockEditorTypes";
 
@@ -43,7 +44,7 @@ type PageBlockListProps = {
     editableElement: HTMLElement,
     selection: TextSelectionOffsets
   ) => Promise<void> | void;
-  onOpenPageLink: (pageId: string) => void;
+  onOpenPageLink: (pageId: string, options?: OpenPageLinkOptions) => void;
   selectedBlockIds: string[];
   onTextDraftChange: (
     block: Block,

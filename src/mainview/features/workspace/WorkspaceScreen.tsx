@@ -11,13 +11,16 @@ import { WorkspaceLayout } from "./components/WorkspaceLayout";
 import { QuickSwitcherDialog } from "./components/QuickSwitcherDialog";
 import { useBlockBatchActions } from "./hooks/useBlockBatchActions";
 import { useBlockTextSync } from "./hooks/useBlockTextSync";
+import { useHistoryMouseNavigation } from "./hooks/useHistoryMouseNavigation";
 import { useInitialPageSelection } from "./hooks/useInitialPageSelection";
+import { useMainNavigationCommand } from "./hooks/useMainNavigationCommand";
 import { useMarkdownClipboard } from "./hooks/useMarkdownClipboard";
 import { usePageHistoryActions } from "./hooks/usePageHistoryActions";
 import { useQuickSwitcher } from "./hooks/useQuickSwitcher";
 import { useWorkspaceEditorActions } from "./hooks/useWorkspaceEditorActions";
 import { useWorkspaceMutations } from "./hooks/useWorkspaceMutations";
 import { navigateToPage, useWorkspaceNavigation } from "./hooks/useWorkspaceNavigation";
+import { useWorkspacePageNavigation } from "./hooks/useWorkspacePageNavigation";
 import { useWorkspaceQueries } from "./hooks/useWorkspaceQueries";
 import { WORKSPACE_COMMANDS } from "./lib/workspaceCommands";
 
@@ -28,6 +31,7 @@ type WorkspaceScreenProps = {
 export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
   const activeTabId = useWorkspaceStore((state) => state.activeTabId);
   const closeTab = useWorkspaceStore((state) => state.closeTab);
+  const navigateActiveTabToPage = useWorkspaceStore((state) => state.navigateActiveTabToPage);
   const openPageTab = useWorkspaceStore((state) => state.openPageTab);
   const pageTitleDraft = useWorkspaceStore((state) => state.pageTitleDraft);
   const reconcilePages = useWorkspaceStore((state) => state.reconcilePages);
@@ -36,6 +40,7 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
   const setActiveTabId = useWorkspaceStore((state) => state.setActiveTabId);
   const setPageTitleDraft = useWorkspaceStore((state) => state.setPageTitleDraft);
   const setSelectedPageId = useWorkspaceStore((state) => state.setSelectedPageId);
+  const syncActiveTabToPage = useWorkspaceStore((state) => state.syncActiveTabToPage);
   const tabs = useWorkspaceStore((state) => state.tabs);
   const toggleSidebar = useWorkspaceStore((state) => state.toggleSidebar);
   const keybindings = useKeybindingStore((state) => state.keybindings);
@@ -84,6 +89,32 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
       setActiveTabId,
       tabs
     });
+  const { navigateTabHistory, openPage, openPageById } =
+    useWorkspacePageNavigation({
+      activeTabId,
+      flushAllTextDrafts,
+      navigate,
+      navigateActiveTabToPage,
+      openPageTab,
+      pages,
+      syncActiveTabToPage,
+      tabs
+    });
+  const activeTab = useMemo(
+    () => tabs.find((tab) => tab.id === activeTabId) ?? null,
+    [activeTabId, tabs]
+  );
+  const canNavigateBack = (activeTab?.history?.back.length ?? 0) > 0;
+  const canNavigateForward = (activeTab?.history?.forward.length ?? 0) > 0;
+  const historyNavigation = useMemo(
+    () => ({
+      canGoBack: canNavigateBack,
+      canGoForward: canNavigateForward,
+      goBack: () => void navigateTabHistory("back"),
+      goForward: () => void navigateTabHistory("forward")
+    }),
+    [canNavigateBack, canNavigateForward, navigateTabHistory]
+  );
   const quickSwitcher = useQuickSwitcher({
     onSelectResult: (result) => {
       void flushAllTextDrafts().then(() => {
@@ -97,10 +128,12 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
   const workspaceCommandContext = useMemo(
     () => ({
       closeActiveTab,
+      navigateBack: () => navigateTabHistory("back"),
+      navigateForward: () => navigateTabHistory("forward"),
       openQuickSwitcher: quickSwitcher.openQuickSwitcher,
       toggleSidebar
     }),
-    [closeActiveTab, quickSwitcher.openQuickSwitcher, toggleSidebar]
+    [closeActiveTab, navigateTabHistory, quickSwitcher.openQuickSwitcher, toggleSidebar]
   );
   const { copyCurrentPageMarkdown, pasteMarkdown } = useMarkdownClipboard({
     clearPendingText,
@@ -146,6 +179,8 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
       window.removeEventListener("note-history-command", handleMenuHistoryCommand);
     };
   }, [redoPage, selectedDocument, undoPage]);
+  useHistoryMouseNavigation({ navigateTabHistory });
+  useMainNavigationCommand({ navigateTabHistory });
   const editorActions = useWorkspaceEditorActions({
     clearPendingText,
     createBlockMutation,
@@ -155,7 +190,8 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
     flushAllTextDrafts,
     flushQueuedTextDraft,
     moveBlocks,
-    navigate,
+    openPage,
+    openPageById,
     pageTitleDraft,
     selectedDocument,
     setFocusBlockId,
@@ -169,12 +205,13 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
     context: workspaceCommandContext,
     keybindings
   });
-  useInitialPageSelection({ openPageTab, pages, routePageId, setSelectedPageId });
+  useInitialPageSelection({ pages, routePageId, setSelectedPageId, syncActiveTabToPage });
 
   return (
     <WorkspaceLayout
       activePageId={activePageId}
       blocksCount={databaseStatusQuery.data?.blocksCount ?? 0}
+      historyNavigation={historyNavigation}
       isCreatingPage={createPageMutation.isPending}
       onCloseTab={closeWorkspaceTab}
       onCopyCurrentPageMarkdown={() => void copyCurrentPageMarkdown()}

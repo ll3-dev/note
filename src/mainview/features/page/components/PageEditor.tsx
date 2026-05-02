@@ -19,6 +19,7 @@ import { scrollBlockIntoView } from "@/mainview/features/page/web/blockScroll";
 import type {
   BlockEditorUpdate,
   CreateBlockOptions,
+  OpenPageLinkOptions,
   TextSelectionOffsets
 } from "@/mainview/features/page/types/blockEditorTypes";
 
@@ -46,7 +47,7 @@ type PageEditorProps = {
   ) => Promise<void> | void;
   onMoveBlocks: (blocks: Block[], afterBlockId: string | null) => Promise<void> | void;
   onPasteMarkdown: PasteMarkdownHandler;
-  onOpenPageLink: (pageId: string) => void;
+  onOpenPageLink: (pageId: string, options?: OpenPageLinkOptions) => void;
   onTextDraftChange: TextDraftChangeHandler;
   onTextDraftFlush: TextDraftFlushHandler;
   onTextHistoryApply: (block: Block, text: string) => void;
