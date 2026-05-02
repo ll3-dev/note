@@ -17,6 +17,8 @@ import { clearEditableFocusForBlockSelection } from "@/mainview/features/page/we
 import { focusEditableBlockById } from "@/mainview/features/page/web/blockFocusDom";
 import { scrollBlockIntoView } from "@/mainview/features/page/web/blockScroll";
 import type {
+  BlockEditorActions,
+  BlockEditorDragActions,
   BlockEditorUpdate,
   CreateBlockOptions,
   OpenPageLinkOptions,
@@ -192,6 +194,36 @@ export function PageEditor({
     scrollBlockIntoView(selectionFocusBlockId);
   }, [selectionFocusBlockId]);
 
+  const blockEditorActions = {
+    onCreateAfter: onCreateBlockAfter,
+    onCreatePageLink,
+    onDelete: onDeleteBlock,
+    onFocusNext: onFocusNextBlock,
+    onFocusPrevious: focusPreviousBlock,
+    onMergeWithPrevious: onMergeBlockWithPrevious,
+    onOpenPageLink,
+    onPasteMarkdown,
+    onRestorePageLink,
+    onTextDraftChange,
+    onTextDraftFlush,
+    onTextHistoryApply,
+    onTextRedo,
+    onTextUndo,
+    onUpdate: onUpdateBlock
+  } satisfies BlockEditorActions;
+  const blockDragActions = {
+    onDragEnd: clearDragState,
+    onDragOver: setDropPlacement,
+    onDragPointerDown: pressBlockDragHandle,
+    onDragStart: startDrag,
+    onDrop: dropBlock
+  } satisfies BlockEditorDragActions;
+  const blockSelectionState = {
+    draggedBlockId,
+    isBlockRangeSelecting,
+    selectedBlockIds
+  };
+
   return (
     <div
       className="flex h-full w-full flex-col"
@@ -219,29 +251,10 @@ export function PageEditor({
             />
             <PageBlockList
               document={document}
-              draggedBlockId={draggedBlockId}
-              isBlockRangeSelecting={isBlockRangeSelecting}
-              onCreateBlockAfter={onCreateBlockAfter}
-              onCreatePageLink={onCreatePageLink}
-              onDeleteBlock={onDeleteBlock}
-              onDragEnd={clearDragState}
-              onDragOver={setDropPlacement}
-              onDragStart={startDrag}
-              onDragPointerDown={pressBlockDragHandle}
-              onDrop={dropBlock}
-              onFocusNextBlock={onFocusNextBlock}
+              dragActions={blockDragActions}
+              editorActions={blockEditorActions}
+              selectionState={blockSelectionState}
               onFocusPreviousBlock={focusPreviousBlock}
-              onMergeBlockWithPrevious={onMergeBlockWithPrevious}
-              onPasteMarkdown={onPasteMarkdown}
-              onOpenPageLink={onOpenPageLink}
-              onRestorePageLink={onRestorePageLink}
-              selectedBlockIds={selectedBlockIds}
-              onTextDraftChange={onTextDraftChange}
-              onTextDraftFlush={onTextDraftFlush}
-              onTextHistoryApply={onTextHistoryApply}
-              onTextRedo={onTextRedo}
-              onTextUndo={onTextUndo}
-              onUpdateBlock={onUpdateBlock}
               pages={pages}
             />
           </div>

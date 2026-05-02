@@ -79,3 +79,27 @@ export type BlockEditorProps = {
   onTextUndo: (block: Block) => Promise<Block | null>;
   onUpdate: (block: Block, changes: BlockEditorUpdate) => void;
 };
+
+export type BlockEditorActions = Pick<
+  BlockEditorProps,
+  | "onCreateAfter"
+  | "onCreatePageLink"
+  | "onDelete"
+  | "onFocusNext"
+  | "onFocusPrevious"
+  | "onMergeWithPrevious"
+  | "onOpenPageLink"
+  | "onPasteMarkdown"
+  | "onRestorePageLink"
+  | "onTextDraftChange"
+  | "onTextDraftFlush"
+  | "onTextHistoryApply"
+  | "onTextRedo"
+  | "onTextUndo"
+  | "onUpdate"
+>;
+
+export type BlockEditorDragActions = Pick<
+  BlockEditorProps,
+  "onDragEnd" | "onDragOver" | "onDragPointerDown" | "onDragStart" | "onDrop"
+>;
