@@ -1,17 +1,10 @@
-import { DragEvent, FormEvent, useRef } from "react";
-import { useKeybindingStore } from "@/mainview/features/commands/keybindingStore";
-import { useKeyboardShortcuts } from "@/mainview/features/commands/useKeyboardShortcuts";
 import { cn } from "@/mainview/lib/utils";
 import { BlockBody } from "./BlockBody";
 import { BlockCommandMenu } from "./BlockCommandMenu";
 import { BlockDragHandle } from "./BlockDragHandle";
 import { InlineFormattingToolbar } from "./InlineFormattingToolbar";
-import { useBlockTextEditing } from "@/mainview/features/page/hooks/useBlockTextEditing";
-import { getBlockDepth } from "@/mainview/features/page/lib/blockEditingBehavior";
-import { BLOCK_EDITOR_COMMANDS } from "@/mainview/features/page/lib/blockEditorCommands";
+import { useBlockEditorController } from "@/mainview/features/page/hooks/useBlockEditorController";
 import type { BlockEditorProps } from "@/mainview/features/page/types/blockEditorTypes";
-import { getCursorTextOffset } from "@/mainview/features/page/web/domSelection";
-import { getDropPlacement } from "@/mainview/features/page/web/blockDragDom";
 
 export function BlockEditor({
   block,
@@ -47,117 +40,42 @@ export function BlockEditor({
   onTextUndo,
   onUpdate
 }: BlockEditorProps) {
-  const editableRef = useRef<HTMLDivElement>(null);
-  const keybindings = useKeybindingStore((state) => state.keybindings);
-  const checked = Boolean(block.props.checked);
   const {
-    applyCommand,
-    applyInlineFormat,
-    applyInlineLink,
-    applySelectedCommand,
-    changeDraft,
-    closeCommandMenu,
-    commitDraft,
-    draft,
-    draftProps,
-    isCommandMenuOpen,
-    selectedCommandIndex,
-    selectionToolbarRect,
-    selectNextCommand,
-    selectPreviousCommand,
-    setSelectedCommandIndex,
-    syncActiveInlineMarksFromSelection,
-    redoTextDraft,
-    undoTextDraft,
-    visibleCommands
-  } = useBlockTextEditing({
-    block,
     checked,
+    depth,
     editableRef,
+    handleBeforeInput,
+    handleDragOver,
+    handleDrop,
+    handleHistoryInput,
+    handleKeyDown,
+    handleShellDragStart,
+    textEditing
+  } = useBlockEditorController({
+    block,
+    blocksCount,
+    isCommandShellSelected: isSelected,
+    maxIndentDepth,
+    numberedListMarker,
+    numberedListStartAfterIndent,
+    numberedListStartAfterOutdent,
+    onCreatePageLink,
+    onCreateAfter,
+    onDelete,
+    onDragOver,
+    onDragStart,
+    onDrop,
+    onFocusNext,
+    onFocusPrevious,
+    onMergeWithPrevious,
     onTextDraftChange,
     onTextDraftFlush,
-    onCreateBlockAfter: onCreateAfter,
-    onCreatePageLink,
-    onDeleteBlock: onDelete,
     onTextHistoryApply,
     onTextRedo,
     onTextUndo,
-    onUpdate
+    onUpdate,
+    previousBlock
   });
-  const depth = getBlockDepth(block);
-  const { handleKeyDown } = useKeyboardShortcuts({
-    activeScopes: isCommandMenuOpen
-      ? ["global", "editor", "block", "commandMenu"]
-      : ["global", "editor", "block"],
-    commands: BLOCK_EDITOR_COMMANDS,
-    context: {
-      applySelectedCommand,
-      applyInlineFormat,
-      block,
-      blocksCount,
-      closeCommandMenu,
-      commitDraft,
-      draft,
-      draftProps,
-      getCursorOffset: () =>
-        editableRef.current ? getCursorTextOffset(editableRef.current) : null,
-      isCommandMenuOpen,
-      maxIndentDepth,
-      numberedListMarker,
-      numberedListStartAfterIndent,
-      numberedListStartAfterOutdent,
-      onCreateAfter,
-      onDelete,
-      onFocusNext,
-      onFocusPrevious,
-      onMergeWithPrevious,
-      onUpdate,
-      previousBlock,
-      redoTextDraft,
-      selectNextCommand,
-      selectPreviousCommand,
-      undoTextDraft
-    },
-    keybindings
-  });
-
-  function handleDragOver(event: DragEvent<HTMLDivElement>) {
-    event.preventDefault();
-    onDragOver(block, getDropPlacement(event.clientY, event.currentTarget));
-  }
-
-  function handleDrop(event: DragEvent<HTMLDivElement>) {
-    event.preventDefault();
-    onDrop(block, getDropPlacement(event.clientY, event.currentTarget));
-  }
-
-  function handleBeforeInput(event: FormEvent<HTMLDivElement>) {
-    const inputType = (event.nativeEvent as InputEvent).inputType;
-
-    if (inputType !== "historyUndo" && inputType !== "historyRedo") {
-      return;
-    }
-
-    event.preventDefault();
-    void commitDraft().then(() =>
-      inputType === "historyUndo" ? undoTextDraft() : redoTextDraft()
-    );
-  }
-
-  function handleHistoryInput(inputType: "historyRedo" | "historyUndo") {
-    void commitDraft().then(() =>
-      inputType === "historyUndo" ? undoTextDraft() : redoTextDraft()
-    );
-  }
-
-  function handleShellDragStart(event: DragEvent<HTMLDivElement>) {
-    if (!isSelected) {
-      event.preventDefault();
-      return;
-    }
-
-    onDragStart(block, event);
-  }
 
   return (
     <div
@@ -187,38 +105,38 @@ export function BlockEditor({
           block={block}
           blockIndex={blockIndex}
           checked={checked}
-          draft={draft}
-          draftProps={draftProps}
+          draft={textEditing.draft}
+          draftProps={textEditing.draftProps}
           isSelected={isSelected}
           linkedPage={linkedPage}
           numberedListMarker={numberedListMarker}
-          onBlur={commitDraft}
+          onBlur={textEditing.commitDraft}
           onBeforeInput={handleBeforeInput}
-          onChange={changeDraft}
+          onChange={textEditing.changeDraft}
           onDragStart={handleShellDragStart}
           onHistoryInput={handleHistoryInput}
           onKeyDown={handleKeyDown}
           onOpenPageLink={onOpenPageLink}
           onRestorePageLink={onRestorePageLink}
           onPasteMarkdown={onPasteMarkdown}
-          onSelectionChange={syncActiveInlineMarksFromSelection}
+          onSelectionChange={textEditing.syncActiveInlineMarksFromSelection}
           onUpdate={onUpdate}
           editableRef={editableRef}
         />
 
-        {isCommandMenuOpen ? (
+        {textEditing.isCommandMenuOpen ? (
           <BlockCommandMenu
-            activeIndex={selectedCommandIndex}
+            activeIndex={textEditing.selectedCommandIndex}
             anchorRef={editableRef}
-            commands={visibleCommands}
-            onActiveIndexChange={setSelectedCommandIndex}
-            onSelect={applyCommand}
+            commands={textEditing.visibleCommands}
+            onActiveIndexChange={textEditing.setSelectedCommandIndex}
+            onSelect={textEditing.applyCommand}
           />
         ) : null}
         <InlineFormattingToolbar
-          onFormat={applyInlineFormat}
-          onLink={applyInlineLink}
-          rect={selectionToolbarRect}
+          onFormat={textEditing.applyInlineFormat}
+          onLink={textEditing.applyInlineLink}
+          rect={textEditing.selectionToolbarRect}
         />
       </div>
     </div>
