@@ -5,6 +5,7 @@ export type WorkspaceCommandContext = {
   navigateBack: () => Promise<void>;
   navigateForward: () => Promise<void>;
   openQuickSwitcher: () => void;
+  openSettings: () => void;
   toggleSidebar: () => void;
 };
 
@@ -34,6 +35,15 @@ export const WORKSPACE_COMMANDS: Command<WorkspaceCommandContext>[] = [
     title: "Open quick switcher",
     run: ({ openQuickSwitcher }) => {
       openQuickSwitcher();
+    }
+  },
+  {
+    defaultKeybindings: ["Mod+,"],
+    id: "workspace.settings.open",
+    scope: "workspace",
+    title: "Open settings",
+    run: ({ openSettings }) => {
+      openSettings();
     }
   },
   {

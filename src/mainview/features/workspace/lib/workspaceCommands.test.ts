@@ -7,6 +7,7 @@ const noopContext = {
   navigateBack: async () => {},
   navigateForward: async () => {},
   openQuickSwitcher: () => {},
+  openSettings: () => {},
   toggleSidebar: () => {}
 };
 
@@ -103,6 +104,36 @@ describe("workspace commands", () => {
       toggleSidebar: () => {}
     });
     expect(calls).toEqual(["openQuickSwitcher"]);
+  });
+
+  test("opens settings with Mod+Comma", () => {
+    const calls: string[] = [];
+    const command = resolveKeybinding({
+      activeScopes: ["global", "workspace"],
+      commands: WORKSPACE_COMMANDS,
+      context: {
+        ...noopContext,
+        openSettings: () => {
+          calls.push("openSettings");
+        }
+      },
+      event: {
+        altKey: false,
+        ctrlKey: false,
+        key: ",",
+        metaKey: true,
+        shiftKey: false
+      }
+    });
+
+    expect(command?.id).toBe("workspace.settings.open");
+    command?.run({
+      ...noopContext,
+      openSettings: () => {
+        calls.push("openSettings");
+      }
+    });
+    expect(calls).toEqual(["openSettings"]);
   });
 
   test("navigates back with Mod+LeftBracket", async () => {

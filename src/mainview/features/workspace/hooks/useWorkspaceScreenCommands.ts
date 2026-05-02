@@ -10,6 +10,7 @@ type UseWorkspaceScreenCommandsOptions = {
   closeActiveTab: () => Promise<void>;
   navigateTabHistory: (direction: "back" | "forward") => Promise<void>;
   onOpenQuickSwitcher: () => void;
+  onOpenSettings: () => void;
   tabs: WorkspaceTab[];
   toggleSidebar: () => void;
 };
@@ -19,6 +20,7 @@ export function useWorkspaceScreenCommands({
   closeActiveTab,
   navigateTabHistory,
   onOpenQuickSwitcher,
+  onOpenSettings,
   tabs,
   toggleSidebar
 }: UseWorkspaceScreenCommandsOptions) {
@@ -34,12 +36,19 @@ export function useWorkspaceScreenCommands({
       navigateBack: () => navigateTabHistory("back"),
       navigateForward: () => navigateTabHistory("forward"),
       openQuickSwitcher: onOpenQuickSwitcher,
+      openSettings: onOpenSettings,
       toggleSidebar: () => {
         window.dispatchEvent(new CustomEvent("note-clear-block-selection"));
         toggleSidebar();
       }
     }),
-    [closeActiveTab, navigateTabHistory, onOpenQuickSwitcher, toggleSidebar]
+    [
+      closeActiveTab,
+      navigateTabHistory,
+      onOpenQuickSwitcher,
+      onOpenSettings,
+      toggleSidebar
+    ]
   );
 
   useGlobalKeyboardShortcuts({

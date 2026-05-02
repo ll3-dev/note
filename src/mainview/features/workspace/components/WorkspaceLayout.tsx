@@ -1,9 +1,4 @@
-import {
-  useState,
-  type MouseEvent,
-  type ReactNode,
-  type SyntheticEvent
-} from "react";
+import { type MouseEvent, type ReactNode, type SyntheticEvent } from "react";
 import { useWorkspaceStore } from "@/mainview/store/useWorkspaceStore";
 import type { Page } from "@/shared/contracts";
 import { useSidebarResize } from "@/mainview/features/workspace/hooks/useSidebarResize";
@@ -22,16 +17,19 @@ type WorkspaceLayoutProps = {
   children: ReactNode;
   historyNavigation: WorkspaceHistoryNavigation;
   isCreatingPage: boolean;
+  isSettingsOpen: boolean;
   onCloseTab: (event: MouseEvent<HTMLButtonElement>, tabId: string) => void;
   onCopyCurrentPageMarkdown: () => void;
   onCreatePage: (event: SyntheticEvent<HTMLFormElement>) => void;
   onCreateUntitledPage: () => void;
   onDeletePage: (page: Page) => void;
+  onCloseSettings: () => void;
   onMovePage: (
     page: Page,
     parentPageId: string | null,
     afterPageId: string | null
   ) => void;
+  onOpenSettings: () => void;
   onRefreshWorkspace: () => void;
   onRestoreArchivedPage: (page: Page) => void;
   onSelectPage: (page: Page) => void;
@@ -49,12 +47,15 @@ export function WorkspaceLayout({
   children,
   historyNavigation,
   isCreatingPage,
+  isSettingsOpen,
+  onCloseSettings,
   onCloseTab,
   onCopyCurrentPageMarkdown,
   onCreatePage,
   onCreateUntitledPage,
   onDeletePage,
   onMovePage,
+  onOpenSettings,
   onRefreshWorkspace,
   onRestoreArchivedPage,
   onSelectPage,
@@ -73,7 +74,6 @@ export function WorkspaceLayout({
   const sidebarWidth = useWorkspaceStore((state) => state.sidebarWidth);
   const tabs = useWorkspaceStore((state) => state.tabs);
   const toggleSidebar = useWorkspaceStore((state) => state.toggleSidebar);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const { handleResizeSidebar, isResizingSidebar } = useSidebarResize({
     setSidebarWidth,
     sidebarWidth
@@ -125,7 +125,7 @@ export function WorkspaceLayout({
               onCreatePage={onCreatePage}
               onDeletePage={onDeletePage}
               onMovePage={onMovePage}
-              onOpenSettings={() => setIsSettingsOpen(true)}
+              onOpenSettings={onOpenSettings}
               onRefreshWorkspace={onRefreshWorkspace}
               onResizeSidebar={handleResizeSidebar}
               onSelectPage={onSelectPage}
@@ -143,7 +143,7 @@ export function WorkspaceLayout({
         <WorkspaceSettingsPanel
           archivedPages={archivedPages}
           blocksCount={blocksCount}
-          onClose={() => setIsSettingsOpen(false)}
+          onClose={onCloseSettings}
           onCopyCurrentPageMarkdown={onCopyCurrentPageMarkdown}
           onRestoreArchivedPage={onRestoreArchivedPage}
           pagesCount={pagesCount}

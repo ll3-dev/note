@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { noteApi } from "@/mainview/lib/rpc";
 import type { Block, BlockProps } from "@/shared/contracts";
 import { useBlockFocus } from "@/mainview/features/page/hooks/useBlockFocus";
@@ -27,6 +27,7 @@ type WorkspaceScreenProps = {
 
 export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
   const shell = useWorkspaceShellStore();
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const activePageId = routePageId ?? shell.selectedPageId;
   const { archivedPagesQuery, backlinksQuery, databaseStatusQuery, pageDocumentQuery, pagesQuery, refreshWorkspace } = useWorkspaceQueries(activePageId);
 
@@ -102,6 +103,7 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
     closeActiveTab,
     navigateTabHistory,
     onOpenQuickSwitcher: quickSwitcher.openQuickSwitcher,
+    onOpenSettings: () => setIsSettingsOpen(true),
     tabs: shell.tabs,
     toggleSidebar: shell.toggleSidebar
   });
@@ -153,6 +155,8 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
       blocksCount={databaseStatusQuery.data?.blocksCount ?? 0}
       historyNavigation={historyNavigation}
       isCreatingPage={createPageMutation.isPending}
+      isSettingsOpen={isSettingsOpen}
+      onCloseSettings={() => setIsSettingsOpen(false)}
       onCloseTab={closeWorkspaceTab}
       onCopyCurrentPageMarkdown={() => void editorController.copyCurrentPageMarkdown()}
       onCreatePage={editorController.editorActions.handleCreatePage}
@@ -163,6 +167,7 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
       onMovePage={(page, parentPageId, afterPageId) => {
         movePageMutation.mutate({ afterPageId, page, parentPageId });
       }}
+      onOpenSettings={() => setIsSettingsOpen(true)}
       onRefreshWorkspace={() => {
         void flushAllTextDrafts().then(refreshWorkspace);
       }}

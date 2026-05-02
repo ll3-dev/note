@@ -514,6 +514,14 @@ test("restores an archived page from the settings dialog", async ({ page }) => {
   );
 });
 
+test("opens settings with the command comma shortcut", async ({ page }) => {
+  await page.goto("/");
+
+  await page.keyboard.press(`${modKey}+,`);
+
+  await expect(page.getByRole("dialog", { name: "설정" })).toBeVisible();
+});
+
 test("restores a sidebar-deleted linked page from its page link block", async ({ page }) => {
   await page.goto("/");
   await page.evaluate(() => window.__noteE2E.reset());
