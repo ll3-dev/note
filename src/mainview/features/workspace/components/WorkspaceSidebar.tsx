@@ -1,20 +1,16 @@
 import { PanelLeft, Plus, RefreshCw, Settings } from "lucide-react";
-import { useState, type PointerEvent, type SyntheticEvent } from "react";
+import { type PointerEvent, type SyntheticEvent } from "react";
 import { Button } from "@/mainview/components/ui/button";
 import { Input } from "@/mainview/components/ui/input";
 import { ScrollArea } from "@/mainview/components/ui/scroll-area";
 import { Separator } from "@/mainview/components/ui/separator";
 import { useWorkspaceStore } from "@/mainview/store/useWorkspaceStore";
 import type { Page } from "@/shared/contracts";
-import type { TextSyncStatus } from "@/mainview/features/workspace/hooks/useBlockTextSync";
 import { SidebarPageTree } from "./SidebarPageTree";
-import { WorkspaceSettingsPanel } from "./WorkspaceSettingsPanel";
 
 type WorkspaceSidebarProps = {
   activePageId: string | null;
-  blocksCount: number;
   isCreatingPage: boolean;
-  onCopyCurrentPageMarkdown: () => void;
   onCreatePage: (event: SyntheticEvent<HTMLFormElement>) => void;
   onDeletePage: (page: Page) => void;
   onMovePage: (
@@ -22,30 +18,24 @@ type WorkspaceSidebarProps = {
     parentPageId: string | null,
     afterPageId: string | null
   ) => void;
+  onOpenSettings: () => void;
   onRefreshWorkspace: () => void;
   onResizeSidebar: (event: PointerEvent<HTMLDivElement>) => void;
   onSelectPage: (page: Page) => void;
   pages: Page[];
-  pagesCount: number;
-  saveStatus: TextSyncStatus;
-  sqliteVersion?: string;
 };
 
 export function WorkspaceSidebar({
   activePageId,
-  blocksCount,
   isCreatingPage,
-  onCopyCurrentPageMarkdown,
   onCreatePage,
   onDeletePage,
   onMovePage,
+  onOpenSettings,
   onRefreshWorkspace,
   onResizeSidebar,
   onSelectPage,
-  pages,
-  pagesCount,
-  saveStatus,
-  sqliteVersion
+  pages
 }: WorkspaceSidebarProps) {
   const expandedPageIds = useWorkspaceStore((state) => state.expandedPageIds);
   const pageTitleDraft = useWorkspaceStore((state) => state.pageTitleDraft);
@@ -56,7 +46,6 @@ export function WorkspaceSidebar({
   const toggleExpandedPage = useWorkspaceStore(
     (state) => state.toggleExpandedPage
   );
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   return (
     <>
@@ -75,7 +64,7 @@ export function WorkspaceSidebar({
           </Button>
           <Button
             aria-label="설정"
-            onClick={() => setIsSettingsOpen((isOpen) => !isOpen)}
+            onClick={onOpenSettings}
             size="icon-xs"
             variant="ghost"
           >
@@ -128,17 +117,6 @@ export function WorkspaceSidebar({
           />
         </nav>
       </ScrollArea>
-
-      {isSettingsOpen ? (
-        <WorkspaceSettingsPanel
-          blocksCount={blocksCount}
-          onClose={() => setIsSettingsOpen(false)}
-          onCopyCurrentPageMarkdown={onCopyCurrentPageMarkdown}
-          pagesCount={pagesCount}
-          saveStatus={saveStatus}
-          sqliteVersion={sqliteVersion}
-        />
-      ) : null}
 
       <div
         aria-label="사이드바 너비 조절"

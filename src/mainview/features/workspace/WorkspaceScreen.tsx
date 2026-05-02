@@ -149,6 +149,7 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
   return (
     <WorkspaceLayout
       activePageId={activePageId}
+      archivedPages={archivedPages}
       blocksCount={databaseStatusQuery.data?.blocksCount ?? 0}
       historyNavigation={historyNavigation}
       isCreatingPage={createPageMutation.isPending}
@@ -164,6 +165,9 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
       }}
       onRefreshWorkspace={() => {
         void flushAllTextDrafts().then(refreshWorkspace);
+      }}
+      onRestoreArchivedPage={(page) => {
+        void flushAllTextDrafts().then(() => restorePage(page.id));
       }}
       onSelectPage={selectPage}
       onSelectTab={selectTab}

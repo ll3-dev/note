@@ -470,6 +470,50 @@ test("deletes a page from the sidebar page list", async ({ page }) => {
   await expect(page).not.toHaveURL(new RegExp(`/pages/${removedPageId}$`));
 });
 
+test("restores an archived page from the settings dialog", async ({ page }) => {
+  await page.goto("/");
+  await page.evaluate(() => window.__noteE2E.reset());
+
+  const sidebar = page.getByRole("complementary");
+  await sidebar.getByLabel("새 페이지 제목").fill("Settings restore");
+  await sidebar.getByRole("button", { name: "새 페이지" }).click();
+
+  const archivedPageId = await page.evaluate(() => {
+    return window.__noteE2E.getPages().find((item) => item.title === "Settings restore")
+      ?.id ?? null;
+  });
+  expect(archivedPageId).toBeTruthy();
+
+  await page
+    .getByRole("navigation")
+    .getByRole("button", { name: "Settings restore 페이지 삭제" })
+    .click();
+  await expect
+    .poll(() =>
+      page.evaluate((pageId) =>
+        window.__noteE2E.getArchivedPages().some((item) => item.id === pageId),
+        archivedPageId
+      )
+    )
+    .toBe(true);
+
+  await page.getByRole("button", { name: "설정" }).click();
+  await expect(page.getByRole("dialog", { name: "설정" })).toBeVisible();
+  await page.getByRole("button", { name: "Settings restore 페이지 복구" }).click();
+
+  await expect
+    .poll(() =>
+      page.evaluate((pageId) =>
+        window.__noteE2E.getPages().some((item) => item.id === pageId),
+        archivedPageId
+      )
+    )
+    .toBe(true);
+  await expect(page.getByRole("dialog", { name: "설정" })).toContainText(
+    "복구할 페이지가 없습니다."
+  );
+});
+
 test("restores a sidebar-deleted linked page from its page link block", async ({ page }) => {
   await page.goto("/");
   await page.evaluate(() => window.__noteE2E.reset());

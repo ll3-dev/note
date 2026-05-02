@@ -1,9 +1,15 @@
-import { type MouseEvent, type ReactNode, type SyntheticEvent } from "react";
+import {
+  useState,
+  type MouseEvent,
+  type ReactNode,
+  type SyntheticEvent
+} from "react";
 import { useWorkspaceStore } from "@/mainview/store/useWorkspaceStore";
 import type { Page } from "@/shared/contracts";
 import { useSidebarResize } from "@/mainview/features/workspace/hooks/useSidebarResize";
 import type { TextSyncStatus } from "@/mainview/features/workspace/hooks/useBlockTextSync";
 import { WorkspaceSidebar } from "./WorkspaceSidebar";
+import { WorkspaceSettingsPanel } from "./WorkspaceSettingsPanel";
 import {
   WorkspaceTitleBar,
   type WorkspaceHistoryNavigation
@@ -11,6 +17,7 @@ import {
 
 type WorkspaceLayoutProps = {
   activePageId: string | null;
+  archivedPages: Page[];
   blocksCount: number;
   children: ReactNode;
   historyNavigation: WorkspaceHistoryNavigation;
@@ -26,6 +33,7 @@ type WorkspaceLayoutProps = {
     afterPageId: string | null
   ) => void;
   onRefreshWorkspace: () => void;
+  onRestoreArchivedPage: (page: Page) => void;
   onSelectPage: (page: Page) => void;
   onSelectTab: (tabId: string) => void;
   pages: Page[];
@@ -36,6 +44,7 @@ type WorkspaceLayoutProps = {
 
 export function WorkspaceLayout({
   activePageId,
+  archivedPages,
   blocksCount,
   children,
   historyNavigation,
@@ -47,6 +56,7 @@ export function WorkspaceLayout({
   onDeletePage,
   onMovePage,
   onRefreshWorkspace,
+  onRestoreArchivedPage,
   onSelectPage,
   onSelectTab,
   pages,
@@ -63,6 +73,7 @@ export function WorkspaceLayout({
   const sidebarWidth = useWorkspaceStore((state) => state.sidebarWidth);
   const tabs = useWorkspaceStore((state) => state.tabs);
   const toggleSidebar = useWorkspaceStore((state) => state.toggleSidebar);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const { handleResizeSidebar, isResizingSidebar } = useSidebarResize({
     setSidebarWidth,
     sidebarWidth
@@ -110,19 +121,15 @@ export function WorkspaceLayout({
           >
             <WorkspaceSidebar
               activePageId={activePageId}
-              blocksCount={blocksCount}
               isCreatingPage={isCreatingPage}
-              onCopyCurrentPageMarkdown={onCopyCurrentPageMarkdown}
               onCreatePage={onCreatePage}
               onDeletePage={onDeletePage}
               onMovePage={onMovePage}
+              onOpenSettings={() => setIsSettingsOpen(true)}
               onRefreshWorkspace={onRefreshWorkspace}
               onResizeSidebar={handleResizeSidebar}
               onSelectPage={onSelectPage}
               pages={pages}
-              pagesCount={pagesCount}
-              saveStatus={saveStatus}
-              sqliteVersion={sqliteVersion}
             />
           </aside>
         </div>
@@ -131,6 +138,19 @@ export function WorkspaceLayout({
           {children}
         </section>
       </div>
+
+      {isSettingsOpen ? (
+        <WorkspaceSettingsPanel
+          archivedPages={archivedPages}
+          blocksCount={blocksCount}
+          onClose={() => setIsSettingsOpen(false)}
+          onCopyCurrentPageMarkdown={onCopyCurrentPageMarkdown}
+          onRestoreArchivedPage={onRestoreArchivedPage}
+          pagesCount={pagesCount}
+          saveStatus={saveStatus}
+          sqliteVersion={sqliteVersion}
+        />
+      ) : null}
     </main>
   );
 }
