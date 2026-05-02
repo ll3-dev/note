@@ -7,8 +7,8 @@ import { WORKSPACE_COMMANDS } from "@/mainview/features/workspace/lib/workspaceC
 
 type UseWorkspaceScreenCommandsOptions = {
   activeTabId: string | null;
-  closeActiveTab: () => void;
-  navigateTabHistory: (direction: "back" | "forward") => Promise<void> | void;
+  closeActiveTab: () => Promise<void>;
+  navigateTabHistory: (direction: "back" | "forward") => Promise<void>;
   onOpenQuickSwitcher: () => void;
   tabs: WorkspaceTab[];
   toggleSidebar: () => void;

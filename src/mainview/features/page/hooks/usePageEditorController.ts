@@ -145,7 +145,7 @@ export function usePageEditorController({
     onCreatePageLink,
     onDelete: onDeleteBlock,
     onFocusNext: onFocusNextBlock,
-    onFocusPrevious: focusPreviousBlock,
+    onFocusPrevious: onFocusPreviousBlock,
     onMergeWithPrevious: onMergeBlockWithPrevious,
     onOpenPageLink,
     onPasteMarkdown,

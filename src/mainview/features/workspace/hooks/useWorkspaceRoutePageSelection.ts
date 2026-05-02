@@ -1,10 +1,11 @@
 import { useCallback } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import type { Page } from "@/shared/contracts";
 import { navigateToPage } from "./useWorkspaceNavigation";
 import { useInitialPageSelection } from "./useInitialPageSelection";
 
 type UseWorkspaceRoutePageSelectionOptions = {
-  navigate: (options: { replace?: boolean; to: string }) => Promise<void> | void;
+  navigate: ReturnType<typeof useNavigate>;
   pages: Page[];
   pagesLoaded: boolean;
   routePageId: string | null;

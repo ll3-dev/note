@@ -1,8 +1,9 @@
+import { useNavigate } from "@tanstack/react-router";
 import { navigateToPage } from "./useWorkspaceNavigation";
 
 type UseRestorePageLinkActionOptions = {
   flushAllTextDrafts: () => Promise<void>;
-  navigate: (options: { replace?: boolean; to: string }) => Promise<void> | void;
+  navigate: ReturnType<typeof useNavigate>;
   restorePage: (pageId: string) => Promise<void>;
 };
 

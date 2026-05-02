@@ -65,7 +65,7 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
     useWorkspaceNavigation({
       activeTabId: shell.activeTabId,
       closeTab: shell.closeTab,
-      closeWindow: () => noteApi.closeMainWindow(),
+      closeWindow: () => noteApi.closeMainWindow().then(() => undefined),
       flushBeforeNavigate: flushAllTextDrafts,
       openPageTab: shell.openPageTab,
       setActiveTabId: shell.setActiveTabId,
