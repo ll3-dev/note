@@ -9,6 +9,7 @@ import {
   createPage,
   deleteBlock,
   deleteBlocks,
+  deletePage,
   getPageDocument,
   listPages,
   moveBlock,
@@ -168,6 +169,52 @@ describe("notes repository", () => {
 
     const document = getPageDocument(handle, { pageId: page.id });
     expect(document.blocks.map((item) => item.id)).not.toContain(block.id);
+  });
+
+  test("archives linked child pages when deleting page link blocks", () => {
+    const handle = openTempDatabase();
+    const parent = createPage(handle, { title: "Parent" }).page;
+    const child = createPage(handle, {
+      parentPageId: parent.id,
+      title: "Child"
+    }).page;
+    const grandchild = createPage(handle, {
+      parentPageId: child.id,
+      title: "Grandchild"
+    }).page;
+    const pageLink = createBlock(handle, {
+      pageId: parent.id,
+      props: { targetPageId: child.id, targetTitle: child.title },
+      type: "page_link"
+    });
+
+    deleteBlock(handle, { blockId: pageLink.id });
+
+    expect(listPages(handle).map((page) => page.id)).toEqual([parent.id]);
+    expect(searchPages(handle, { query: "Child" })).toEqual([]);
+    expect(getPageDocument(handle, { pageId: child.id }).page.archivedAt)
+      .not.toBeNull();
+    expect(getPageDocument(handle, { pageId: grandchild.id }).page.archivedAt)
+      .not.toBeNull();
+  });
+
+  test("soft deletes pages with descendants", () => {
+    const handle = openTempDatabase();
+    const parent = createPage(handle, { title: "Parent" }).page;
+    const child = createPage(handle, {
+      parentPageId: parent.id,
+      title: "Child"
+    }).page;
+
+    deletePage(handle, { pageId: parent.id });
+
+    expect(listPages(handle)).toEqual([]);
+    expect(searchPages(handle, { query: "Parent" })).toEqual([]);
+    expect(searchWorkspace(handle, { query: "Child" })).toEqual([]);
+    expect(getPageDocument(handle, { pageId: parent.id }).page.archivedAt)
+      .not.toBeNull();
+    expect(getPageDocument(handle, { pageId: child.id }).page.archivedAt)
+      .not.toBeNull();
   });
 
   test("searches blocks through the FTS index", () => {

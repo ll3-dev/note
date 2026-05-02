@@ -8,7 +8,10 @@ test.beforeEach(async ({ context }) => {
 
 async function openInitialPage(page: Page) {
   await page.goto("/");
-  await page.getByRole("button", { exact: true, name: "Untitled" }).click();
+  await page
+    .getByRole("navigation")
+    .getByRole("button", { exact: true, name: "Untitled" })
+    .click();
 }
 
 test("moves from title to the first body block with Enter", async ({ page }) => {
@@ -264,6 +267,14 @@ test("deletes a focused page block with Backspace", async ({ page }) => {
       page.evaluate(() => window.__noteE2E.getDocument("page-1").blocks[0]?.type)
     )
     .toBe("page_link");
+  const focusedTargetPageId = await page.evaluate(() => {
+    const block = window.__noteE2E.getDocument("page-1").blocks[0];
+
+    return typeof block?.props.targetPageId === "string"
+      ? block.props.targetPageId
+      : null;
+  });
+  expect(focusedTargetPageId).toBeTruthy();
   await page.goBack();
 
   const pageBlock = page
@@ -277,6 +288,14 @@ test("deletes a focused page block with Backspace", async ({ page }) => {
       page.evaluate(() => window.__noteE2E.getDocument("page-1").blocks[0]?.type)
     )
     .toBe("paragraph");
+  await expect
+    .poll(() =>
+      page.evaluate((targetPageId) =>
+        window.__noteE2E.getPages().some((item) => item.id === targetPageId),
+        focusedTargetPageId
+      )
+    )
+    .toBe(false);
 });
 
 test("deletes a drag-selected page block with Delete", async ({ page }) => {
@@ -291,6 +310,14 @@ test("deletes a drag-selected page block with Delete", async ({ page }) => {
       page.evaluate(() => window.__noteE2E.getDocument("page-1").blocks[0]?.type)
     )
     .toBe("page_link");
+  const dragTargetPageId = await page.evaluate(() => {
+    const block = window.__noteE2E.getDocument("page-1").blocks[0];
+
+    return typeof block?.props.targetPageId === "string"
+      ? block.props.targetPageId
+      : null;
+  });
+  expect(dragTargetPageId).toBeTruthy();
   await page.goBack();
 
   const pageBlock = page
@@ -313,6 +340,14 @@ test("deletes a drag-selected page block with Delete", async ({ page }) => {
       page.evaluate(() => window.__noteE2E.getDocument("page-1").blocks[0]?.type)
     )
     .toBe("paragraph");
+  await expect
+    .poll(() =>
+      page.evaluate((targetPageId) =>
+        window.__noteE2E.getPages().some((item) => item.id === targetPageId),
+        dragTargetPageId
+      )
+    )
+    .toBe(false);
 });
 
 test("turns markdown shortcuts into block types", async ({ page }) => {
@@ -403,6 +438,38 @@ test("keeps an editable block after deleting every selected block", async ({ pag
     .toEqual(["Delete me"]);
 });
 
+test("deletes a page from the sidebar page list", async ({ page }) => {
+  await page.goto("/");
+
+  const sidebar = page.getByRole("complementary");
+  await sidebar.getByLabel("새 페이지 제목").fill("Remove me");
+  await sidebar.getByRole("button", { name: "새 페이지" }).click();
+
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        window.__noteE2E.getPages().some((item) => item.title === "Remove me")
+      )
+    )
+    .toBe(true);
+  const removedPageId = await page.evaluate(() => {
+    return window.__noteE2E.getPages().find((item) => item.title === "Remove me")
+      ?.id ?? null;
+  });
+  expect(removedPageId).toBeTruthy();
+
+  await page.getByRole("button", { name: "Remove me 페이지 삭제" }).click();
+
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        window.__noteE2E.getPages().some((item) => item.title === "Remove me")
+      )
+    )
+    .toBe(false);
+  await expect(page).not.toHaveURL(new RegExp(`/pages/${removedPageId}$`));
+});
+
 test("selects the focused block with Escape and returns to editing with Enter", async ({ page }) => {
   await openInitialPage(page);
 
@@ -415,6 +482,21 @@ test("selects the focused block with Escape and returns to editing with Enter", 
 
   await page.keyboard.press("Enter");
   await expect(firstBlock).toBeFocused();
+});
+
+test("clears block selection when toggling the sidebar shortcut", async ({ page }) => {
+  await openInitialPage(page);
+
+  const firstBlock = page.getByRole("textbox", { name: "paragraph block" }).first();
+  await firstBlock.click();
+  await page.keyboard.type("Selectable");
+  await page.keyboard.press("Escape");
+
+  await expect(page.locator("[data-block-selection-overlay]")).toHaveCount(1);
+
+  await page.keyboard.press(`${modKey}+\\`);
+
+  await expect(page.locator("[data-block-selection-overlay]")).toHaveCount(0);
 });
 
 test("moves selected blocks with command shift arrows", async ({ page }) => {
