@@ -100,12 +100,19 @@ export const noteApi = {
     return cloneDocument(document);
   },
 
+  async deletePage(input: { pageId: string }) {
+    archivePagesById([input.pageId]);
+
+    return { deleted: true as const };
+  },
+
   async deleteBlock(input: DeleteBlockInput) {
     for (const document of state.documents.values()) {
       const index = document.blocks.findIndex((block) => block.id === input.blockId);
 
       if (index !== -1) {
         recordDocumentHistory(document);
+        archiveLinkedPages([document.blocks[index]]);
         document.blocks.splice(index, 1);
         normalizeBlockSortKeys(document);
         touchPage(document.page);
@@ -135,6 +142,7 @@ export const noteApi = {
 
     recordDocumentHistory(document);
     const blockIds = new Set(input.blockIds);
+    archiveLinkedPages(document.blocks.filter((block) => blockIds.has(block.id)));
     document.blocks = document.blocks.filter((block) => !blockIds.has(block.id));
     let createdBlock: Block | undefined;
 
@@ -172,7 +180,9 @@ export const noteApi = {
   },
 
   async listPages() {
-    return state.pages.map((page) => ({ ...page }));
+    return state.pages
+      .filter((page) => !page.archivedAt)
+      .map((page) => ({ ...page }));
   },
 
   async searchPages(input: { query: string; limit?: number }) {
@@ -183,6 +193,7 @@ export const noteApi = {
     }
 
     return state.pages
+      .filter((page) => !page.archivedAt)
       .filter((page) => page.title.toLowerCase().includes(query))
       .slice(0, input.limit ?? 8)
       .map((page) => ({ pageId: page.id, title: page.title }));
@@ -216,6 +227,7 @@ export const noteApi = {
     }
 
     const pageResults = state.pages
+      .filter((page) => !page.archivedAt)
       .filter((page) => page.title.toLowerCase().includes(query))
       .map((page) => ({ kind: "page" as const, pageId: page.id, title: page.title }));
     const blockResults = [...state.documents.values()].flatMap((document) =>
@@ -314,6 +326,10 @@ export const noteApi = {
 Object.assign(window, {
   __noteE2E: {
     getDocument: (pageId: string) => cloneDocument(getDocument(pageId)),
+    getPages: () =>
+      state.pages
+        .filter((page) => !page.archivedAt)
+        .map((page) => ({ ...page })),
     reset: resetState
   }
 });
@@ -351,6 +367,50 @@ function findBlock(blockId: string) {
   }
 
   throw new Error(`block not found: ${blockId}`);
+}
+
+function archiveLinkedPages(blocks: Block[]) {
+  const pageIds = blocks.flatMap((block) =>
+    block.type === "page_link" && typeof block.props.targetPageId === "string"
+      ? [block.props.targetPageId]
+      : []
+  );
+
+  archivePagesById(pageIds);
+}
+
+function archivePagesById(pageIds: string[]) {
+  for (const pageId of collectPageIdsWithDescendants(pageIds)) {
+    const page = state.pages.find((item) => item.id === pageId);
+
+    if (page) {
+      page.archivedAt = now();
+      page.updatedAt = now();
+    }
+  }
+}
+
+function collectPageIdsWithDescendants(pageIds: string[]) {
+  const seen = new Set<string>();
+  const pending = [...new Set(pageIds.filter(Boolean))];
+
+  while (pending.length > 0) {
+    const pageId = pending.pop();
+
+    if (!pageId || seen.has(pageId)) {
+      continue;
+    }
+
+    seen.add(pageId);
+
+    for (const page of state.pages) {
+      if (page.parentPageId === pageId) {
+        pending.push(page.id);
+      }
+    }
+  }
+
+  return [...seen];
 }
 
 function cloneDocument(document: PageDocument): PageDocument {

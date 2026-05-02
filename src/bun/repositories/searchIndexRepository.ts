@@ -10,6 +10,15 @@ export function indexPage(handle: DatabaseHandle, page: Page) {
     .run(page.id, page.title);
 }
 
+export function deletePageFromSearchIndex(
+  handle: DatabaseHandle,
+  pageId: string
+) {
+  handle.db
+    .query("DELETE FROM pages_fts WHERE page_id = ?")
+    .run(pageId);
+}
+
 export function indexBlock(handle: DatabaseHandle, block: Block) {
   handle.db
     .query("DELETE FROM blocks_fts WHERE block_id = ?")

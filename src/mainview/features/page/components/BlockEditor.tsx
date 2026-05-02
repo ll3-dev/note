@@ -191,7 +191,6 @@ export function BlockEditor({
           isSelected={isSelected}
           linkedPage={linkedPage}
           numberedListMarker={numberedListMarker}
-          onApplyCommand={applyCommand}
           onBlur={commitDraft}
           onBeforeInput={handleBeforeInput}
           onChange={changeDraft}

@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { ScrollArea } from "@/mainview/components/ui/scroll-area";
 import type { Block, Page, PageDocument } from "@/shared/contracts";
 import { PageBlockList } from "./PageBlockList";
@@ -128,6 +128,11 @@ export function PageEditor({
     onFocusPreviousBlock,
     onStartDrag: startDrag
   });
+  const clearBlockSelectionRef = useRef(clearBlockSelection);
+
+  useEffect(() => {
+    clearBlockSelectionRef.current = clearBlockSelection;
+  }, [clearBlockSelection]);
 
   useSelectedBlockShortcuts({
     clearSelection: clearBlockSelection,
@@ -165,6 +170,21 @@ export function PageEditor({
       window.removeEventListener("note-history-command", handleHistoryCommand);
     };
   }, [clearBlockSelection, selectedBlockIds.length]);
+
+  useEffect(() => {
+    function handleClearBlockSelection() {
+      clearBlockSelectionRef.current();
+    }
+
+    window.addEventListener("note-clear-block-selection", handleClearBlockSelection);
+
+    return () => {
+      window.removeEventListener(
+        "note-clear-block-selection",
+        handleClearBlockSelection
+      );
+    };
+  }, []);
 
   useEffect(() => {
     scrollBlockIntoView(selectionFocusBlockId);

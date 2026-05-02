@@ -19,6 +19,7 @@ type WorkspaceLayoutProps = {
   onCopyCurrentPageMarkdown: () => void;
   onCreatePage: (event: SyntheticEvent<HTMLFormElement>) => void;
   onCreateUntitledPage: () => void;
+  onDeletePage: (page: Page) => void;
   onMovePage: (
     page: Page,
     parentPageId: string | null,
@@ -43,6 +44,7 @@ export function WorkspaceLayout({
   onCopyCurrentPageMarkdown,
   onCreatePage,
   onCreateUntitledPage,
+  onDeletePage,
   onMovePage,
   onRefreshWorkspace,
   onSelectPage,
@@ -112,6 +114,7 @@ export function WorkspaceLayout({
               isCreatingPage={isCreatingPage}
               onCopyCurrentPageMarkdown={onCopyCurrentPageMarkdown}
               onCreatePage={onCreatePage}
+              onDeletePage={onDeletePage}
               onMovePage={onMovePage}
               onRefreshWorkspace={onRefreshWorkspace}
               onResizeSidebar={handleResizeSidebar}

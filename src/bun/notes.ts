@@ -8,6 +8,7 @@ import {
 } from "./repositories/blockRepository";
 import { moveBlock } from "./repositories/blockMoveRepository";
 import { listBlocksForPage } from "./repositories/blockReadRepository";
+import { deletePage } from "./repositories/pageArchiveRepository";
 import {
   createPage,
   getPage,
@@ -32,6 +33,7 @@ export {
   createPage,
   deleteBlock,
   deleteBlocks,
+  deletePage,
   listPages,
   listBacklinks,
   moveBlock,

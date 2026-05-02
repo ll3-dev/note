@@ -110,6 +110,14 @@ export function useWorkspaceMutations({
     return result;
   }
 
+  async function deletePage(page: Page) {
+    await noteApi.deletePage({ pageId: page.id });
+    queryClient.removeQueries({ queryKey: queryKeys.pageDocument(page.id) });
+    await queryClient.invalidateQueries({ queryKey: queryKeys.pages });
+    await queryClient.invalidateQueries({ queryKey: queryKeys.databaseStatus });
+    await queryClient.invalidateQueries({ queryKey: queryKeys.backlinksRoot });
+  }
+
   async function createLinkedPage(title: string, parentPageId: string) {
     const document = await noteApi.createPage({ title, parentPageId });
 
@@ -279,6 +287,7 @@ export function useWorkspaceMutations({
   return {
     createBlockMutation,
     createBlocks,
+    deletePage,
     deleteBlocks,
     createLinkedPage,
     createPageMutation,

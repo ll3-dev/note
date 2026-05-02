@@ -47,7 +47,7 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
   const activePageId = routePageId ?? selectedPageId;
   const { backlinksQuery, databaseStatusQuery, pageDocumentQuery, pagesQuery, refreshWorkspace } = useWorkspaceQueries(activePageId);
 
-  const { createBlockMutation, createBlocks, deleteBlocks: deleteBlocksBatch, createLinkedPage, createPageMutation, deleteBlockMutation, moveBlocks, movePageMutation, updatePageMutation, updateBlockMutation } = useWorkspaceMutations({
+  const { createBlockMutation, createBlocks, deletePage, deleteBlocks: deleteBlocksBatch, createLinkedPage, createPageMutation, deleteBlockMutation, moveBlocks, movePageMutation, updatePageMutation, updateBlockMutation } = useWorkspaceMutations({
     navigateToPage: async (pageId) => {
       await navigateToPage(navigate, pageId);
     },
@@ -115,6 +115,15 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
     }),
     [canNavigateBack, canNavigateForward, navigateTabHistory]
   );
+  const handleMissingRoutePage = useCallback(() => {
+    const fallbackPage = pages[pages.length - 1] ?? null;
+
+    if (fallbackPage) {
+      void navigateToPage(navigate, fallbackPage.id, true);
+    } else {
+      void navigate({ to: "/", replace: true });
+    }
+  }, [navigate, pages]);
   const quickSwitcher = useQuickSwitcher({
     onSelectResult: (result) => {
       void flushAllTextDrafts().then(() => {
@@ -131,7 +140,10 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
       navigateBack: () => navigateTabHistory("back"),
       navigateForward: () => navigateTabHistory("forward"),
       openQuickSwitcher: quickSwitcher.openQuickSwitcher,
-      toggleSidebar
+      toggleSidebar: () => {
+        window.dispatchEvent(new CustomEvent("note-clear-block-selection"));
+        toggleSidebar();
+      }
     }),
     [closeActiveTab, navigateTabHistory, quickSwitcher.openQuickSwitcher, toggleSidebar]
   );
@@ -205,7 +217,14 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
     context: workspaceCommandContext,
     keybindings
   });
-  useInitialPageSelection({ pages, routePageId, setSelectedPageId, syncActiveTabToPage });
+  useInitialPageSelection({
+    onMissingRoutePage: handleMissingRoutePage,
+    pages,
+    pagesLoaded: pagesQuery.isSuccess,
+    routePageId,
+    setSelectedPageId,
+    syncActiveTabToPage
+  });
 
   return (
     <WorkspaceLayout
@@ -217,6 +236,9 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
       onCopyCurrentPageMarkdown={() => void copyCurrentPageMarkdown()}
       onCreatePage={editorActions.handleCreatePage}
       onCreateUntitledPage={() => createPageMutation.mutate("")}
+      onDeletePage={(page) => {
+        void flushAllTextDrafts().then(() => deletePage(page));
+      }}
       onMovePage={(page, parentPageId, afterPageId) => {
         movePageMutation.mutate({ afterPageId, page, parentPageId });
       }}

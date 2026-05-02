@@ -1,5 +1,5 @@
 import { Database } from "bun:sqlite";
-import { count, sql } from "drizzle-orm";
+import { count, isNull, sql } from "drizzle-orm";
 import { drizzle, type BunSQLiteDatabase } from "drizzle-orm/bun-sqlite";
 import { mkdirSync } from "node:fs";
 import path from "node:path";
@@ -45,7 +45,11 @@ export function getDatabaseStatus(handle: DatabaseHandle): DatabaseStatus {
   const sqliteVersion = handle.orm.get<[string]>(
     sql`SELECT sqlite_version() AS version`
   );
-  const pagesCount = handle.orm.select({ count: count() }).from(pages).get();
+  const pagesCount = handle.orm
+    .select({ count: count() })
+    .from(pages)
+    .where(isNull(pages.archived_at))
+    .get();
   const blocksCount = handle.orm.select({ count: count() }).from(blocks).get();
 
   return {

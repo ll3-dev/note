@@ -16,6 +16,7 @@ type WorkspaceSidebarProps = {
   isCreatingPage: boolean;
   onCopyCurrentPageMarkdown: () => void;
   onCreatePage: (event: SyntheticEvent<HTMLFormElement>) => void;
+  onDeletePage: (page: Page) => void;
   onMovePage: (
     page: Page,
     parentPageId: string | null,
@@ -36,6 +37,7 @@ export function WorkspaceSidebar({
   isCreatingPage,
   onCopyCurrentPageMarkdown,
   onCreatePage,
+  onDeletePage,
   onMovePage,
   onRefreshWorkspace,
   onResizeSidebar,
@@ -100,6 +102,7 @@ export function WorkspaceSidebar({
             value={pageTitleDraft}
           />
           <Button
+            aria-label="새 페이지"
             disabled={isCreatingPage || !pageTitleDraft.trim()}
             size="icon-sm"
             type="submit"
@@ -117,6 +120,7 @@ export function WorkspaceSidebar({
           <SidebarPageTree
             activePageId={activePageId}
             expandedPageIds={new Set(expandedPageIds)}
+            onDeletePage={onDeletePage}
             onMovePage={onMovePage}
             onSelectPage={onSelectPage}
             onToggleExpanded={toggleExpandedPage}

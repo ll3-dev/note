@@ -1,4 +1,4 @@
-import { ChevronRight, FileText } from "lucide-react";
+import { ChevronRight, FileText, Trash2 } from "lucide-react";
 import type { DragEvent } from "react";
 import { Button } from "@/mainview/components/ui/button";
 import { cn } from "@/mainview/lib/utils";
@@ -12,6 +12,7 @@ type SidebarPageItemProps = {
   depth: number;
   hasChildren: boolean;
   isExpanded: boolean;
+  onDeletePage: (page: Page) => void;
   onMovePage: (
     page: Page,
     parentPageId: string | null,
@@ -29,6 +30,7 @@ export function SidebarPageItem({
   depth,
   hasChildren,
   isExpanded,
+  onDeletePage,
   onMovePage,
   onSelectPage,
   onToggleExpanded,
@@ -41,12 +43,12 @@ export function SidebarPageItem({
     return sourcePageId === page.id ? null : pagesById.get(sourcePageId);
   }
 
-  function handleDragStart(event: DragEvent<HTMLButtonElement>) {
+  function handleDragStart(event: DragEvent<HTMLDivElement>) {
     event.dataTransfer.effectAllowed = "move";
     event.dataTransfer.setData(PAGE_DRAG_TYPE, page.id);
   }
 
-  function handleDrop(event: DragEvent<HTMLButtonElement>) {
+  function handleDrop(event: DragEvent<HTMLDivElement>) {
     event.preventDefault();
     const sourcePage = getDraggedPage(event);
 
@@ -55,7 +57,7 @@ export function SidebarPageItem({
     }
   }
 
-  function handleDropAsChild(event: DragEvent<HTMLSpanElement>) {
+  function handleDropAsChild(event: DragEvent<HTMLButtonElement>) {
     event.preventDefault();
     event.stopPropagation();
     const sourcePage = getDraggedPage(event);
@@ -67,31 +69,23 @@ export function SidebarPageItem({
   }
 
   return (
-    <Button
-      className="group/page relative h-7 w-full min-w-0 select-none justify-start px-1 text-left font-normal"
+    <div
+      className={cn(
+        "group/page grid h-7 w-full min-w-0 select-none grid-cols-[1.25rem_minmax(0,1fr)_1.25rem] items-center gap-1 rounded-md pr-1 text-sm transition-colors",
+        page.id === activePageId
+          ? "bg-secondary text-secondary-foreground"
+          : "hover:bg-accent hover:text-accent-foreground"
+      )}
       draggable
-      onClick={() => onSelectPage(page)}
       onDragOver={(event) => event.preventDefault()}
       onDragStart={handleDragStart}
       onDrop={handleDrop}
       style={{ paddingLeft: depth * 14 + 4 }}
-      variant={page.id === activePageId ? "secondary" : "ghost"}
     >
-      <span className="relative flex size-4 shrink-0 items-center justify-center">
-        <FileText
-          className={cn(
-            "size-4 text-muted-foreground transition-opacity duration-150",
-            hasChildren && "group-hover/page:opacity-0",
-            hasChildren && isExpanded && "opacity-0"
-          )}
-        />
-        <span
+      {hasChildren ? (
+        <Button
           aria-label={isExpanded ? "페이지 접기" : "페이지 펼치기"}
-          className={cn(
-            "absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-150",
-            hasChildren && "group-hover/page:opacity-100",
-            hasChildren && isExpanded && "opacity-100"
-          )}
+          className="size-5 rounded-sm text-muted-foreground"
           onClick={(event) => {
             event.stopPropagation();
             onToggleExpanded(page.id);
@@ -101,17 +95,9 @@ export function SidebarPageItem({
             event.stopPropagation();
           }}
           onDrop={handleDropAsChild}
-          onKeyDown={(event) => {
-            if (event.key !== "Enter" && event.key !== " ") {
-              return;
-            }
-
-            event.preventDefault();
-            event.stopPropagation();
-            onToggleExpanded(page.id);
-          }}
-          role="button"
-          tabIndex={-1}
+          size="icon-xs"
+          type="button"
+          variant="ghost"
         >
           <ChevronRight
             className={cn(
@@ -119,9 +105,32 @@ export function SidebarPageItem({
               isExpanded && "rotate-90"
             )}
           />
+        </Button>
+      ) : (
+        <span className="flex size-5 items-center justify-center text-muted-foreground">
+          <FileText className="size-4" />
         </span>
-      </span>
-      <span className="min-w-0 truncate">{getPageTitleDisplay(page.title)}</span>
-    </Button>
+      )}
+      <button
+        className="min-w-0 truncate text-left outline-none focus-visible:rounded-sm focus-visible:ring-[3px] focus-visible:ring-ring/50"
+        onClick={() => onSelectPage(page)}
+        type="button"
+      >
+        {getPageTitleDisplay(page.title)}
+      </button>
+      <Button
+        aria-label={`${getPageTitleDisplay(page.title)} 페이지 삭제`}
+        className="size-5 rounded-sm opacity-0 transition-opacity group-hover/page:opacity-100 group-focus-within/page:opacity-100 focus-visible:opacity-100"
+        onClick={(event) => {
+          event.stopPropagation();
+          onDeletePage(page);
+        }}
+        size="icon-xs"
+        type="button"
+        variant="ghost"
+      >
+        <Trash2 className="size-3.5" />
+      </Button>
+    </div>
   );
 }

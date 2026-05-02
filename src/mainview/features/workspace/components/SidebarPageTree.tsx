@@ -9,6 +9,7 @@ import { SidebarPageItem } from "./SidebarPageItem";
 type SidebarPageTreeProps = {
   activePageId: string | null;
   expandedPageIds: Set<string>;
+  onDeletePage: (page: Page) => void;
   onMovePage: (
     page: Page,
     parentPageId: string | null,
@@ -22,6 +23,7 @@ type SidebarPageTreeProps = {
 export function SidebarPageTree({
   activePageId,
   expandedPageIds,
+  onDeletePage,
   onMovePage,
   onSelectPage,
   onToggleExpanded,
@@ -44,6 +46,7 @@ export function SidebarPageTree({
         activePageId={activePageId}
         depth={0}
         expandedPageIds={expandedPageIds}
+        onDeletePage={onDeletePage}
         onMovePage={onMovePage}
         onSelectPage={onSelectPage}
         onToggleExpanded={onToggleExpanded}
@@ -59,6 +62,7 @@ function SidebarPageTreeItems({
   activePageId,
   depth,
   expandedPageIds,
+  onDeletePage,
   onMovePage,
   onSelectPage,
   onToggleExpanded,
@@ -80,6 +84,7 @@ function SidebarPageTreeItems({
           depth={depth}
           hasChildren={childPages.length > 0}
           isExpanded={isExpanded}
+          onDeletePage={onDeletePage}
           onMovePage={onMovePage}
           onSelectPage={onSelectPage}
           onToggleExpanded={onToggleExpanded}
@@ -92,6 +97,7 @@ function SidebarPageTreeItems({
             activePageId={activePageId}
             depth={depth + 1}
             expandedPageIds={expandedPageIds}
+            onDeletePage={onDeletePage}
             onMovePage={onMovePage}
             onSelectPage={onSelectPage}
             onToggleExpanded={onToggleExpanded}
@@ -109,6 +115,7 @@ type SidebarPageTreeItemsProps = {
   activePageId: string | null;
   depth: number;
   expandedPageIds: Set<string>;
+  onDeletePage: (page: Page) => void;
   onMovePage: SidebarPageTreeProps["onMovePage"];
   onSelectPage: (page: Page) => void;
   onToggleExpanded: (pageId: string) => void;

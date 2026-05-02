@@ -6,6 +6,7 @@ import type {
   CreatePageInput,
   DeleteBlockInput,
   DeleteBlocksInput,
+  DeletePageInput,
   GetPageDocumentInput,
   MoveBlockInput,
   MovePageInput,
@@ -57,6 +58,11 @@ export function validateUpdatePageInput(input: unknown): UpdatePageInput {
   }
 
   return output;
+}
+
+export function validateDeletePageInput(input: unknown): DeletePageInput {
+  const record = asRecord(input);
+  return { pageId: idValue(record.pageId, "pageId") };
 }
 
 export function validateGetPageDocumentInput(input: unknown): GetPageDocumentInput {

@@ -2,26 +2,45 @@ import { useLayoutEffect } from "react";
 import type { Page } from "@/shared/contracts";
 
 type UseInitialPageSelectionOptions = {
+  onMissingRoutePage: () => void;
   pages: Page[];
+  pagesLoaded: boolean;
   routePageId: string | null;
   setSelectedPageId: (pageId: string | null) => void;
   syncActiveTabToPage: (page: Page) => void;
 };
 
 export function useInitialPageSelection({
+  onMissingRoutePage,
   pages,
+  pagesLoaded,
   routePageId,
   setSelectedPageId,
   syncActiveTabToPage
 }: UseInitialPageSelectionOptions) {
   useLayoutEffect(() => {
-    if (routePageId) {
-      setSelectedPageId(routePageId);
-      const routePage = pages.find((page) => page.id === routePageId);
-
-      if (routePage) {
-        syncActiveTabToPage(routePage);
-      }
+    if (!routePageId) {
+      return;
     }
-  }, [pages, routePageId, setSelectedPageId, syncActiveTabToPage]);
+
+    const routePage = pages.find((page) => page.id === routePageId);
+
+    if (routePage) {
+      setSelectedPageId(routePageId);
+      syncActiveTabToPage(routePage);
+      return;
+    }
+
+    if (pagesLoaded) {
+      setSelectedPageId(null);
+      onMissingRoutePage();
+    }
+  }, [
+    onMissingRoutePage,
+    pages,
+    pagesLoaded,
+    routePageId,
+    setSelectedPageId,
+    syncActiveTabToPage
+  ]);
 }

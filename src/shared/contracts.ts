@@ -62,6 +62,10 @@ export type UpdatePageInput = {
   title?: string;
 };
 
+export type DeletePageInput = {
+  pageId: string;
+};
+
 export type GetPageDocumentInput = {
   pageId: string;
 };
@@ -193,6 +197,10 @@ export type NoteRPC = {
       updatePage: {
         params: UpdatePageInput;
         response: Page;
+      };
+      deletePage: {
+        params: DeletePageInput;
+        response: { deleted: true };
       };
       createBlock: {
         params: CreateBlockInput;

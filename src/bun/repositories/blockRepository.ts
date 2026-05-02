@@ -5,6 +5,7 @@ import { getNextSortKey } from "./blockOrdering";
 import { normalizeBlockProps } from "./blockProps";
 import { getBlock } from "./blockReadRepository";
 import { recordOperation } from "./noteOperations";
+import { archivePagesWithDescendants } from "./pageArchiveRepository";
 import { touchPage } from "./pageTouch";
 import {
   deleteBlockFromSearchIndex,
@@ -150,12 +151,15 @@ export function deleteBlock(
 ): { deleted: true } {
   const current = getBlock(handle, input.blockId);
 
-  capturePageHistoryBeforeChange(handle, current.pageId);
-  deleteBlockFromSearchIndex(handle, input.blockId);
-  handle.orm.delete(blocks).where(eq(blocks.id, input.blockId)).run();
-  touchPage(handle, current.pageId);
-  syncPageHistoryAfterChange(handle, current.pageId);
-  recordOperation(handle, "block", input.blockId, "delete", {});
+  runInTransaction(handle, () => {
+    capturePageHistoryBeforeChange(handle, current.pageId);
+    archiveLinkedPagesForBlocks(handle, [current]);
+    deleteBlockFromSearchIndex(handle, input.blockId);
+    handle.orm.delete(blocks).where(eq(blocks.id, input.blockId)).run();
+    touchPage(handle, current.pageId);
+    syncPageHistoryAfterChange(handle, current.pageId);
+    recordOperation(handle, "block", input.blockId, "delete", {});
+  });
 
   return { deleted: true };
 }
@@ -170,13 +174,20 @@ export function deleteBlocks(
 
   runInTransaction(handle, () => {
     capturePageHistoryBeforeChange(handle, pageId);
-
-    for (const blockId of input.blockIds) {
+    const blocksToDelete = input.blockIds.map((blockId) => {
       const block = getBlock(handle, blockId);
 
       if (block.pageId !== pageId) {
         throw new Error("batch block deletion must target one page");
       }
+
+      return block;
+    });
+
+    archiveLinkedPagesForBlocks(handle, blocksToDelete);
+
+    for (const block of blocksToDelete) {
+      const blockId = block.id;
 
       handle.orm.delete(blocks).where(eq(blocks.id, blockId)).run();
       deleteBlockFromSearchIndex(handle, blockId);
@@ -204,6 +215,22 @@ export function deleteBlocks(
   });
 
   return createdBlock ? { createdBlock, deleted: true } : { deleted: true };
+}
+
+function archiveLinkedPagesForBlocks(handle: DatabaseHandle, deletedBlocks: Block[]) {
+  const linkedPageIds = deletedBlocks.flatMap((block) => {
+    if (block.type !== "page_link") {
+      return [];
+    }
+
+    const targetPageId = block.props.targetPageId;
+
+    return typeof targetPageId === "string" && targetPageId
+      ? [targetPageId]
+      : [];
+  });
+
+  archivePagesWithDescendants(handle, linkedPageIds);
 }
 
 export function insertBlock(
