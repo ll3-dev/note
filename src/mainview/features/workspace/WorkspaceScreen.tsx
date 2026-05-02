@@ -1,8 +1,5 @@
-import { useCallback, useEffect, useMemo } from "react";
-import { useGlobalKeyboardShortcuts } from "@/mainview/features/commands/useGlobalKeyboardShortcuts";
-import { useKeybindingStore } from "@/mainview/features/commands/keybindingStore";
+import { useCallback } from "react";
 import { noteApi } from "@/mainview/lib/rpc";
-import { useWorkspaceStore } from "@/mainview/store/useWorkspaceStore";
 import type { Block, BlockProps } from "@/shared/contracts";
 import { useBlockFocus } from "@/mainview/features/page/hooks/useBlockFocus";
 import { useBlockKeyboardFocus } from "@/mainview/features/page/hooks/useBlockKeyboardFocus";
@@ -11,37 +8,26 @@ import { WorkspaceLayout } from "./components/WorkspaceLayout";
 import { QuickSwitcherDialog } from "./components/QuickSwitcherDialog";
 import { useBlockTextSync } from "./hooks/useBlockTextSync";
 import { useHistoryMouseNavigation } from "./hooks/useHistoryMouseNavigation";
-import { useInitialPageSelection } from "./hooks/useInitialPageSelection";
 import { useMainNavigationCommand } from "./hooks/useMainNavigationCommand";
 import { useWorkspacePageEditorController } from "./hooks/useWorkspacePageEditorController";
 import { useQuickSwitcher } from "./hooks/useQuickSwitcher";
+import { useRestorePageLinkAction } from "./hooks/useRestorePageLinkAction";
 import { useWorkspaceMutations } from "./hooks/useWorkspaceMutations";
 import { navigateToPage, useWorkspaceNavigation } from "./hooks/useWorkspaceNavigation";
 import { useWorkspacePageNavigation } from "./hooks/useWorkspacePageNavigation";
+import { useWorkspacePagesReconcile } from "./hooks/useWorkspacePagesReconcile";
+import { useWorkspaceRoutePageSelection } from "./hooks/useWorkspaceRoutePageSelection";
+import { useWorkspaceScreenCommands } from "./hooks/useWorkspaceScreenCommands";
+import { useWorkspaceShellStore } from "./hooks/useWorkspaceShellStore";
 import { useWorkspaceQueries } from "./hooks/useWorkspaceQueries";
-import { WORKSPACE_COMMANDS } from "./lib/workspaceCommands";
 
 type WorkspaceScreenProps = {
   routePageId: string | null;
 };
 
 export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
-  const activeTabId = useWorkspaceStore((state) => state.activeTabId);
-  const closeTab = useWorkspaceStore((state) => state.closeTab);
-  const navigateActiveTabToPage = useWorkspaceStore((state) => state.navigateActiveTabToPage);
-  const openPageTab = useWorkspaceStore((state) => state.openPageTab);
-  const pageTitleDraft = useWorkspaceStore((state) => state.pageTitleDraft);
-  const reconcilePages = useWorkspaceStore((state) => state.reconcilePages);
-  const renamePageRefs = useWorkspaceStore((state) => state.renamePageRefs);
-  const selectedPageId = useWorkspaceStore((state) => state.selectedPageId);
-  const setActiveTabId = useWorkspaceStore((state) => state.setActiveTabId);
-  const setPageTitleDraft = useWorkspaceStore((state) => state.setPageTitleDraft);
-  const setSelectedPageId = useWorkspaceStore((state) => state.setSelectedPageId);
-  const syncActiveTabToPage = useWorkspaceStore((state) => state.syncActiveTabToPage);
-  const tabs = useWorkspaceStore((state) => state.tabs);
-  const toggleSidebar = useWorkspaceStore((state) => state.toggleSidebar);
-  const keybindings = useKeybindingStore((state) => state.keybindings);
-  const activePageId = routePageId ?? selectedPageId;
+  const shell = useWorkspaceShellStore();
+  const activePageId = routePageId ?? shell.selectedPageId;
   const { archivedPagesQuery, backlinksQuery, databaseStatusQuery, pageDocumentQuery, pagesQuery, refreshWorkspace } = useWorkspaceQueries(activePageId);
 
   const { createBlockMutation, createBlocks, deletePage, deleteBlocks: deleteBlocksBatch, createLinkedPage, createPageMutation, deleteBlockMutation, moveBlocks, movePageMutation, restorePage, updatePageMutation, updateBlockMutation } = useWorkspaceMutations({
@@ -49,21 +35,21 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
       await navigateToPage(navigate, pageId);
     },
     onPageCreated: (page) => {
-      openPageTab(page);
-      setPageTitleDraft("");
+      shell.openPageTab(page);
+      shell.setPageTitleDraft("");
     },
     onPageUpdated: (page) => {
-      renamePageRefs(page);
+      shell.renamePageRefs(page);
     }
   });
 
   const pages = pagesQuery.data ?? [];
   const archivedPages = archivedPagesQuery.data ?? [];
-  useEffect(() => {
-    if (pagesQuery.isSuccess) {
-      reconcilePages(pages);
-    }
-  }, [pages, pagesQuery.isSuccess, reconcilePages]);
+  useWorkspacePagesReconcile({
+    isLoaded: pagesQuery.isSuccess,
+    pages,
+    reconcilePages: shell.reconcilePages
+  });
   const selectedDocument = pageDocumentQuery.data ?? null;
   const { setFocusBlockId } = useBlockFocus(selectedDocument);
   const { focusNextBlock, focusPreviousBlock } = useBlockKeyboardFocus(selectedDocument, setFocusBlockId);
@@ -77,51 +63,30 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
     useBlockTextSync({ saveText: saveBlockText });
   const { closeActiveTab, closeWorkspaceTab, navigate, selectPage, selectTab } =
     useWorkspaceNavigation({
-      activeTabId,
-      closeTab,
-      closeWindow: async () => {
-        await noteApi.closeMainWindow();
-      },
+      activeTabId: shell.activeTabId,
+      closeTab: shell.closeTab,
+      closeWindow: () => noteApi.closeMainWindow(),
       flushBeforeNavigate: flushAllTextDrafts,
-      openPageTab,
-      setActiveTabId,
-      tabs
+      openPageTab: shell.openPageTab,
+      setActiveTabId: shell.setActiveTabId,
+      tabs: shell.tabs
     });
   const { navigateTabHistory, openPage, openPageById } =
     useWorkspacePageNavigation({
-      activeTabId,
+      activeTabId: shell.activeTabId,
       flushAllTextDrafts,
       navigate,
-      navigateActiveTabToPage,
-      openPageTab,
+      navigateActiveTabToPage: shell.navigateActiveTabToPage,
+      openPageTab: shell.openPageTab,
       pages,
-      syncActiveTabToPage,
-      tabs
+      syncActiveTabToPage: shell.syncActiveTabToPage,
+      tabs: shell.tabs
     });
-  const activeTab = useMemo(
-    () => tabs.find((tab) => tab.id === activeTabId) ?? null,
-    [activeTabId, tabs]
-  );
-  const canNavigateBack = (activeTab?.history?.back.length ?? 0) > 0;
-  const canNavigateForward = (activeTab?.history?.forward.length ?? 0) > 0;
-  const historyNavigation = useMemo(
-    () => ({
-      canGoBack: canNavigateBack,
-      canGoForward: canNavigateForward,
-      goBack: () => void navigateTabHistory("back"),
-      goForward: () => void navigateTabHistory("forward")
-    }),
-    [canNavigateBack, canNavigateForward, navigateTabHistory]
-  );
-  const handleMissingRoutePage = useCallback(() => {
-    const fallbackPage = pages[pages.length - 1] ?? null;
-
-    if (fallbackPage) {
-      void navigateToPage(navigate, fallbackPage.id, true);
-    } else {
-      void navigate({ to: "/", replace: true });
-    }
-  }, [navigate, pages]);
+  const restorePageLink = useRestorePageLinkAction({
+    flushAllTextDrafts,
+    navigate,
+    restorePage
+  });
   const quickSwitcher = useQuickSwitcher({
     onSelectResult: (result) => {
       void flushAllTextDrafts().then(() => {
@@ -132,19 +97,14 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
       });
     }
   });
-  const workspaceCommandContext = useMemo(
-    () => ({
-      closeActiveTab,
-      navigateBack: () => navigateTabHistory("back"),
-      navigateForward: () => navigateTabHistory("forward"),
-      openQuickSwitcher: quickSwitcher.openQuickSwitcher,
-      toggleSidebar: () => {
-        window.dispatchEvent(new CustomEvent("note-clear-block-selection"));
-        toggleSidebar();
-      }
-    }),
-    [closeActiveTab, navigateTabHistory, quickSwitcher.openQuickSwitcher, toggleSidebar]
-  );
+  const { historyNavigation } = useWorkspaceScreenCommands({
+    activeTabId: shell.activeTabId,
+    closeActiveTab,
+    navigateTabHistory,
+    onOpenQuickSwitcher: quickSwitcher.openQuickSwitcher,
+    tabs: shell.tabs,
+    toggleSidebar: shell.toggleSidebar
+  });
   useHistoryMouseNavigation({ navigateTabHistory });
   useMainNavigationCommand({ navigateTabHistory });
   const editorController = useWorkspacePageEditorController({
@@ -164,15 +124,10 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
     focusNextBlock,
     focusPreviousBlock,
     moveBlocks,
-    onRestorePageLink: (pageId) => {
-      void flushAllTextDrafts().then(async () => {
-        await restorePage(pageId);
-        await navigateToPage(navigate, pageId);
-      });
-    },
+    onRestorePageLink: restorePageLink,
     openPage,
     openPageById,
-    pageTitleDraft,
+    pageTitleDraft: shell.pageTitleDraft,
     queueTextDraft,
     refetchDocument: async () => (await pageDocumentQuery.refetch()).data ?? null,
     saveStatus,
@@ -182,19 +137,13 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
     updatePageMutation
   });
 
-  useGlobalKeyboardShortcuts({
-    activeScopes: ["global", "workspace"],
-    commands: WORKSPACE_COMMANDS,
-    context: workspaceCommandContext,
-    keybindings
-  });
-  useInitialPageSelection({
-    onMissingRoutePage: handleMissingRoutePage,
+  useWorkspaceRoutePageSelection({
+    navigate,
     pages,
     pagesLoaded: pagesQuery.isSuccess,
     routePageId,
-    setSelectedPageId,
-    syncActiveTabToPage
+    setSelectedPageId: shell.setSelectedPageId,
+    syncActiveTabToPage: shell.syncActiveTabToPage
   });
 
   return (
@@ -204,9 +153,7 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
       historyNavigation={historyNavigation}
       isCreatingPage={createPageMutation.isPending}
       onCloseTab={closeWorkspaceTab}
-      onCopyCurrentPageMarkdown={() =>
-        void editorController.copyCurrentPageMarkdown()
-      }
+      onCopyCurrentPageMarkdown={() => void editorController.copyCurrentPageMarkdown()}
       onCreatePage={editorController.editorActions.handleCreatePage}
       onCreateUntitledPage={() => createPageMutation.mutate("")}
       onDeletePage={(page) => {
