@@ -4,16 +4,15 @@ import type {
   KeyboardEvent,
   RefObject
 } from "react";
-import { useEffect } from "react";
-import { ChevronDown, ChevronRight, FileText, RotateCcw } from "lucide-react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import { cn } from "@/mainview/lib/utils";
 import type { Block, Page } from "@/shared/contracts";
-import { getPageTitleDisplay } from "@/shared/pageDisplay";
 import { getBlockDepth } from "@/mainview/features/page/lib/blockEditingBehavior";
-import { blockShellClass, editableClass } from "@/mainview/features/page/lib/blockStyles";
-import { useBlockClipboardEditing } from "@/mainview/features/page/hooks/useBlockClipboardEditing";
-import { InlineMarksViewer } from "./InlineMarksViewer";
+import { blockShellClass } from "@/mainview/features/page/lib/blockStyles";
+import { useEditableHistoryInput } from "@/mainview/features/page/hooks/useEditableHistoryInput";
+import { EditableTextBlock } from "./EditableTextBlock";
 import { ImageBlock } from "./ImageBlock";
+import { PageLinkBlock } from "./PageLinkBlock";
 import type {
   BlockEditorUpdate,
   OpenPageLinkOptions,
@@ -71,84 +70,7 @@ export function BlockBody({
   editableRef
 }: BlockBodyProps) {
   const blockDepth = getBlockDepth(block);
-  const linkedPageId = getStringProp(draftProps.targetPageId);
-  const isLinkedPageArchived = Boolean(linkedPage?.archivedAt);
-  const { handleDrop, handleEditableKeyDown, handlePaste } = useBlockClipboardEditing({
-    block,
-    onChange,
-    onKeyDown,
-    onPasteMarkdown
-  });
-
-  useEffect(() => {
-    const editable = editableRef.current;
-
-    if (!editable) {
-      return;
-    }
-
-    function handleNativeBeforeInput(event: InputEvent) {
-      if (event.inputType !== "historyUndo" && event.inputType !== "historyRedo") {
-        return;
-      }
-
-      event.preventDefault();
-      event.stopPropagation();
-      onHistoryInput(event.inputType);
-    }
-
-    function handleNativeKeyDown(event: globalThis.KeyboardEvent) {
-      if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== "z") {
-        return;
-      }
-
-      if (document.activeElement !== editable) {
-        return;
-      }
-
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      onHistoryInput(event.shiftKey ? "historyRedo" : "historyUndo");
-    }
-
-    function handleMenuHistoryCommand(event: Event) {
-      if (document.activeElement !== editable) {
-        return;
-      }
-
-      const command = (event as CustomEvent<"redo" | "undo">).detail;
-
-      if (command !== "undo" && command !== "redo") {
-        return;
-      }
-
-      onHistoryInput(command === "undo" ? "historyUndo" : "historyRedo");
-    }
-
-    window.addEventListener("note-history-command", handleMenuHistoryCommand);
-    window.addEventListener("keydown", handleNativeKeyDown, {
-      capture: true
-    });
-    editable.addEventListener("keydown", handleNativeKeyDown, {
-      capture: true
-    });
-    editable.addEventListener("beforeinput", handleNativeBeforeInput, {
-      capture: true
-    });
-
-    return () => {
-      window.removeEventListener("note-history-command", handleMenuHistoryCommand);
-      window.removeEventListener("keydown", handleNativeKeyDown, {
-        capture: true
-      });
-      editable.removeEventListener("keydown", handleNativeKeyDown, {
-        capture: true
-      });
-      editable.removeEventListener("beforeinput", handleNativeBeforeInput, {
-        capture: true
-      });
-    };
-  }, [editableRef, onHistoryInput]);
+  useEditableHistoryInput({ editableRef, onHistoryInput });
 
   return (
     <div
@@ -210,125 +132,31 @@ export function BlockBody({
           <span className="h-px w-full rounded-full bg-border transition-colors group-hover/divider:bg-muted-foreground/45" />
         </div>
       ) : block.type === "page_link" ? (
-        <div className="flex min-h-8 min-w-0 flex-1 items-center gap-1">
-          <button
-            className={cn(
-              "min-w-0 flex-1 rounded-sm px-1.5 py-1 text-left outline-none hover:bg-accent focus-visible:ring-1 focus-visible:ring-ring",
-              isLinkedPageArchived && "text-muted-foreground"
-            )}
-            data-block-focus-target
-            onAuxClick={(event) => {
-              if (event.button !== 1 || !linkedPageId || isLinkedPageArchived) {
-                return;
-              }
-
-              event.preventDefault();
-              onOpenPageLink(linkedPageId, { newTab: true });
-            }}
-            onClick={() => {
-              if (!linkedPageId) {
-                return;
-              }
-
-              if (isLinkedPageArchived) {
-                onRestorePageLink(linkedPageId);
-                return;
-              }
-
-              onOpenPageLink(linkedPageId);
-            }}
-            onKeyDown={onKeyDown}
-            onMouseDown={(event) => {
-              if (event.button === 1) {
-                event.preventDefault();
-              }
-            }}
-            type="button"
-          >
-            <span className="flex min-w-0 items-center gap-2">
-              <FileText className="size-4 shrink-0 text-muted-foreground" />
-              <span className="min-w-0 truncate text-[15px] font-semibold text-foreground">
-                {getPageTitleDisplay(
-                  linkedPage?.title ?? getStringProp(draftProps.targetTitle) ?? draft
-                )}
-              </span>
-              {isLinkedPageArchived ? (
-                <span className="shrink-0 text-xs font-medium text-muted-foreground">
-                  Archived
-                </span>
-              ) : null}
-            </span>
-          </button>
-          {isLinkedPageArchived && linkedPageId ? (
-            <button
-              aria-label={`${getPageTitleDisplay(linkedPage?.title ?? getStringProp(draftProps.targetTitle) ?? draft)} 페이지 복구`}
-              className="flex size-7 shrink-0 items-center justify-center rounded-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground focus-visible:ring-1 focus-visible:ring-ring"
-              onClick={() => onRestorePageLink(linkedPageId)}
-              type="button"
-            >
-              <RotateCcw className="size-3.5" />
-            </button>
-          ) : null}
-        </div>
+        <PageLinkBlock
+          draft={draft}
+          draftProps={draftProps}
+          linkedPage={linkedPage}
+          onKeyDown={onKeyDown}
+          onOpenPageLink={onOpenPageLink}
+          onRestorePageLink={onRestorePageLink}
+        />
       ) : (
-        <div className="relative min-w-0 flex-1">
-          <InlineMarksViewer
-            className={cn(
-              editableClass(block.type),
-              checked &&
-                block.type === "todo" &&
-                "text-muted-foreground line-through"
-            )}
-            props={draftProps}
-            text={draft}
-          />
-          <div
-            aria-label={`${block.type} block`}
-            className={cn(
-              "block-editable min-h-7 w-full min-w-0 whitespace-pre-wrap wrap-break-word rounded-sm bg-transparent px-1 py-1 outline-none",
-              editableClass(block.type),
-              hasInlineMarks(draftProps) && "text-transparent",
-              checked &&
-                block.type === "todo" &&
-                "text-muted-foreground line-through",
-            )}
-            contentEditable="plaintext-only"
-            data-has-inline-marks={hasInlineMarks(draftProps) ? "true" : undefined}
-            data-placeholder="Type '/' for commands"
-            draggable={isSelected}
-            onBlur={() => void onBlur()}
-            onBeforeInput={onBeforeInput}
-            onDragStart={(event) => {
-              if (isSelected) {
-                onDragStart(event);
-              }
-            }}
-            onDrop={handleDrop}
-            onFocus={onSelectionChange}
-            onInput={(event) => {
-              const inputType = (event.nativeEvent as InputEvent).inputType;
-
-              if (inputType === "historyUndo" || inputType === "historyRedo") {
-                onHistoryInput(inputType);
-                return;
-              }
-
-              onChange(event.currentTarget.textContent ?? "");
-            }}
-            onKeyDownCapture={handleEditableKeyDown}
-            onKeyUp={(event) => {
-              if (shouldSyncSelectionAfterKey(event.key)) {
-                onSelectionChange();
-              }
-            }}
-            onMouseUp={onSelectionChange}
-            onPaste={handlePaste}
-            ref={editableRef}
-            role="textbox"
-            spellCheck
-            suppressContentEditableWarning
-          />
-        </div>
+        <EditableTextBlock
+          block={block}
+          checked={checked}
+          draft={draft}
+          draftProps={draftProps}
+          editableRef={editableRef}
+          isSelected={isSelected}
+          onBeforeInput={onBeforeInput}
+          onBlur={onBlur}
+          onChange={onChange}
+          onDragStart={onDragStart}
+          onHistoryInput={onHistoryInput}
+          onKeyDown={onKeyDown}
+          onPasteMarkdown={onPasteMarkdown}
+          onSelectionChange={onSelectionChange}
+        />
       )}
     </div>
   );
@@ -346,27 +174,6 @@ function BulletMarker({ depth }: { depth: number }) {
   return <span className="size-1.5 rounded-full bg-foreground/70" />;
 }
 
-function hasInlineMarks(props: Block["props"]) {
-  return Array.isArray(props.inlineMarks) && props.inlineMarks.length > 0;
-}
-
 function isToggleOpen(props: Block["props"]) {
   return props.open !== false;
-}
-
-function shouldSyncSelectionAfterKey(key: string) {
-  return [
-    "ArrowLeft",
-    "ArrowRight",
-    "ArrowUp",
-    "ArrowDown",
-    "Home",
-    "End",
-    "PageUp",
-    "PageDown"
-  ].includes(key);
-}
-
-function getStringProp(value: unknown) {
-  return typeof value === "string" ? value : null;
 }
