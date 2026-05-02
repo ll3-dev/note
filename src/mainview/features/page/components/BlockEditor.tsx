@@ -39,6 +39,7 @@ export function BlockEditor({
   onPasteMarkdown,
   onCreatePageLink,
   onOpenPageLink,
+  onRestorePageLink,
   onTextDraftChange,
   onTextDraftFlush,
   onTextHistoryApply,
@@ -198,6 +199,7 @@ export function BlockEditor({
           onHistoryInput={handleHistoryInput}
           onKeyDown={handleKeyDown}
           onOpenPageLink={onOpenPageLink}
+          onRestorePageLink={onRestorePageLink}
           onPasteMarkdown={onPasteMarkdown}
           onSelectionChange={syncActiveInlineMarksFromSelection}
           onUpdate={onUpdate}

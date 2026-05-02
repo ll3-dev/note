@@ -66,6 +66,10 @@ export type DeletePageInput = {
   pageId: string;
 };
 
+export type RestorePageInput = {
+  pageId: string;
+};
+
 export type GetPageDocumentInput = {
   pageId: string;
 };
@@ -174,6 +178,10 @@ export type NoteRPC = {
         params: void;
         response: Page[];
       };
+      listArchivedPages: {
+        params: void;
+        response: Page[];
+      };
       searchPages: {
         params: SearchPagesInput;
         response: PageSearchResult[];
@@ -201,6 +209,14 @@ export type NoteRPC = {
       deletePage: {
         params: DeletePageInput;
         response: { deleted: true };
+      };
+      restorePage: {
+        params: RestorePageInput;
+        response: { restored: true };
+      };
+      purgeExpiredArchivedPages: {
+        params: void;
+        response: { purgedCount: number };
       };
       createBlock: {
         params: CreateBlockInput;

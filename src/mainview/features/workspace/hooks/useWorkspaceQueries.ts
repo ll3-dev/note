@@ -15,6 +15,11 @@ export function useWorkspaceQueries(activePageId: string | null) {
     queryFn: () => noteApi.listPages()
   });
 
+  const archivedPagesQuery = useQuery({
+    queryKey: queryKeys.archivedPages,
+    queryFn: () => noteApi.listArchivedPages()
+  });
+
   const pageDocumentQuery = useQuery({
     queryKey: queryKeys.pageDocument(activePageId),
     queryFn: () => noteApi.getPageDocument({ pageId: activePageId ?? "" }),
@@ -30,6 +35,7 @@ export function useWorkspaceQueries(activePageId: string | null) {
   async function refreshWorkspace() {
     await queryClient.invalidateQueries({ queryKey: queryKeys.databaseStatus });
     await queryClient.invalidateQueries({ queryKey: queryKeys.pages });
+    await queryClient.invalidateQueries({ queryKey: queryKeys.archivedPages });
 
     if (activePageId) {
       await queryClient.invalidateQueries({
@@ -42,6 +48,7 @@ export function useWorkspaceQueries(activePageId: string | null) {
   }
 
   return {
+    archivedPagesQuery,
     backlinksQuery,
     databaseStatusQuery,
     pageDocumentQuery,

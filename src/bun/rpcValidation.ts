@@ -12,6 +12,7 @@ import type {
   MovePageInput,
   PageHistoryInput,
   ListBacklinksInput,
+  RestorePageInput,
   SearchPagesInput,
   SearchWorkspaceInput,
   UpdateBlockInput,
@@ -61,6 +62,11 @@ export function validateUpdatePageInput(input: unknown): UpdatePageInput {
 }
 
 export function validateDeletePageInput(input: unknown): DeletePageInput {
+  const record = asRecord(input);
+  return { pageId: idValue(record.pageId, "pageId") };
+}
+
+export function validateRestorePageInput(input: unknown): RestorePageInput {
   const record = asRecord(input);
   return { pageId: idValue(record.pageId, "pageId") };
 }

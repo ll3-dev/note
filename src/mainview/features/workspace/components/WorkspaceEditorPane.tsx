@@ -14,6 +14,7 @@ type WorkspaceEditorPaneProps = {
   document: PageDocument | null;
   isLoading: boolean;
   backlinks: Backlink[];
+  editorPages: PageDocument["page"][];
   isCreatingPage: boolean;
   onCreateUntitledPage: () => void;
   onOpenQuickSwitcher: () => void;
@@ -27,6 +28,7 @@ export function WorkspaceEditorPane({
   document,
   isLoading,
   backlinks,
+  editorPages,
   isCreatingPage,
   onCreateUntitledPage,
   onOpenQuickSwitcher,
@@ -39,7 +41,7 @@ export function WorkspaceEditorPane({
       {document ? (
         <PageEditor
           document={document}
-          pages={pages}
+          pages={editorPages}
           {...pageEditorProps}
         />
       ) : !isLoading ? (

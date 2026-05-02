@@ -42,9 +42,9 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
   const toggleSidebar = useWorkspaceStore((state) => state.toggleSidebar);
   const keybindings = useKeybindingStore((state) => state.keybindings);
   const activePageId = routePageId ?? selectedPageId;
-  const { backlinksQuery, databaseStatusQuery, pageDocumentQuery, pagesQuery, refreshWorkspace } = useWorkspaceQueries(activePageId);
+  const { archivedPagesQuery, backlinksQuery, databaseStatusQuery, pageDocumentQuery, pagesQuery, refreshWorkspace } = useWorkspaceQueries(activePageId);
 
-  const { createBlockMutation, createBlocks, deletePage, deleteBlocks: deleteBlocksBatch, createLinkedPage, createPageMutation, deleteBlockMutation, moveBlocks, movePageMutation, updatePageMutation, updateBlockMutation } = useWorkspaceMutations({
+  const { createBlockMutation, createBlocks, deletePage, deleteBlocks: deleteBlocksBatch, createLinkedPage, createPageMutation, deleteBlockMutation, moveBlocks, movePageMutation, restorePage, updatePageMutation, updateBlockMutation } = useWorkspaceMutations({
     navigateToPage: async (pageId) => {
       await navigateToPage(navigate, pageId);
     },
@@ -58,6 +58,7 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
   });
 
   const pages = pagesQuery.data ?? [];
+  const archivedPages = archivedPagesQuery.data ?? [];
   useEffect(() => {
     if (pagesQuery.isSuccess) {
       reconcilePages(pages);
@@ -163,10 +164,15 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
     focusNextBlock,
     focusPreviousBlock,
     moveBlocks,
+    onRestorePageLink: (pageId) => {
+      void flushAllTextDrafts().then(async () => {
+        await restorePage(pageId);
+        await navigateToPage(navigate, pageId);
+      });
+    },
     openPage,
     openPageById,
     pageTitleDraft,
-    pages,
     queueTextDraft,
     refetchDocument: async () => (await pageDocumentQuery.refetch()).data ?? null,
     saveStatus,
@@ -222,13 +228,14 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
       <WorkspaceEditorPane
         backlinks={backlinksQuery.data ?? []}
         document={selectedDocument}
+        editorPages={[...pages, ...archivedPages]}
         isCreatingPage={createPageMutation.isPending}
         isLoading={pagesQuery.isLoading}
         onCreateUntitledPage={() => createPageMutation.mutate("")}
         onOpenQuickSwitcher={quickSwitcher.openQuickSwitcher}
         onSelectPage={selectPage}
-        pageEditorProps={editorController.pageEditorProps}
         pages={pages}
+        pageEditorProps={editorController.pageEditorProps}
       />
       <QuickSwitcherDialog
         activeIndex={quickSwitcher.activeIndex}

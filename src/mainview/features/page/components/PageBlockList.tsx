@@ -45,6 +45,7 @@ type PageBlockListProps = {
     selection: TextSelectionOffsets
   ) => Promise<void> | void;
   onOpenPageLink: (pageId: string, options?: OpenPageLinkOptions) => void;
+  onRestorePageLink: (pageId: string) => void;
   selectedBlockIds: string[];
   onTextDraftChange: (
     block: Block,
@@ -80,6 +81,7 @@ export function PageBlockList({
   onMergeBlockWithPrevious,
   onPasteMarkdown,
   onOpenPageLink,
+  onRestorePageLink,
   selectedBlockIds,
   onTextDraftChange,
   onTextDraftFlush,
@@ -136,6 +138,7 @@ export function PageBlockList({
             onMergeWithPrevious={onMergeBlockWithPrevious}
             onPasteMarkdown={onPasteMarkdown}
             onOpenPageLink={onOpenPageLink}
+            onRestorePageLink={onRestorePageLink}
             onTextDraftChange={onTextDraftChange}
             onTextDraftFlush={onTextDraftFlush}
             onTextHistoryApply={onTextHistoryApply}

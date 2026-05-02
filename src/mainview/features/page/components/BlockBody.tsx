@@ -5,7 +5,7 @@ import type {
   RefObject
 } from "react";
 import { useEffect } from "react";
-import { ChevronDown, ChevronRight, FileText } from "lucide-react";
+import { ChevronDown, ChevronRight, FileText, RotateCcw } from "lucide-react";
 import { cn } from "@/mainview/lib/utils";
 import type { Block, Page } from "@/shared/contracts";
 import { getPageTitleDisplay } from "@/shared/pageDisplay";
@@ -42,6 +42,7 @@ type BlockBodyProps = {
     selection: TextSelectionOffsets
   ) => Promise<void> | void;
   onOpenPageLink: (pageId: string, options?: OpenPageLinkOptions) => void;
+  onRestorePageLink: (pageId: string) => void;
   onSelectionChange: () => void;
   onUpdate: (block: Block, changes: BlockEditorUpdate) => void;
   editableRef: RefObject<HTMLDivElement | null>;
@@ -64,11 +65,14 @@ export function BlockBody({
   onHistoryInput,
   onPasteMarkdown,
   onOpenPageLink,
+  onRestorePageLink,
   onSelectionChange,
   onUpdate,
   editableRef
 }: BlockBodyProps) {
   const blockDepth = getBlockDepth(block);
+  const linkedPageId = getStringProp(draftProps.targetPageId);
+  const isLinkedPageArchived = Boolean(linkedPage?.archivedAt);
   const { handleDrop, handleEditableKeyDown, handlePaste } = useBlockClipboardEditing({
     block,
     onChange,
@@ -206,45 +210,66 @@ export function BlockBody({
           <span className="h-px w-full rounded-full bg-border transition-colors group-hover/divider:bg-muted-foreground/45" />
         </div>
       ) : block.type === "page_link" ? (
-        <button
-          className="min-h-8 min-w-0 flex-1 rounded-sm px-1.5 py-1 text-left outline-none hover:bg-accent focus-visible:ring-1 focus-visible:ring-ring"
-          data-block-focus-target
-          onAuxClick={(event) => {
-            if (event.button !== 1) {
-              return;
-            }
+        <div className="flex min-h-8 min-w-0 flex-1 items-center gap-1">
+          <button
+            className={cn(
+              "min-w-0 flex-1 rounded-sm px-1.5 py-1 text-left outline-none hover:bg-accent focus-visible:ring-1 focus-visible:ring-ring",
+              isLinkedPageArchived && "text-muted-foreground"
+            )}
+            data-block-focus-target
+            onAuxClick={(event) => {
+              if (event.button !== 1 || !linkedPageId || isLinkedPageArchived) {
+                return;
+              }
 
-            const targetPageId = getStringProp(draftProps.targetPageId);
-
-            if (targetPageId) {
               event.preventDefault();
-              onOpenPageLink(targetPageId, { newTab: true });
-            }
-          }}
-          onClick={() => {
-            const targetPageId = getStringProp(draftProps.targetPageId);
+              onOpenPageLink(linkedPageId, { newTab: true });
+            }}
+            onClick={() => {
+              if (!linkedPageId) {
+                return;
+              }
 
-            if (targetPageId) {
-              onOpenPageLink(targetPageId);
-            }
-          }}
-          onKeyDown={onKeyDown}
-          onMouseDown={(event) => {
-            if (event.button === 1) {
-              event.preventDefault();
-            }
-          }}
-          type="button"
-        >
-          <span className="flex min-w-0 items-center gap-2">
-            <FileText className="size-4 shrink-0 text-muted-foreground" />
-            <span className="min-w-0 truncate text-[15px] font-semibold text-foreground">
-              {getPageTitleDisplay(
-                linkedPage?.title ?? getStringProp(draftProps.targetTitle) ?? draft
-              )}
+              if (isLinkedPageArchived) {
+                onRestorePageLink(linkedPageId);
+                return;
+              }
+
+              onOpenPageLink(linkedPageId);
+            }}
+            onKeyDown={onKeyDown}
+            onMouseDown={(event) => {
+              if (event.button === 1) {
+                event.preventDefault();
+              }
+            }}
+            type="button"
+          >
+            <span className="flex min-w-0 items-center gap-2">
+              <FileText className="size-4 shrink-0 text-muted-foreground" />
+              <span className="min-w-0 truncate text-[15px] font-semibold text-foreground">
+                {getPageTitleDisplay(
+                  linkedPage?.title ?? getStringProp(draftProps.targetTitle) ?? draft
+                )}
+              </span>
+              {isLinkedPageArchived ? (
+                <span className="shrink-0 text-xs font-medium text-muted-foreground">
+                  Archived
+                </span>
+              ) : null}
             </span>
-          </span>
-        </button>
+          </button>
+          {isLinkedPageArchived && linkedPageId ? (
+            <button
+              aria-label={`${getPageTitleDisplay(linkedPage?.title ?? getStringProp(draftProps.targetTitle) ?? draft)} 페이지 복구`}
+              className="flex size-7 shrink-0 items-center justify-center rounded-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground focus-visible:ring-1 focus-visible:ring-ring"
+              onClick={() => onRestorePageLink(linkedPageId)}
+              type="button"
+            >
+              <RotateCcw className="size-3.5" />
+            </button>
+          ) : null}
+        </div>
       ) : (
         <div className="relative min-w-0 flex-1">
           <InlineMarksViewer

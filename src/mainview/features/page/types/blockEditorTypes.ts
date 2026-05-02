@@ -66,6 +66,7 @@ export type BlockEditorProps = {
     selection: TextSelectionOffsets
   ) => Promise<void> | void;
   onOpenPageLink: (pageId: string, options?: OpenPageLinkOptions) => void;
+  onRestorePageLink: (pageId: string) => void;
   onSelectionChange?: () => void;
   onTextDraftChange: (block: Block, text: string, props?: BlockProps) => void;
   onTextDraftFlush: (

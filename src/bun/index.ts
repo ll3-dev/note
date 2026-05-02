@@ -17,11 +17,14 @@ import {
   deleteBlocks,
   deletePage,
   getPageDocument,
+  listArchivedPages,
   listBacklinks,
   listPages,
   moveBlock,
   movePage,
+  purgeExpiredArchivedPages,
   redoPageHistory,
+  restorePage,
   searchPages,
   searchWorkspace,
   undoPageHistory,
@@ -39,6 +42,7 @@ import {
   validateMoveBlockInput,
   validateMovePageInput,
   validatePageHistoryInput,
+  validateRestorePageInput,
   validateListBacklinksInput,
   validateSearchPagesInput,
   validateSearchWorkspaceInput,
@@ -47,6 +51,7 @@ import {
 } from "./rpcValidation";
 
 const databaseHandle = openDatabase(Utils.paths.userData);
+purgeExpiredArchivedPages(databaseHandle);
 const mainviewUrl = resolveMainviewUrl();
 let mainWindow: BrowserWindow | null = null;
 let navigationMouseButtons = 0n;
@@ -73,6 +78,7 @@ const rpc = BrowserView.defineRPC<NoteRPC>({
         return { closed: true };
       },
       listPages: () => listPages(databaseHandle),
+      listArchivedPages: () => listArchivedPages(databaseHandle),
       searchPages: (input) => searchPages(databaseHandle, validateSearchPagesInput(input)),
       listBacklinks: (input) => listBacklinks(databaseHandle, validateListBacklinksInput(input)),
       searchWorkspace: (input) => searchWorkspace(databaseHandle, validateSearchWorkspaceInput(input)),
@@ -80,6 +86,8 @@ const rpc = BrowserView.defineRPC<NoteRPC>({
       createPage: (input) => createPage(databaseHandle, validateCreatePageInput(input)),
       updatePage: (input) => updatePage(databaseHandle, validateUpdatePageInput(input)),
       deletePage: (input) => deletePage(databaseHandle, validateDeletePageInput(input)),
+      restorePage: (input) => restorePage(databaseHandle, validateRestorePageInput(input)),
+      purgeExpiredArchivedPages: () => purgeExpiredArchivedPages(databaseHandle),
       createBlock: (input) => createBlock(databaseHandle, validateCreateBlockInput(input)),
       createBlocks: (input) => createBlocks(databaseHandle, validateCreateBlocksInput(input)),
       updateBlock: (input) => updateBlock(databaseHandle, validateUpdateBlockInput(input)),

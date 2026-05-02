@@ -114,8 +114,18 @@ export function useWorkspaceMutations({
     await noteApi.deletePage({ pageId: page.id });
     queryClient.removeQueries({ queryKey: queryKeys.pageDocument(page.id) });
     await queryClient.invalidateQueries({ queryKey: queryKeys.pages });
+    await queryClient.invalidateQueries({ queryKey: queryKeys.archivedPages });
     await queryClient.invalidateQueries({ queryKey: queryKeys.databaseStatus });
     await queryClient.invalidateQueries({ queryKey: queryKeys.backlinksRoot });
+  }
+
+  async function restorePage(pageId: string) {
+    await noteApi.restorePage({ pageId });
+    await queryClient.invalidateQueries({ queryKey: queryKeys.pages });
+    await queryClient.invalidateQueries({ queryKey: queryKeys.archivedPages });
+    await queryClient.invalidateQueries({ queryKey: queryKeys.databaseStatus });
+    await queryClient.invalidateQueries({ queryKey: queryKeys.backlinksRoot });
+    await queryClient.invalidateQueries({ queryKey: queryKeys.pageDocument(pageId) });
   }
 
   async function createLinkedPage(title: string, parentPageId: string) {
@@ -296,6 +306,7 @@ export function useWorkspaceMutations({
     moveBlocks,
     movePageMutation,
     updatePageMutation,
+    restorePage,
     updateBlockMutation
   };
 }

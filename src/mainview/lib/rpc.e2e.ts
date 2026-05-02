@@ -106,6 +106,42 @@ export const noteApi = {
     return { deleted: true as const };
   },
 
+  async listArchivedPages() {
+    return state.pages
+      .filter((page) => page.archivedAt)
+      .map((page) => ({ ...page }));
+  },
+
+  async purgeExpiredArchivedPages() {
+    const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
+    const pageIds = state.pages
+      .filter((page) => page.archivedAt && Date.parse(page.archivedAt) < cutoff)
+      .map((page) => page.id);
+    const pageIdsToPurge = new Set(collectPageIdsWithDescendants(pageIds));
+
+    for (const pageId of pageIdsToPurge) {
+      state.documents.delete(pageId);
+      state.history.delete(pageId);
+    }
+
+    state.pages = state.pages.filter((page) => !pageIdsToPurge.has(page.id));
+
+    return { purgedCount: pageIdsToPurge.size };
+  },
+
+  async restorePage(input: { pageId: string }) {
+    for (const pageId of collectPageIdsWithDescendants([input.pageId])) {
+      const page = state.pages.find((item) => item.id === pageId);
+
+      if (page) {
+        page.archivedAt = null;
+        page.updatedAt = now();
+      }
+    }
+
+    return { restored: true as const };
+  },
+
   async deleteBlock(input: DeleteBlockInput) {
     for (const document of state.documents.values()) {
       const index = document.blocks.findIndex((block) => block.id === input.blockId);
@@ -329,6 +365,10 @@ Object.assign(window, {
     getPages: () =>
       state.pages
         .filter((page) => !page.archivedAt)
+        .map((page) => ({ ...page })),
+    getArchivedPages: () =>
+      state.pages
+        .filter((page) => page.archivedAt)
         .map((page) => ({ ...page })),
     reset: resetState
   }

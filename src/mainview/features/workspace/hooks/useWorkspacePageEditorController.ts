@@ -28,8 +28,8 @@ type WorkspacePageEditorControllerOptions = {
   moveBlocks: WorkspaceMutations["moveBlocks"];
   openPage: (page: Page, options?: OpenPageLinkOptions) => Promise<void>;
   openPageById: (pageId: string, options?: OpenPageLinkOptions) => Promise<void>;
+  onRestorePageLink: (pageId: string) => void;
   pageTitleDraft: string;
-  pages: Page[];
   queueTextDraft: (block: Block, text: string, props?: BlockProps) => void;
   refetchDocument: () => Promise<PageDocument | null>;
   saveStatus: TextSyncStatus;
@@ -56,8 +56,8 @@ export function useWorkspacePageEditorController({
   moveBlocks,
   openPage,
   openPageById,
+  onRestorePageLink,
   pageTitleDraft,
-  pages,
   queueTextDraft,
   refetchDocument,
   saveStatus,
@@ -149,6 +149,7 @@ export function useWorkspacePageEditorController({
     onMergeBlockWithPrevious: editorActions.mergeBlockWithPrevious,
     onMoveBlocks: editorActions.moveBlocksWithDescendants,
     onOpenPageLink: editorActions.openPageLink,
+    onRestorePageLink,
     onPasteBlocks: (target) => pasteBlocksAfter(target),
     onPasteMarkdown: pasteMarkdown,
     onTextDraftChange: queueTextDraft,

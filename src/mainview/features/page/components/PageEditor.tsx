@@ -48,6 +48,7 @@ type PageEditorProps = {
   onMoveBlocks: (blocks: Block[], afterBlockId: string | null) => Promise<void> | void;
   onPasteMarkdown: PasteMarkdownHandler;
   onOpenPageLink: (pageId: string, options?: OpenPageLinkOptions) => void;
+  onRestorePageLink: (pageId: string) => void;
   onTextDraftChange: TextDraftChangeHandler;
   onTextDraftFlush: TextDraftFlushHandler;
   onTextHistoryApply: (block: Block, text: string) => void;
@@ -83,6 +84,7 @@ export function PageEditor({
   onMoveBlocks,
   onPasteMarkdown,
   onOpenPageLink,
+  onRestorePageLink,
   onTextDraftChange,
   onTextDraftFlush,
   onTextHistoryApply,
@@ -232,6 +234,7 @@ export function PageEditor({
               onMergeBlockWithPrevious={onMergeBlockWithPrevious}
               onPasteMarkdown={onPasteMarkdown}
               onOpenPageLink={onOpenPageLink}
+              onRestorePageLink={onRestorePageLink}
               selectedBlockIds={selectedBlockIds}
               onTextDraftChange={onTextDraftChange}
               onTextDraftFlush={onTextDraftFlush}
