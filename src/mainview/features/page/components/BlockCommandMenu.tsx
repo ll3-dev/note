@@ -18,6 +18,7 @@ export function BlockCommandMenu({
   onSelect
 }: BlockCommandMenuProps) {
   const commandRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const pointerActiveChangeRef = useRef(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const menuStyle = useFloatingCommandMenuStyle({ anchorRef });
 
@@ -26,6 +27,11 @@ export function BlockCommandMenu({
     const activeCommand = commandRefs.current[activeIndex];
 
     if (!menu || !activeCommand) {
+      return;
+    }
+
+    if (pointerActiveChangeRef.current) {
+      pointerActiveChangeRef.current = false;
       return;
     }
 
@@ -73,7 +79,12 @@ export function BlockCommandMenu({
                 event.preventDefault();
                 void onSelect(command);
               }}
-              onMouseEnter={() => onActiveIndexChange(index)}
+              onPointerMove={() => {
+                if (index !== activeIndex) {
+                  pointerActiveChangeRef.current = true;
+                  onActiveIndexChange(index);
+                }
+              }}
               ref={(element) => {
                 commandRefs.current[index] = element;
               }}

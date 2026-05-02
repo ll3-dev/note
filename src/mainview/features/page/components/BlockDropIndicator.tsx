@@ -21,7 +21,7 @@ export function BlockDropIndicator({ dropTarget }: BlockDropIndicatorProps) {
     onSync: syncRect
   });
 
-  if (!rect) {
+  if (!dropTarget || !rect) {
     return null;
   }
 

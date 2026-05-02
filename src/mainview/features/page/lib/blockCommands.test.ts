@@ -76,16 +76,13 @@ describe("block command shortcuts", () => {
     });
   });
 
-  test("includes insert and action slash commands", () => {
+  test("keeps direct block actions out of slash commands", () => {
     expect(BLOCK_COMMANDS.find((command) => command.id === "insert-paragraph-below"))
-      .toMatchObject({
-        action: "insertAfter",
-        type: "paragraph"
-      });
+      .toBeUndefined();
+    expect(BLOCK_COMMANDS.find((command) => command.id === "insert-todo-below"))
+      .toBeUndefined();
     expect(BLOCK_COMMANDS.find((command) => command.id === "delete-current-block"))
-      .toMatchObject({
-        action: "delete"
-      });
+      .toBeUndefined();
     expect(BLOCK_COMMANDS.find((command) => command.id === "turn-into-image"))
       .toMatchObject({
         action: "turnInto",

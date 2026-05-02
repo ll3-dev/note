@@ -149,34 +149,6 @@ export const BLOCK_COMMANDS: BlockCommand[] = [
     label: "Page link",
     type: "page_link"
   },
-  {
-    action: "insertAfter",
-    aliases: ["insert", "below", "new"],
-    description: "Insert a text block below",
-    icon: Text,
-    id: "insert-paragraph-below",
-    label: "Text below",
-    type: "paragraph"
-  },
-  {
-    action: "insertAfter",
-    aliases: ["insert", "below", "todo", "task"],
-    description: "Insert a to-do block below",
-    icon: CheckSquare,
-    id: "insert-todo-below",
-    label: "To-do below",
-    props: { checked: false },
-    type: "todo"
-  },
-  {
-    action: "delete",
-    aliases: ["remove", "trash"],
-    description: "Delete this block",
-    icon: Minus,
-    id: "delete-current-block",
-    label: "Delete block",
-    type: "paragraph"
-  }
 ];
 
 export function filterBlockCommands(query: string) {
