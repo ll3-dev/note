@@ -16,6 +16,19 @@
 - If a component starts accumulating several local handler/helper functions, classify each one before extracting: render-only stays with the component, state/effect/event orchestration becomes a hook, and pure logic becomes a `lib` helper.
 - Avoid inline render functions that recursively or repeatedly return component trees from inside another component; extract them into named components so React reconciliation stays explicit.
 
+## Readability Guardrails
+
+- Treat 200 lines as a review trigger, not a formatting game. A component or screen over roughly 200 lines should justify why it still owns all of that behavior.
+- When a file crosses the threshold, classify the extra code in this order:
+  1. Render-only JSX for a distinct block of UI -> extract a named component near the original feature.
+  2. State, refs, effects, subscriptions, timers, keyboard wiring, or event choreography -> extract a feature hook under `hooks/`.
+  3. Pure calculation, grouping, condition-building, tree math, or DOM geometry math -> extract a helper under `lib/` or `web/`.
+  4. Shared domain shape used across components/hooks -> move the type to `types/`.
+- Prefer meaningful prop bundles over long prop tunnels. Bundle by responsibility, such as `editorActions`, `dragActions`, `selectionState`, or `pageEditorProps`; do not hide unrelated behavior in a generic `actions` bag.
+- Screens should compose data, controllers, and layout. If a screen starts handling command context, route fallback, page reconciliation, or restore flows inline, move those flows into small workspace hooks.
+- Hooks may be longer than render components when they coordinate real behavior, but a hook over roughly 200 lines should be checked for separate concerns such as sync, history, drag, command, and route handling.
+- After extracting, read the call site first. A new developer should be able to infer the feature flow from the prop names and hook names without opening every implementation file.
+
 ## React State
 
 - Do not mirror values that can be derived from props/state with `useEffect`. Compute them during render, and keep state only for real user intent or external synchronization.
