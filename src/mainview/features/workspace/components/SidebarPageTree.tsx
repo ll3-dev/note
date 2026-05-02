@@ -41,7 +41,7 @@ export function SidebarPageTree({
   }
 
   return (
-    <div className="grid w-full min-w-0 gap-0.5">
+    <div className="grid w-full min-w-0 gap-1">
       <SidebarPageTreeItems
         activePageId={activePageId}
         depth={0}
@@ -78,7 +78,7 @@ function SidebarPageTreeItems({
     const previousSibling = pages[index - 1] ?? null;
 
     return (
-      <div key={page.id}>
+      <div className="grid min-w-0 gap-1" key={page.id}>
         <SidebarPageItem
           activePageId={activePageId}
           depth={depth}
