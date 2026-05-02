@@ -470,6 +470,71 @@ test("deletes a page from the sidebar page list", async ({ page }) => {
   await expect(page).not.toHaveURL(new RegExp(`/pages/${removedPageId}$`));
 });
 
+test("restores a sidebar-deleted linked page from its page link block", async ({ page }) => {
+  await page.goto("/");
+  await page.evaluate(() => window.__noteE2E.reset());
+  await openInitialPage(page);
+
+  const firstBlock = page.getByRole("textbox", { name: "paragraph block" }).first();
+  await firstBlock.click();
+  await page.keyboard.type("/page");
+  await page.keyboard.press("Enter");
+
+  const linkedPageId = await page.evaluate(() => {
+    const block = window.__noteE2E.getDocument("page-1").blocks[0];
+
+    return typeof block?.props.targetPageId === "string"
+      ? block.props.targetPageId
+      : null;
+  });
+  expect(linkedPageId).toBeTruthy();
+  await expect(page).toHaveURL(new RegExp(`/pages/${linkedPageId}$`));
+
+  const title = page.getByRole("heading", { name: "Untitled" });
+  await title.click();
+  await page.keyboard.press(`${modKey}+A`);
+  await page.keyboard.type("Linked child");
+
+  await expect
+    .poll(() =>
+      page.evaluate((pageId) =>
+        window.__noteE2E.getPages().find((item) => item.id === pageId)?.title,
+        linkedPageId
+      )
+    )
+    .toBe("Linked child");
+
+  await page.goBack();
+  await page.getByRole("navigation").getByRole("button", { name: "페이지 펼치기" }).click();
+  await page
+    .getByRole("navigation")
+    .getByRole("button", { name: "Linked child 페이지 삭제" })
+    .last()
+    .click();
+
+  await expect
+    .poll(() =>
+      page.evaluate((pageId) =>
+        window.__noteE2E.getArchivedPages().some((item) => item.id === pageId),
+        linkedPageId
+      )
+    )
+    .toBe(true);
+  await expect(page.getByRole("button", { name: /Linked child Archived/ })).toBeVisible();
+
+  await page.getByRole("button", { name: "Linked child 페이지 복구" }).click();
+
+  await expect
+    .poll(() =>
+      page.evaluate((pageId) =>
+        window.__noteE2E.getPages().some((item) => item.id === pageId),
+        linkedPageId
+      )
+    )
+    .toBe(true);
+  await expect(page).toHaveURL(new RegExp(`/pages/${linkedPageId}$`));
+});
+
 test("selects the focused block with Escape and returns to editing with Enter", async ({ page }) => {
   await openInitialPage(page);
 

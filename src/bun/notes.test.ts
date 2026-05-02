@@ -11,9 +11,12 @@ import {
   deleteBlocks,
   deletePage,
   getPageDocument,
+  listArchivedPages,
   listPages,
   moveBlock,
   movePage,
+  purgeExpiredArchivedPages,
+  restorePage,
   searchPages,
   searchWorkspace,
   undoPageHistory,
@@ -215,6 +218,51 @@ describe("notes repository", () => {
       .not.toBeNull();
     expect(getPageDocument(handle, { pageId: child.id }).page.archivedAt)
       .not.toBeNull();
+  });
+
+  test("restores archived pages with descendants into active page lists and search", () => {
+    const handle = openTempDatabase();
+    const parent = createPage(handle, { title: "Parent" }).page;
+    const child = createPage(handle, {
+      parentPageId: parent.id,
+      title: "Child"
+    }).page;
+
+    deletePage(handle, { pageId: parent.id });
+
+    expect(listArchivedPages(handle).map((page) => page.id).sort()).toEqual([
+      child.id,
+      parent.id
+    ].sort());
+
+    restorePage(handle, { pageId: parent.id });
+
+    expect(listPages(handle).map((page) => page.id).sort()).toEqual([
+      child.id,
+      parent.id
+    ].sort());
+    expect(searchPages(handle, { query: "Child" })[0]?.pageId).toBe(child.id);
+    expect(getPageDocument(handle, { pageId: parent.id }).page.archivedAt).toBeNull();
+    expect(getPageDocument(handle, { pageId: child.id }).page.archivedAt).toBeNull();
+  });
+
+  test("purges pages archived past the retention window", () => {
+    const handle = openTempDatabase();
+    const expired = createPage(handle, { title: "Expired" }).page;
+    const recent = createPage(handle, { title: "Recent" }).page;
+
+    deletePage(handle, { pageId: expired.id });
+    deletePage(handle, { pageId: recent.id });
+    handle.db
+      .query("UPDATE pages SET archived_at = datetime('now', '-31 days') WHERE id = ?")
+      .run(expired.id);
+
+    expect(purgeExpiredArchivedPages(handle)).toEqual({ purgedCount: 1 });
+
+    expect(() => getPageDocument(handle, { pageId: expired.id })).toThrow();
+    expect(getPageDocument(handle, { pageId: recent.id }).page.archivedAt)
+      .not.toBeNull();
+    expect(listArchivedPages(handle).map((page) => page.id)).toEqual([recent.id]);
   });
 
   test("searches blocks through the FTS index", () => {
