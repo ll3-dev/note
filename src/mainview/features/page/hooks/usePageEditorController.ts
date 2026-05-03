@@ -34,7 +34,8 @@ export function usePageEditorController({
   onTextHistoryApply,
   onTextRedo,
   onTextUndo,
-  onUpdateBlock
+  onUpdateBlock,
+  openSearch
 }: PageEditorControllerOptions) {
   useInputMode();
   const focusLastBlock = useLastBlockFocus({ document, onCreateBlockAfter });
@@ -155,7 +156,8 @@ export function usePageEditorController({
     onTextHistoryApply,
     onTextRedo,
     onTextUndo,
-    onUpdate: onUpdateBlock
+    onUpdate: onUpdateBlock,
+    openSearch
   } satisfies BlockEditorActions;
   const blockDragActions = {
     onDragEnd: clearDragState,

@@ -16,6 +16,7 @@ import { PageLinkBlock } from "./PageLinkBlock";
 import type {
   BlockEditorUpdate,
   OpenPageLinkOptions,
+  SearchHighlight,
   TextSelectionOffsets
 } from "@/mainview/features/page/types/blockEditorTypes";
 
@@ -45,6 +46,8 @@ type BlockBodyProps = {
   onSelectionChange: () => void;
   onUpdate: (block: Block, changes: BlockEditorUpdate) => void;
   editableRef: RefObject<HTMLDivElement | null>;
+  searchHighlights?: SearchHighlight[];
+  searchActiveHighlight?: SearchHighlight;
 };
 
 export function BlockBody({
@@ -67,7 +70,9 @@ export function BlockBody({
   onRestorePageLink,
   onSelectionChange,
   onUpdate,
-  editableRef
+  editableRef,
+  searchHighlights,
+  searchActiveHighlight
 }: BlockBodyProps) {
   const blockDepth = getBlockDepth(block);
   useEditableHistoryInput({ editableRef, onHistoryInput });
@@ -161,6 +166,8 @@ export function BlockBody({
           onKeyDown={onKeyDown}
           onPasteMarkdown={onPasteMarkdown}
           onSelectionChange={onSelectionChange}
+          searchHighlights={searchHighlights}
+          searchActiveHighlight={searchActiveHighlight}
         />
       )}
     </div>

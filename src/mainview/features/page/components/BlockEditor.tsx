@@ -38,7 +38,10 @@ export function BlockEditor({
   onTextHistoryApply,
   onTextRedo,
   onTextUndo,
-  onUpdate
+  onUpdate,
+  openSearch,
+  searchHighlights,
+  searchActiveHighlight
 }: BlockEditorProps) {
   const {
     checked,
@@ -74,6 +77,7 @@ export function BlockEditor({
     onTextRedo,
     onTextUndo,
     onUpdate,
+    openSearch,
     previousBlock
   });
 
@@ -122,6 +126,8 @@ export function BlockEditor({
           onSelectionChange={textEditing.syncActiveInlineMarksFromSelection}
           onUpdate={onUpdate}
           editableRef={editableRef}
+          searchHighlights={searchHighlights}
+          searchActiveHighlight={searchActiveHighlight}
         />
 
         {textEditing.isCommandMenuOpen ? (

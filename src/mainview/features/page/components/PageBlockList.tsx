@@ -8,8 +8,10 @@ import { getNumberedListMarkers } from "@/mainview/features/page/lib/blockNumber
 import { getVisibleBlocks } from "@/mainview/features/page/lib/blockTree";
 import type {
   BlockEditorActions,
-  BlockEditorDragActions
+  BlockEditorDragActions,
+  SearchHighlight
 } from "@/mainview/features/page/types/blockEditorTypes";
+import type { SearchResult } from "@/mainview/features/page/lib/pageSearch";
 
 type PageBlockListProps = {
   document: PageDocument;
@@ -20,6 +22,8 @@ type PageBlockListProps = {
     isBlockRangeSelecting: boolean;
     selectedBlockIds: string[];
   };
+  searchMatches?: SearchResult[];
+  searchActiveIndex?: number;
   onFocusPreviousBlock: (block: Block, blockIndex: number) => void;
   pages: Page[];
 };
@@ -29,6 +33,8 @@ export function PageBlockList({
   dragActions,
   editorActions,
   selectionState,
+  searchMatches,
+  searchActiveIndex = 0,
   onFocusPreviousBlock,
   pages
 }: PageBlockListProps) {
@@ -36,10 +42,28 @@ export function PageBlockList({
   const pagesById = new Map(pages.map((page) => [page.id, page]));
   const visibleBlocks = getVisibleBlocks(document.blocks);
 
+  const blockMatches = new Map<string, SearchResult[]>();
+
+  if (searchMatches) {
+    for (const match of searchMatches) {
+      const existing = blockMatches.get(match.blockId) ?? [];
+      existing.push(match);
+      blockMatches.set(match.blockId, existing);
+    }
+  }
+
+  const activeMatch = searchMatches?.[searchActiveIndex];
+
   return (
     <>
       {visibleBlocks.map((block) => {
         const blockIndex = document.blocks.findIndex((item) => item.id === block.id);
+        const highlights = blockMatches.get(block.id)?.map(
+          (m): SearchHighlight => ({ length: m.length, offset: m.offset })
+        );
+        const activeHighlight: SearchHighlight | undefined = activeMatch?.blockId === block.id
+          ? { length: activeMatch.length, offset: activeMatch.offset }
+          : undefined;
 
         return (
           <BlockEditor
@@ -69,6 +93,8 @@ export function PageBlockList({
             {...editorActions}
             {...dragActions}
             onFocusPrevious={(target) => onFocusPreviousBlock(target, blockIndex)}
+            searchHighlights={highlights}
+            searchActiveHighlight={activeHighlight}
           />
         );
       })}

@@ -88,4 +88,6 @@ export type PageEditorControllerOptions = Pick<
   | "onTextRedo"
   | "onTextUndo"
   | "onUpdateBlock"
->;
+> & {
+  openSearch: () => void;
+};

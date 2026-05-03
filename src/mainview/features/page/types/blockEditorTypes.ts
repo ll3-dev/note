@@ -26,6 +26,11 @@ export type TextSelectionOffsets = {
   start: number;
 };
 
+export type SearchHighlight = {
+  length: number;
+  offset: number;
+};
+
 export type BlockEditorProps = {
   block: Block;
   blockIndex: number;
@@ -78,6 +83,9 @@ export type BlockEditorProps = {
   onTextRedo: (block: Block) => Promise<Block | null>;
   onTextUndo: (block: Block) => Promise<Block | null>;
   onUpdate: (block: Block, changes: BlockEditorUpdate) => void;
+  openSearch: () => void;
+  searchHighlights?: SearchHighlight[];
+  searchActiveHighlight?: SearchHighlight;
 };
 
 export type BlockEditorActions = Pick<
@@ -97,6 +105,7 @@ export type BlockEditorActions = Pick<
   | "onTextRedo"
   | "onTextUndo"
   | "onUpdate"
+  | "openSearch"
 >;
 
 export type BlockEditorDragActions = Pick<

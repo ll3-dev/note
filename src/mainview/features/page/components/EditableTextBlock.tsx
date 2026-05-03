@@ -14,6 +14,7 @@ import { InlinePageSearchMenu } from "./InlinePageSearchMenu";
 import { getInlinePageLinkProps } from "@/mainview/features/page/lib/inlineFormatting";
 import { getCursorTextOffset } from "@/mainview/features/page/web/domSelection";
 import type { TextSelectionOffsets } from "@/mainview/features/page/types/blockEditorTypes";
+import type { SearchHighlight } from "@/mainview/features/page/types/blockEditorTypes";
 
 type EditableTextBlockProps = {
   block: Block;
@@ -36,6 +37,8 @@ type EditableTextBlockProps = {
     selection: TextSelectionOffsets
   ) => Promise<void> | void;
   onSelectionChange: () => void;
+  searchHighlights?: SearchHighlight[];
+  searchActiveHighlight?: SearchHighlight;
 };
 
 export function EditableTextBlock({
@@ -53,7 +56,9 @@ export function EditableTextBlock({
   onHistoryInput,
   onKeyDown,
   onPasteMarkdown,
-  onSelectionChange
+  onSelectionChange,
+  searchHighlights,
+  searchActiveHighlight
 }: EditableTextBlockProps) {
   const { handleDrop, handleEditableKeyDown, handlePaste } = useBlockClipboardEditing({
     block,
@@ -101,6 +106,13 @@ export function EditableTextBlock({
         props={draftProps}
         text={draft}
       />
+      {searchHighlights && searchHighlights.length > 0 ? (
+        <SearchHighlightOverlay
+          highlights={searchHighlights}
+          activeHighlight={searchActiveHighlight}
+          text={draft}
+        />
+      ) : null}
       <div
         aria-label={`${block.type} block`}
         className={cn(
@@ -181,4 +193,82 @@ function shouldSyncSelectionAfterKey(key: string) {
     "PageUp",
     "PageDown"
   ].includes(key);
+}
+
+function SearchHighlightOverlay({
+  highlights,
+  activeHighlight,
+  text
+}: {
+  highlights: SearchHighlight[];
+  activeHighlight?: SearchHighlight;
+  text: string;
+}) {
+  return (
+    <div
+      aria-hidden
+      className="pointer-events-none absolute inset-0 whitespace-pre-wrap wrap-break-word px-1 py-1"
+    >
+      {buildHighlightSegments(text, highlights, activeHighlight).map((segment) => (
+        <span
+          className={cn(
+            segment.isActive && "bg-orange-300/60 rounded-sm",
+            segment.isHighlight && "bg-yellow-200/60 rounded-sm"
+          )}
+          key={segment.key}
+        >
+          {segment.text}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+type HighlightSegment = {
+  isActive: boolean;
+  isHighlight: boolean;
+  key: string;
+  text: string;
+};
+
+function buildHighlightSegments(
+  text: string,
+  highlights: SearchHighlight[],
+  activeHighlight?: SearchHighlight
+): HighlightSegment[] {
+  const points = new Set<number>();
+
+  points.add(0);
+  points.add(text.length);
+
+  for (const h of highlights) {
+    points.add(h.offset);
+    points.add(h.offset + h.length);
+  }
+
+  const sorted = Array.from(points).sort((a, b) => a - b);
+  const segments: HighlightSegment[] = [];
+
+  for (let i = 0; i < sorted.length - 1; i++) {
+    const start = sorted[i];
+    const end = sorted[i + 1];
+
+    if (start === end) continue;
+
+    const isHighlight = highlights.some(
+      (h) => h.offset <= start && h.offset + h.length >= end
+    );
+    const isActive = activeHighlight
+      ? activeHighlight.offset <= start && activeHighlight.offset + activeHighlight.length >= end
+      : false;
+
+    segments.push({
+      isActive,
+      isHighlight: isHighlight && !isActive,
+      key: `${start}-${end}`,
+      text: text.slice(start, end)
+    });
+  }
+
+  return segments;
 }

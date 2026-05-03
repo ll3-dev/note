@@ -5,7 +5,9 @@ import { BlockSelectionRect } from "./BlockSelectionRect";
 import { BlockDragPreview } from "./BlockDragPreview";
 import { BlockDropIndicator } from "./BlockDropIndicator";
 import { PageTitleEditor } from "./PageTitleEditor";
+import { SearchBar } from "./SearchBar";
 import { usePageEditorController } from "@/mainview/features/page/hooks/usePageEditorController";
+import { usePageSearch } from "@/mainview/features/page/hooks/usePageSearch";
 import type { PageEditorProps } from "@/mainview/features/page/types/pageEditorTypes";
 
 export function PageEditor({
@@ -34,6 +36,7 @@ export function PageEditor({
   onUpdatePageTitle,
   pages
 }: PageEditorProps) {
+  const search = usePageSearch();
   const {
     blockDragActions,
     blockEditorActions,
@@ -69,7 +72,8 @@ export function PageEditor({
     onTextHistoryApply,
     onTextRedo,
     onTextUndo,
-    onUpdateBlock
+    onUpdateBlock,
+    openSearch: search.openSearch
   });
 
   return (
@@ -79,6 +83,23 @@ export function PageEditor({
       onMouseDown={handleEditorMouseDown}
       role="presentation"
     >
+      {search.active && (
+        <SearchBar
+          activeIndex={search.activeIndex}
+          matchCount={search.matches.length}
+          query={search.query}
+          replaceQuery={search.replaceQuery}
+          showReplace={search.showReplace}
+          onClose={search.closeSearch}
+          onGoNext={search.goNext}
+          onGoPrevious={search.goPrevious}
+          onQueryChange={(query) => search.setQuery(query, document.blocks)}
+          onReplace={() => {}}
+          onReplaceAll={() => {}}
+          onReplaceQueryChange={search.setReplaceQuery}
+          onToggleReplace={search.toggleReplace}
+        />
+      )}
       <ScrollArea className="min-h-0 flex-1">
         <div className="mx-auto flex min-h-full w-full max-w-230 flex-col px-10 py-8">
           <PageTitleEditor
@@ -102,6 +123,8 @@ export function PageEditor({
               dragActions={blockDragActions}
               editorActions={blockEditorActions}
               selectionState={blockSelectionState}
+              searchMatches={search.active ? search.matches : undefined}
+              searchActiveIndex={search.activeIndex}
               onFocusPreviousBlock={focusPreviousBlock}
               pages={pages}
             />

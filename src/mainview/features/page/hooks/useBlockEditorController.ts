@@ -31,6 +31,7 @@ export function useBlockEditorController({
   onTextRedo,
   onTextUndo,
   onUpdate,
+  openSearch,
   previousBlock
 }: BlockEditorControllerOptions) {
   const editableRef = useRef<HTMLDivElement>(null);
@@ -77,6 +78,7 @@ export function useBlockEditorController({
       onFocusPrevious,
       onMergeWithPrevious,
       onUpdate,
+      openSearch,
       previousBlock,
       redoTextDraft: textEditing.redoTextDraft,
       selectNextCommand: textEditing.selectNextCommand,
@@ -164,6 +166,7 @@ type BlockEditorControllerOptions = Pick<
   | "onTextRedo"
   | "onTextUndo"
   | "onUpdate"
+  | "openSearch"
   | "previousBlock"
 > & {
   isCommandShellSelected: boolean;
