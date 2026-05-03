@@ -4,11 +4,13 @@ import { normalizeLinkHref } from "@/shared/linkSanitization";
 export type InlineMarkType = "bold" | "italic" | "code";
 export type TextStyleInlineMarkType = InlineMarkType;
 export type LinkInlineMarkType = "link";
-export type AnyInlineMarkType = InlineMarkType | LinkInlineMarkType;
+export type PageLinkInlineMarkType = "pageLink";
+export type AnyInlineMarkType = InlineMarkType | LinkInlineMarkType | PageLinkInlineMarkType;
 
 export type InlineMark = {
   end: number;
   href?: string;
+  pageId?: string;
   start: number;
   type: AnyInlineMarkType;
 };
@@ -16,6 +18,7 @@ export type InlineMark = {
 export type InlineTextSegment = {
   marks: InlineMarkType[];
   href?: string;
+  pageId?: string;
   text: string;
 };
 
@@ -105,6 +108,34 @@ export function getInlineLinkProps(
   };
 }
 
+export function getInlinePageLinkProps(
+  props: BlockProps,
+  selection: { end: number; start: number } | null,
+  pageId: string
+) {
+  if (!selection || !pageId) {
+    return null;
+  }
+
+  const start = Math.min(selection.start, selection.end);
+  const end = Math.max(selection.start, selection.end);
+
+  if (start === end) {
+    return null;
+  }
+
+  return {
+    ...props,
+    inlineMarks: [
+      ...getInlineMarks(props).filter(
+        (mark) =>
+          !(mark.type === "pageLink" && mark.start === start && mark.end === end)
+      ),
+      { end, pageId, start, type: "pageLink" }
+    ]
+  };
+}
+
 export function getInlineTextSegments(text: string, props: BlockProps) {
   const marks = getInlineMarks(props).filter(
     (mark) => mark.start < mark.end && mark.start < text.length
@@ -141,7 +172,13 @@ export function getInlineTextSegments(text: string, props: BlockProps) {
         ?.href,
       marks: marks
         .filter((mark) => mark.start <= start && mark.end >= end)
-        .flatMap((mark) => (mark.type === "link" ? [] : [mark.type])),
+        .flatMap((mark) =>
+          mark.type === "link" || mark.type === "pageLink" ? [] : [mark.type]
+        ),
+      pageId: marks.find(
+        (mark) =>
+          mark.type === "pageLink" && mark.start <= start && mark.end >= end
+      )?.pageId,
       text: segmentText
     });
   }
@@ -155,7 +192,7 @@ export function getInlineMarksAtOffset(
 ): TextStyleInlineMarkType[] {
   return getInlineMarks(props)
     .flatMap((mark) =>
-      mark.type !== "link" && mark.start < offset && mark.end >= offset
+      mark.type !== "link" && mark.type !== "pageLink" && mark.start < offset && mark.end >= offset
         ? [mark.type]
         : []
     );
@@ -184,7 +221,8 @@ function isInlineMark(value: unknown): value is InlineMark {
     (mark.type === "bold" ||
       mark.type === "italic" ||
       mark.type === "code" ||
-      (mark.type === "link" && typeof mark.href === "string"))
+      (mark.type === "link" && typeof mark.href === "string") ||
+      (mark.type === "pageLink" && typeof mark.pageId === "string"))
   );
 }
 
