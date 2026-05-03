@@ -1,4 +1,4 @@
-import { describe, test, expect } from "bun:test";
+import { test, expect } from "bun:test";
 import { findInBlocks } from "./pageSearch";
 
 test("finds all occurrences across blocks", () => {
