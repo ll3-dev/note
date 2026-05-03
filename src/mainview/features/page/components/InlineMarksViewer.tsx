@@ -37,6 +37,7 @@ export function InlineMarksViewer({
             href={segment.href}
             key={`${segmentStart}-${segmentOffset}-${segment.text}`}
             marks={segment.marks}
+            pageId={segment.pageId}
             text={segment.text}
           />
         );
@@ -48,10 +49,12 @@ export function InlineMarksViewer({
 function InlineSegment({
   href,
   marks,
+  pageId,
   text
 }: {
   href?: string;
   marks: Array<"bold" | "italic" | "code">;
+  pageId?: string;
   text: string;
 }) {
   const className = cn(
@@ -60,6 +63,17 @@ function InlineSegment({
     marks.includes("code") &&
       "rounded-sm bg-muted px-1 py-0.5 font-mono text-[0.92em]"
   );
+
+  if (pageId) {
+    return (
+      <a
+        className={cn(className, "text-primary underline underline-offset-2")}
+        data-page-link-id={pageId}
+      >
+        {text}
+      </a>
+    );
+  }
 
   if (href) {
     return (
