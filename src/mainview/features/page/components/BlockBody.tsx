@@ -121,6 +121,11 @@ export function BlockBody({
           )}
         </button>
       ) : null}
+      {block.type === "callout" ? (
+        <span className="mt-1 shrink-0 text-lg" role="img" aria-label="callout icon">
+          {typeof draftProps.icon === "string" ? draftProps.icon : "💡"}
+        </span>
+      ) : null}
       {block.type === "image" ? (
         <ImageBlock block={block} onUpdate={onUpdate} props={draftProps} />
       ) : block.type === "divider" ? (
