@@ -108,6 +108,14 @@ describe("block command shortcuts", () => {
       });
   });
 
+  test("converts callout shortcut into callout block", () => {
+    expect(getMarkdownShortcut(">! ")).toEqual({
+      props: { icon: "💡" },
+      text: "",
+      type: "callout"
+    });
+  });
+
   test("ignores regular paragraph text", () => {
     expect(getMarkdownShortcut("plain text")).toBeNull();
   });

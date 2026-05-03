@@ -31,7 +31,8 @@ export type BlockType =
   | "toggle"
   | "divider"
   | "image"
-  | "page_link";
+  | "page_link"
+  | "callout";
 
 export type BlockProps = Record<string, unknown>;
 

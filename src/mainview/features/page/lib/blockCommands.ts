@@ -8,6 +8,7 @@ import {
   Link,
   List,
   ListOrdered,
+  MessageSquare,
   Minus,
   ListTree,
   Quote,
@@ -149,6 +150,16 @@ export const BLOCK_COMMANDS: BlockCommand[] = [
     label: "Page link",
     type: "page_link"
   },
+  {
+    action: "turnInto",
+    aliases: ["alert", "info", "notice", "tip", "warning"],
+    description: "Highlighted callout with icon",
+    icon: MessageSquare,
+    id: "turn-into-callout",
+    label: "Callout",
+    props: { icon: "💡" },
+    type: "callout"
+  },
 ];
 
 export function filterBlockCommands(query: string) {
@@ -190,6 +201,7 @@ export function getMarkdownShortcut(value: string): MarkdownShortcut | null {
     [/^>\s$/, { props: { open: true }, text: "", type: "toggle" }],
     [/^"\s$/, { props: {}, text: "", type: "quote" }],
     [/^```\s?$/, { props: {}, text: "", type: "code" }],
+    [/^>!\s$/, { props: { icon: "💡" }, text: "", type: "callout" }],
     [/^###\s$/, { props: {}, text: "", type: "heading_3" }],
     [/^\[\]\s$|^\[ \]\s$/, { props: { checked: false }, text: "", type: "todo" }],
     [
