@@ -10,6 +10,7 @@ export type ImportInline =
 
 export type ImportBlock =
   | { children: ImportInline[]; type: "paragraph" | "heading_1" | "heading_2" | "heading_3" | "quote" }
+  | { children: ImportInline[]; icon: string; type: "callout" }
   | { children: ImportInline[]; depth: number; type: "bulleted_list" }
   | { children: ImportInline[]; depth: number; start: number; type: "numbered_list" }
   | { checked: boolean; children: ImportInline[]; depth: number; type: "todo" }
@@ -78,6 +79,8 @@ function importBlockToMarkdownLines(block: ImportBlock): string[] {
       return [importInlineToMarkdown(block.children)];
     case "quote":
       return [`> ${importInlineToMarkdown(block.children)}`];
+    case "callout":
+      return [`>! ${importInlineToMarkdown(block.children)}`];
     case "bulleted_list":
       return [`${"  ".repeat(block.depth)}- ${importInlineToMarkdown(block.children)}`];
     case "numbered_list":
@@ -177,6 +180,8 @@ function getBlockBaseProps(block: ImportBlock): BlockProps {
         ...(block.depth > 0 ? { depth: block.depth } : {}),
         checked: block.checked
       };
+    case "callout":
+      return { icon: block.icon };
     default:
       return {};
   }

@@ -157,6 +157,13 @@ describe("markdown blocks", () => {
     expect(shouldHandleMarkdownPaste("# Heading")).toBe(true);
     expect(shouldHandleMarkdownPaste("line one\nline two")).toBe(true);
   });
+
+  test("parses callout blocks from markdown", () => {
+    const drafts = parseMarkdownToBlockDrafts(">! This is a callout\n>! Another one");
+    expect(drafts).toHaveLength(2);
+    expect(drafts[0]).toEqual({ props: { icon: "💡" }, text: "This is a callout", type: "callout" });
+    expect(drafts[1]).toEqual({ props: { icon: "💡" }, text: "Another one", type: "callout" });
+  });
 });
 
 function block(type: Block["type"], text: string, props: Block["props"] = {}) {

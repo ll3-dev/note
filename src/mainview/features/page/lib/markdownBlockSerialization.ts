@@ -36,6 +36,8 @@ function serializeBlock(block: Block) {
       return [`${depthPrefix}- [${block.props.checked ? "x" : " "}] ${text}`];
     case "quote":
       return [`> ${text}`];
+    case "callout":
+      return [`>! ${text}`];
     case "toggle":
       return [`> ${block.props.open === false ? "" : "> "}${text}`];
     case "code":

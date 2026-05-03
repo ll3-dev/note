@@ -9,6 +9,7 @@ const BLOCK_MARKDOWN_PATTERNS = [
   /^#{1,3}\s+/,
   /^\s*[-*+]\s+/,
   /^\s*\d+\.\s+/,
+  /^\s*>!\s+/,
   /^\s*>\s+/,
   /^\s*[-*]\s+\[[ xX]\]\s+/,
   /^```\w*/,
@@ -137,6 +138,16 @@ function parseMarkdownLine(line: string): ImportBlock | null {
       depth: getDepth(numbered[1]),
       start: Number(numbered[2]),
       type: "numbered_list"
+    };
+  }
+
+  const callout = /^>!\s+(.+)$/.exec(line);
+
+  if (callout) {
+    return {
+      children: parseMarkdownInlineText(callout[1]),
+      icon: "💡",
+      type: "callout"
     };
   }
 
