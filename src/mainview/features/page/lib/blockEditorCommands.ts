@@ -47,6 +47,7 @@ export type BlockShortcutContext = {
     props: Block["props"]
   ) => Promise<void> | void;
   onUpdate: (block: Block, changes: BlockEditorUpdate) => void;
+  openSearch: () => void;
   previousBlock: Block | null;
   redoTextDraft: () => void;
   selectNextCommand: () => void;
@@ -314,6 +315,15 @@ export const BLOCK_EDITOR_COMMANDS: Command<BlockShortcutContext>[] = [
         updateNumberedListStart(block, update, numberedListStartAfterOutdent);
         onUpdate(block, update);
       }
+    }
+  },
+  {
+    defaultKeybindings: ["Mod+F"],
+    id: "editor.search.open",
+    scope: "block",
+    title: "Open search",
+    run: ({ openSearch }) => {
+      openSearch();
     }
   },
   {
