@@ -12,7 +12,8 @@ const EMPTY_ENTER_RESET_TYPES = new Set<BlockType>([
   "bulleted_list",
   "numbered_list",
   "quote",
-  "todo"
+  "todo",
+  "toggle"
 ]);
 
 export type BlockShortcutContext = {

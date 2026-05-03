@@ -1,5 +1,9 @@
 import { describe, expect, test } from "bun:test";
-import { BLOCK_COMMANDS, getMarkdownShortcut } from "./blockCommands";
+import {
+  BLOCK_COMMANDS,
+  filterBlockCommands,
+  getMarkdownShortcut
+} from "./blockCommands";
 
 describe("block command shortcuts", () => {
   test("converts heading shortcuts into typed blocks", () => {
@@ -49,6 +53,20 @@ describe("block command shortcuts", () => {
       text: "",
       type: "quote"
     });
+  });
+
+  test("converts Notion toggle shortcut", () => {
+    expect(getMarkdownShortcut("> ")).toEqual({
+      props: { open: true },
+      text: "",
+      type: "toggle"
+    });
+  });
+
+  test("finds the toggle command by its greater-than alias", () => {
+    expect(filterBlockCommands(">").map((command) => command.id)).toContain(
+      "turn-into-toggle"
+    );
   });
 
   test("converts divider shortcut and requests a following text block", () => {

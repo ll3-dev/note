@@ -95,7 +95,7 @@ export const BLOCK_COMMANDS: BlockCommand[] = [
   },
   {
     action: "turnInto",
-    aliases: ["blockquote"],
+    aliases: ["blockquote", "quote"],
     description: "Quoted callout text",
     icon: Quote,
     id: "turn-into-quote",
@@ -104,7 +104,7 @@ export const BLOCK_COMMANDS: BlockCommand[] = [
   },
   {
     action: "turnInto",
-    aliases: ["toggle", "disclosure"],
+    aliases: [">", "toggle", "disclosure"],
     description: "Collapsible block with nested content",
     icon: ListTree,
     id: "turn-into-toggle",
@@ -187,9 +187,8 @@ export function getMarkdownShortcut(value: string): MarkdownShortcut | null {
     [/^#\s$/, { props: {}, text: "", type: "heading_1" }],
     [/^##\s$/, { props: {}, text: "", type: "heading_2" }],
     [/^[-+]\s$/, { props: {}, text: "", type: "bulleted_list" }],
-    [/^>\s$/, { props: {}, text: "", type: "quote" }],
+    [/^>\s$/, { props: { open: true }, text: "", type: "toggle" }],
     [/^"\s$/, { props: {}, text: "", type: "quote" }],
-    [/^>\s>\s$/, { props: { open: true }, text: "", type: "toggle" }],
     [/^```\s?$/, { props: {}, text: "", type: "code" }],
     [/^###\s$/, { props: {}, text: "", type: "heading_3" }],
     [/^\[\]\s$|^\[ \]\s$/, { props: { checked: false }, text: "", type: "todo" }],

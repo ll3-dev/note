@@ -65,6 +65,10 @@ describe("block editing behavior", () => {
       props: { checked: false, depth: 1 },
       type: "todo"
     });
+    expect(getNextBlockDraft({ ...block, type: "toggle" })).toEqual({
+      props: { depth: 1 },
+      type: "paragraph"
+    });
     expect(getNextBlockDraft({ ...block, type: "heading_1" })).toEqual({
       props: {},
       type: "paragraph"

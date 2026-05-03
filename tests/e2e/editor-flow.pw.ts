@@ -360,6 +360,44 @@ test("turns markdown shortcuts into block types", async ({ page }) => {
   await expect(page.getByRole("textbox", { name: "heading_1 block" }).first()).toBeFocused();
 });
 
+test("turns the greater-than markdown shortcut into a toggle block", async ({ page }) => {
+  await openInitialPage(page);
+
+  const firstBlock = page.getByRole("textbox", { name: "paragraph block" }).first();
+  await firstBlock.click();
+  await page.keyboard.type("> ");
+
+  await expect(page.getByRole("textbox", { name: "toggle block" }).first()).toBeFocused();
+});
+
+test("resets an empty toggle block with Enter", async ({ page }) => {
+  await openInitialPage(page);
+
+  const firstBlock = page.getByRole("textbox", { name: "paragraph block" }).first();
+  await firstBlock.click();
+  await page.keyboard.type("> ");
+  await page.keyboard.press("Enter");
+
+  await expect(page.getByRole("textbox", { name: "paragraph block" }).first()).toBeFocused();
+  await expect(page.getByRole("textbox", { name: "toggle block" })).toHaveCount(0);
+});
+
+test("collapses indented children under toggle blocks", async ({ page }) => {
+  await openInitialPage(page);
+
+  const firstBlock = page.getByRole("textbox", { name: "paragraph block" }).first();
+  await firstBlock.click();
+  await page.keyboard.type("> Parent");
+  await page.keyboard.press("Enter");
+  await page.keyboard.type("Child");
+
+  await expect(page.getByText("Child")).toBeVisible();
+
+  await page.getByRole("button", { name: "토글 닫기" }).click();
+
+  await expect(page.getByText("Child")).toBeHidden();
+});
+
 test("pastes markdown from the system clipboard as multiple blocks", async ({ page }) => {
   await openInitialPage(page);
 

@@ -156,7 +156,8 @@ describe("block editor commands", () => {
     "bulleted_list",
     "numbered_list",
     "quote",
-    "todo"
+    "todo",
+    "toggle"
   ] as const)("resets an empty %s block to paragraph on Enter", async (type) => {
     const updates: unknown[] = [];
     const { calls, context } = createContext({

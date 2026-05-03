@@ -104,6 +104,13 @@ export function getNextBlockDraft(
     };
   }
 
+  if (block.type === "toggle") {
+    return {
+      props: { depth: Math.min(getBlockDepth(block) + 1, MAX_BLOCK_DEPTH) },
+      type: "paragraph"
+    };
+  }
+
   return {
     props: pickDepthProps(block),
     type: block.type
