@@ -118,6 +118,13 @@ describe("block editing behavior", () => {
     });
   });
 
+  test("callout does not continue on Enter — creates paragraph", () => {
+    expect(getNextBlockDraft({ ...block, type: "callout" })).toEqual({
+      props: {},
+      type: "paragraph"
+    });
+  });
+
   test("merges block text into the previous block and shifts inline marks", () => {
     expect(
       getMergedBlockUpdate(

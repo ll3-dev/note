@@ -9,6 +9,10 @@ export function blockShellClass(type: BlockType) {
     return "rounded-md bg-muted px-2";
   }
 
+  if (type === "callout") {
+    return "rounded-md bg-accent/50 px-3 py-1";
+  }
+
   return "";
 }
 
@@ -26,6 +30,8 @@ export function editableClass(type: BlockType) {
       return "text-[17px] italic";
     case "toggle":
       return "font-medium text-[15px]";
+    case "callout":
+      return "text-[15px]";
     default:
       return "text-[15px]";
   }

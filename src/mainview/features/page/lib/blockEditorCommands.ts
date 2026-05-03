@@ -13,7 +13,8 @@ const EMPTY_ENTER_RESET_TYPES = new Set<BlockType>([
   "numbered_list",
   "quote",
   "todo",
-  "toggle"
+  "toggle",
+  "callout"
 ]);
 
 export type BlockShortcutContext = {
@@ -181,7 +182,12 @@ export const BLOCK_EDITOR_COMMANDS: Command<BlockShortcutContext>[] = [
         numberedListMarker ?? undefined
       );
 
-      onUpdate(block, splitDraft.currentUpdate);
+      const currentUpdate =
+        block.type === "toggle" && draftProps.open === false
+          ? { ...splitDraft.currentUpdate, props: { ...splitDraft.currentUpdate.props, open: true } }
+          : splitDraft.currentUpdate;
+
+      onUpdate(block, currentUpdate);
       await onCreateAfter(block, splitDraft.nextDraft, {
         focusPlacement: "start"
       });
@@ -192,8 +198,13 @@ export const BLOCK_EDITOR_COMMANDS: Command<BlockShortcutContext>[] = [
     id: "editor.block.createBelow",
     scope: "block",
     title: "Create block below",
-    run: async ({ block, commitDraft, numberedListMarker, onCreateAfter }) => {
+    run: async ({ block, commitDraft, draftProps, numberedListMarker, onCreateAfter, onUpdate }) => {
       await commitDraft();
+
+      if (block.type === "toggle" && draftProps.open === false) {
+        onUpdate(block, { props: { ...draftProps, open: true } });
+      }
+
       await onCreateAfter(
         block,
         getNextBlockDraft(block, numberedListMarker ?? undefined)
