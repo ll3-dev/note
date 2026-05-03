@@ -8,7 +8,11 @@ import { cn } from "@/mainview/lib/utils";
 import type { Block } from "@/shared/contracts";
 import { editableClass } from "@/mainview/features/page/lib/blockStyles";
 import { useBlockClipboardEditing } from "@/mainview/features/page/hooks/useBlockClipboardEditing";
+import { useInlinePageSearch } from "@/mainview/features/page/hooks/useInlinePageSearch";
 import { InlineMarksViewer } from "./InlineMarksViewer";
+import { InlinePageSearchMenu } from "./InlinePageSearchMenu";
+import { getInlinePageLinkProps } from "@/mainview/features/page/lib/inlineFormatting";
+import { getCursorTextOffset } from "@/mainview/features/page/web/domSelection";
 import type { TextSelectionOffsets } from "@/mainview/features/page/types/blockEditorTypes";
 
 type EditableTextBlockProps = {
@@ -18,6 +22,7 @@ type EditableTextBlockProps = {
   draftProps: Block["props"];
   editableRef: RefObject<HTMLDivElement | null>;
   isSelected: boolean;
+  onApplyPageLink?: (block: Block, changes: { props: Block["props"]; text: string }) => void;
   onBeforeInput: (event: FormEvent<HTMLDivElement>) => void;
   onBlur: () => Promise<void>;
   onChange: (value: string) => void;
@@ -40,6 +45,7 @@ export function EditableTextBlock({
   draftProps,
   editableRef,
   isSelected,
+  onApplyPageLink,
   onBeforeInput,
   onBlur,
   onChange,
@@ -55,8 +61,35 @@ export function EditableTextBlock({
     onKeyDown,
     onPasteMarkdown
   });
+  const { triggerState, checkTrigger, closeSearch } = useInlinePageSearch();
   const isCheckedTodo = checked && block.type === "todo";
   const hasMarks = hasInlineMarks(draftProps);
+
+  function handlePageSelect(pageId: string, pageTitle: string) {
+    if (!triggerState || !editableRef.current) return;
+
+    const text = draft;
+    const triggerEnd = triggerState.triggerOffset + (triggerState.triggerChar === "[[" ? 2 : 1);
+    const queryEnd = triggerEnd + triggerState.query.length;
+
+    const beforeTrigger = text.slice(0, triggerState.triggerOffset);
+    const afterQuery = text.slice(queryEnd);
+    const newText = beforeTrigger + pageTitle + afterQuery;
+
+    const markStart = beforeTrigger.length;
+    const markEnd = markStart + pageTitle.length;
+    const newProps = getInlinePageLinkProps(draftProps, { start: markStart, end: markEnd }, pageId);
+
+    if (newProps) {
+      editableRef.current.textContent = newText;
+      onChange(newText);
+      if (onApplyPageLink) {
+        onApplyPageLink(block, { props: newProps, text: newText });
+      }
+    }
+
+    closeSearch();
+  }
 
   return (
     <div className="relative min-w-0 flex-1">
@@ -97,7 +130,16 @@ export function EditableTextBlock({
             return;
           }
 
-          onChange(event.currentTarget.textContent ?? "");
+          const nextValue = event.currentTarget.textContent ?? "";
+          onChange(nextValue);
+
+          // Check for page link triggers
+          if (editableRef.current) {
+            const offset = getCursorTextOffset(editableRef.current);
+            if (offset !== null) {
+              checkTrigger(nextValue, offset);
+            }
+          }
         }}
         onKeyDownCapture={handleEditableKeyDown}
         onKeyUp={(event) => {
@@ -112,6 +154,14 @@ export function EditableTextBlock({
         spellCheck
         suppressContentEditableWarning
       />
+      {triggerState?.active && (
+        <InlinePageSearchMenu
+          onClose={closeSearch}
+          onSelect={handlePageSelect}
+          query={triggerState.query}
+          rect={editableRef.current?.getBoundingClientRect() ?? null}
+        />
+      )}
     </div>
   );
 }
