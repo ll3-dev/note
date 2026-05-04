@@ -1,6 +1,40 @@
 import type { Block } from "@/shared/contracts";
 import { getBlockDepth } from "./blockEditingBehavior";
 
+export type BlockTreeNode = {
+  block: Block;
+  children: BlockTreeNode[];
+};
+
+export function buildBlockTree(blocks: Block[]): BlockTreeNode[] {
+  const nodesById = new Map<string, BlockTreeNode>();
+  const roots: BlockTreeNode[] = [];
+
+  for (const block of blocks) {
+    nodesById.set(block.id, { block, children: [] });
+  }
+
+  for (const block of blocks) {
+    const node = nodesById.get(block.id);
+
+    if (!node) {
+      continue;
+    }
+
+    const parentNode = block.parentBlockId
+      ? nodesById.get(block.parentBlockId)
+      : null;
+
+    if (parentNode) {
+      parentNode.children.push(node);
+    } else {
+      roots.push(node);
+    }
+  }
+
+  return sortTreeNodes(roots);
+}
+
 export function getVisibleBlocks(blocks: Block[]) {
   const collapsedDepths: number[] = [];
 
@@ -136,4 +170,18 @@ function canIndentBlock(blocks: Block[], block: Block) {
 
 function isCollapsedToggle(block: Block) {
   return block.type === "toggle" && block.props.open === false;
+}
+
+function sortTreeNodes(nodes: BlockTreeNode[]): BlockTreeNode[] {
+  nodes.sort(compareBlockOrder);
+
+  for (const node of nodes) {
+    sortTreeNodes(node.children);
+  }
+
+  return nodes;
+}
+
+function compareBlockOrder(left: BlockTreeNode, right: BlockTreeNode) {
+  return left.block.sortKey.localeCompare(right.block.sortKey);
 }

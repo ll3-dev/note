@@ -6,6 +6,7 @@ import { getPageTitleDisplay } from "@/shared/pageDisplay";
 import type { OpenPageLinkOptions } from "@/mainview/features/page/types/blockEditorTypes";
 
 type PageLinkBlockProps = {
+  blockId: string;
   draft: string;
   draftProps: Block["props"];
   linkedPage: Page | null;
@@ -15,6 +16,7 @@ type PageLinkBlockProps = {
 };
 
 export function PageLinkBlock({
+  blockId,
   draft,
   draftProps,
   linkedPage,
@@ -36,6 +38,7 @@ export function PageLinkBlock({
           isArchived && "text-muted-foreground"
         )}
         data-block-focus-target
+        data-block-focus-target-id={blockId}
         onAuxClick={(event) => {
           if (event.button !== 1 || !linkedPageId || isArchived) {
             return;

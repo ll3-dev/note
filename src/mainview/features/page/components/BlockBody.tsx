@@ -1,6 +1,6 @@
 import type {
   DragEvent,
-  FormEvent,
+  InputEvent as ReactInputEvent,
   KeyboardEvent,
   RefObject
 } from "react";
@@ -31,7 +31,7 @@ type BlockBodyProps = {
   isSelected: boolean;
   linkedPage: Page | null;
   onBlur: () => Promise<void>;
-  onBeforeInput: (event: FormEvent<HTMLDivElement>) => void;
+  onBeforeInput: (event: ReactInputEvent<HTMLDivElement>) => void;
   onChange: (value: string) => void;
   onKeyDown: (event: KeyboardEvent<HTMLElement>) => void;
   onDragStart: (event: DragEvent<HTMLDivElement>) => void;
@@ -151,6 +151,7 @@ export function BlockBody({
         </div>
       ) : block.type === "page_link" ? (
         <PageLinkBlock
+          blockId={block.id}
           draft={draft}
           draftProps={draftProps}
           linkedPage={linkedPage}

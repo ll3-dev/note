@@ -157,8 +157,7 @@ export function useWorkspacePageEditorController({
     onTextHistoryApply: (block) => clearPendingText(block.id),
     onTextRedo: redoBlockText,
     onTextUndo: undoBlockText,
-    onUpdateBlock: (target, changes) =>
-      void editorActions.updateBlock(target, changes),
+    onUpdateBlock: editorActions.updateBlock,
     onUpdatePageTitle: editorActions.updatePageTitle
   } satisfies WorkspacePageEditorProps;
 

@@ -175,7 +175,7 @@ describe("notes repository", () => {
     expect(document.blocks.map((item) => item.id)).not.toContain(block.id);
   });
 
-  test("archives linked child pages when deleting page link blocks", () => {
+  test("keeps linked child pages when deleting page link blocks", () => {
     const handle = openTempDatabase();
     const parent = createPage(handle, { title: "Parent" }).page;
     const child = createPage(handle, {
@@ -194,12 +194,42 @@ describe("notes repository", () => {
 
     deleteBlock(handle, { blockId: pageLink.id });
 
-    expect(listPages(handle).map((page) => page.id)).toEqual([parent.id]);
-    expect(searchPages(handle, { query: "Child" })).toEqual([]);
-    expect(getPageDocument(handle, { pageId: child.id }).page.archivedAt)
-      .not.toBeNull();
+    expect(listPages(handle).map((page) => page.id)).toEqual([
+      parent.id,
+      child.id,
+      grandchild.id
+    ]);
+    expect(searchPages(handle, { query: "Child" }).map((result) => result.pageId))
+      .toContain(child.id);
+    expect(getPageDocument(handle, { pageId: child.id }).page.archivedAt).toBeNull();
     expect(getPageDocument(handle, { pageId: grandchild.id }).page.archivedAt)
-      .not.toBeNull();
+      .toBeNull();
+  });
+
+  test("deletes page link blocks without archiving the linked page", () => {
+    const handle = openTempDatabase();
+    const parent = createPage(handle, { title: "Parent" }).page;
+    const child = createPage(handle, {
+      parentPageId: parent.id,
+      title: "Child"
+    }).page;
+    const firstLink = createBlock(handle, {
+      pageId: parent.id,
+      props: { targetPageId: child.id, targetTitle: child.title },
+      type: "page_link"
+    });
+    const secondLink = createBlock(handle, {
+      pageId: parent.id,
+      props: { targetPageId: child.id, targetTitle: child.title },
+      type: "page_link"
+    });
+
+    deleteBlock(handle, { blockId: firstLink.id });
+
+    expect(getPageDocument(handle, { pageId: child.id }).page.archivedAt).toBeNull();
+    expect(listPages(handle).map((page) => page.id)).toContain(child.id);
+    expect(getPageDocument(handle, { pageId: parent.id }).blocks.map((block) => block.id))
+      .toContain(secondLink.id);
   });
 
   test("soft deletes pages with descendants", () => {
@@ -417,6 +447,31 @@ describe("notes repository", () => {
     });
   });
 
+  test("creates editable child blocks inside callout containers", () => {
+    const handle = openTempDatabase();
+    const page = createPage(handle, { title: "Nested callout" }).page;
+    const root = getPageDocument(handle, { pageId: page.id }).blocks[0];
+    const callout = updateBlock(handle, {
+      blockId: root.id,
+      props: { icon: "💡" },
+      text: "",
+      type: "callout"
+    });
+
+    const child = createBlock(handle, {
+      pageId: page.id,
+      parentBlockId: callout.id,
+      text: "",
+      type: "paragraph"
+    });
+
+    expect(child.parentBlockId).toBe(callout.id);
+    expect(getPageDocument(handle, { pageId: page.id }).blocks).toMatchObject([
+      { id: callout.id, parentBlockId: null, type: "callout" },
+      { id: child.id, parentBlockId: callout.id, type: "paragraph" }
+    ]);
+  });
+
   test("inserts blocks after an existing block without sort key collisions", () => {
     const handle = openTempDatabase();
     const page = createPage(handle, { title: "Ordered" }).page;
@@ -535,6 +590,56 @@ describe("notes repository", () => {
       "00000000",
       "00000001",
       "00000002"
+    ]);
+  });
+
+  test("moves child blocks out of their parent block list", () => {
+    const handle = openTempDatabase();
+    const page = createPage(handle, { title: "Daily" }).page;
+    const initial = getPageDocument(handle, { pageId: page.id }).blocks[0];
+    const before = createBlock(handle, {
+      pageId: page.id,
+      text: "Before",
+      type: "paragraph"
+    });
+    const callout = createBlock(handle, {
+      afterBlockId: before.id,
+      pageId: page.id,
+      props: { icon: "💡" },
+      type: "callout"
+    });
+    const child = createBlock(handle, {
+      pageId: page.id,
+      parentBlockId: callout.id,
+      text: "Child",
+      type: "paragraph"
+    });
+    const sibling = createBlock(handle, {
+      afterBlockId: callout.id,
+      pageId: page.id,
+      text: "Sibling",
+      type: "paragraph"
+    });
+
+    const moved = moveBlock(handle, {
+      afterBlockId: callout.id,
+      blockId: child.id,
+      parentBlockId: null
+    });
+
+    expect(moved.parentBlockId).toBeNull();
+    expect(
+      getPageDocument(handle, { pageId: page.id }).blocks.map((block) => ({
+        id: block.id,
+        parentBlockId: block.parentBlockId,
+        text: block.text
+      }))
+    ).toEqual([
+      { id: initial.id, parentBlockId: null, text: "" },
+      { id: before.id, parentBlockId: null, text: "Before" },
+      { id: callout.id, parentBlockId: null, text: "" },
+      { id: child.id, parentBlockId: null, text: "Child" },
+      { id: sibling.id, parentBlockId: null, text: "Sibling" }
     ]);
   });
 });

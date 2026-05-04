@@ -60,7 +60,7 @@ export type PageEditorProps = {
   onTextHistoryApply: (block: Block, text: string) => void;
   onTextRedo: (block: Block) => Promise<Block | null>;
   onTextUndo: (block: Block) => Promise<Block | null>;
-  onUpdateBlock: (block: Block, changes: BlockEditorUpdate) => void;
+  onUpdateBlock: (block: Block, changes: BlockEditorUpdate) => Promise<void> | void;
   onUpdatePageTitle: (page: Page, title: string) => void;
   pages: Page[];
 };

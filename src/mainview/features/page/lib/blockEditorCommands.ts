@@ -7,6 +7,7 @@ import {
   getSplitBlockDraft
 } from "./blockEditingBehavior";
 import type { BlockEditorUpdate } from "@/mainview/features/page/types/blockEditorTypes";
+import type { CreateBlockOptions } from "@/mainview/features/page/types/blockEditorTypes";
 
 const EMPTY_ENTER_RESET_TYPES = new Set<BlockType>([
   "bulleted_list",
@@ -35,7 +36,7 @@ export type BlockShortcutContext = {
   onCreateAfter: (
     block: Block,
     draft?: ReturnType<typeof getNextBlockDraft>,
-    options?: { focusPlacement?: "end" | "start" }
+    options?: CreateBlockOptions
   ) => Promise<void>;
   onDelete: (block: Block) => void;
   onFocusNext: (block: Block) => void;
@@ -190,7 +191,8 @@ export const BLOCK_EDITOR_COMMANDS: Command<BlockShortcutContext>[] = [
 
       onUpdate(block, currentUpdate);
       await onCreateAfter(block, splitDraft.nextDraft, {
-        focusPlacement: "start"
+        focusPlacement: "start",
+        parentBlockId: block.parentBlockId
       });
     }
   },
@@ -208,7 +210,10 @@ export const BLOCK_EDITOR_COMMANDS: Command<BlockShortcutContext>[] = [
 
       await onCreateAfter(
         block,
-        getNextBlockDraft(block, numberedListMarker ?? undefined)
+        getNextBlockDraft(block, numberedListMarker ?? undefined),
+        {
+          parentBlockId: block.parentBlockId
+        }
       );
     }
   },
@@ -268,7 +273,8 @@ export const BLOCK_EDITOR_COMMANDS: Command<BlockShortcutContext>[] = [
     }
   },
   {
-    canRun: ({ getCursorOffset }) => getCursorOffset() === 0,
+    canRun: ({ block, getCursorOffset }) =>
+      block.type === "page_link" || getCursorOffset() === 0,
     defaultKeybindings: ["ArrowUp"],
     id: "editor.block.focusPrevious",
     scope: "block",
@@ -279,7 +285,8 @@ export const BLOCK_EDITOR_COMMANDS: Command<BlockShortcutContext>[] = [
     }
   },
   {
-    canRun: ({ draft, getCursorOffset }) => getCursorOffset() === draft.length,
+    canRun: ({ block, draft, getCursorOffset }) =>
+      block.type === "page_link" || getCursorOffset() === draft.length,
     defaultKeybindings: ["ArrowDown"],
     id: "editor.block.focusNext",
     scope: "block",

@@ -22,6 +22,7 @@ type WorkspaceEditorActionsOptions = {
     mutateAsync: (input: {
       afterBlockId?: string | null;
       pageId: string;
+      parentBlockId?: string | null;
       props?: BlockProps;
       text?: string;
       type?: Block["type"];
@@ -116,9 +117,11 @@ export function useWorkspaceEditorActions({
     options?: CreateBlockOptions
   ) {
     await flushAllTextDrafts();
+    const parentBlockId = options?.parentBlockId ?? block.parentBlockId;
     const created = await createBlockMutation.mutateAsync({
-      afterBlockId: block.id,
+      afterBlockId: options?.afterBlockId === undefined ? block.id : options.afterBlockId,
       pageId: block.pageId,
+      parentBlockId,
       props: draft?.props,
       text: draft?.text,
       type: draft?.type

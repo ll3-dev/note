@@ -21,6 +21,7 @@ export type BlockCommand = {
   action?: "delete" | "insertAfter" | "turnInto";
   aliases: string[];
   createBlockAfter?: CreateBlockDraft;
+  createChildBlock?: CreateBlockDraft;
   description: string;
   icon: typeof Text;
   id: string;
@@ -153,6 +154,7 @@ export const BLOCK_COMMANDS: BlockCommand[] = [
   {
     action: "turnInto",
     aliases: ["alert", "info", "notice", "tip", "warning"],
+    createChildBlock: { props: {}, text: "", type: "paragraph" },
     description: "Highlighted callout with icon",
     icon: MessageSquare,
     id: "turn-into-callout",
@@ -178,6 +180,7 @@ export function filterBlockCommands(query: string) {
 
 export type MarkdownShortcut = {
   createBlockAfter?: CreateBlockDraft;
+  createChildBlock?: CreateBlockDraft;
   props: BlockProps;
   text: string;
   type: BlockType;
@@ -201,7 +204,15 @@ export function getMarkdownShortcut(value: string): MarkdownShortcut | null {
     [/^>\s$/, { props: { open: true }, text: "", type: "toggle" }],
     [/^"\s$/, { props: {}, text: "", type: "quote" }],
     [/^```\s?$/, { props: {}, text: "", type: "code" }],
-    [/^>!\s$/, { props: { icon: "💡" }, text: "", type: "callout" }],
+    [
+      /^>!\s$/,
+      {
+        createChildBlock: { props: {}, text: "", type: "paragraph" },
+        props: { icon: "💡" },
+        text: "",
+        type: "callout"
+      }
+    ],
     [/^###\s$/, { props: {}, text: "", type: "heading_3" }],
     [/^\[\]\s$|^\[ \]\s$/, { props: { checked: false }, text: "", type: "todo" }],
     [

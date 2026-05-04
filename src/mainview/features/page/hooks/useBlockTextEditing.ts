@@ -1,6 +1,10 @@
 import { RefObject, useCallback, useState } from "react";
 import type { Block, BlockProps } from "@/shared/contracts";
-import { type BlockCommand, getMarkdownShortcut } from "@/mainview/features/page/lib/blockCommands";
+import {
+  type BlockCommand,
+  getMarkdownShortcut,
+  type MarkdownShortcut
+} from "@/mainview/features/page/lib/blockCommands";
 import {
   placeCursorAtEnd,
   placeCursorAtOffset
@@ -38,7 +42,7 @@ type UseBlockTextEditingOptions = {
   onTextHistoryApply: (block: Block, text: string) => void;
   onTextRedo: (block: Block) => Promise<Block | null>;
   onTextUndo: (block: Block) => Promise<Block | null>;
-  onUpdate: (block: Block, changes: BlockEditorUpdate) => void;
+  onUpdate: (block: Block, changes: BlockEditorUpdate) => Promise<void> | void;
 };
 
 export function useBlockTextEditing({
@@ -151,7 +155,7 @@ export function useBlockTextEditing({
     setDraftType(command.type);
     syncEditableText(nextText);
     commandMenu.closeCommandMenu();
-    onUpdate(block, {
+    await onUpdate(block, {
       props: nextProps,
       text: nextText,
       type: command.type
@@ -162,6 +166,16 @@ export function useBlockTextEditing({
       });
       return;
     }
+
+    if (command.createChildBlock) {
+      await onCreateBlockAfter(block, command.createChildBlock, {
+        afterBlockId: null,
+        focusPlacement: "start",
+        parentBlockId: block.id
+      });
+      return;
+    }
+
     editableRef.current?.focus();
   }
 
@@ -182,10 +196,7 @@ export function useBlockTextEditing({
       setDraftType(shortcut.type);
       syncEditableText(shortcut.text);
       commandMenu.closeCommandMenu();
-      onUpdate(block, shortcut);
-      if (shortcut.createBlockAfter) {
-        void onCreateBlockAfter(block, shortcut.createBlockAfter);
-      }
+      void applyMarkdownShortcut(shortcut);
       return;
     }
 
@@ -230,6 +241,24 @@ export function useBlockTextEditing({
         { props: {}, text: "", type: "paragraph" },
         { focusPlacement: "start" }
       );
+    }
+  }
+
+  async function applyMarkdownShortcut(shortcut: MarkdownShortcut) {
+    await onUpdate(block, {
+      props: shortcut.props,
+      text: shortcut.text,
+      type: shortcut.type
+    });
+
+    if (shortcut.createBlockAfter) {
+      await onCreateBlockAfter(block, shortcut.createBlockAfter);
+    } else if (shortcut.createChildBlock) {
+      await onCreateBlockAfter(block, shortcut.createChildBlock, {
+        afterBlockId: null,
+        focusPlacement: "start",
+        parentBlockId: block.id
+      });
     }
   }
 

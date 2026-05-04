@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { PageDocument } from "@/shared/contracts";
 import { placeCursorAtEnd, placeCursorAtStart } from "@/mainview/features/page/web/domSelection";
+import { getBlockFocusTarget } from "@/mainview/features/page/web/blockFocusDom";
 
 type FocusPlacement = "start" | "end";
 
@@ -17,16 +18,20 @@ export function useBlockFocus(document: PageDocument | null) {
       return;
     }
 
-    const editable = window.document.querySelector<HTMLElement>(
-      `[data-block-id="${focusTarget.blockId}"] [contenteditable]`
-    );
+    const target = getBlockFocusTarget(focusTarget.blockId);
 
-    if (editable) {
+    if (target?.isContentEditable) {
       if (focusTarget.placement === "start") {
-        placeCursorAtStart(editable);
+        placeCursorAtStart(target);
       } else {
-        placeCursorAtEnd(editable);
+        placeCursorAtEnd(target);
       }
+      setFocusTarget(null);
+      return;
+    }
+
+    if (target) {
+      target.focus();
       setFocusTarget(null);
     }
   }, [document, focusTarget]);

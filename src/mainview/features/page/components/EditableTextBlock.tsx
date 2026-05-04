@@ -1,22 +1,17 @@
 import type {
   DragEvent,
-  FormEvent,
+  InputEvent as ReactInputEvent,
   KeyboardEvent,
   RefObject
 } from "react";
-import { useState } from "react";
 import { cn } from "@/mainview/lib/utils";
 import type { Block } from "@/shared/contracts";
 import { editableClass } from "@/mainview/features/page/lib/blockStyles";
 import { useBlockClipboardEditing } from "@/mainview/features/page/hooks/useBlockClipboardEditing";
-import { useInlinePageSearch } from "@/mainview/features/page/hooks/useInlinePageSearch";
+import { useInlinePageLinkEditing } from "@/mainview/features/page/hooks/useInlinePageLinkEditing";
 import { InlineMarksViewer } from "./InlineMarksViewer";
 import { InlinePageSearchMenu } from "./InlinePageSearchMenu";
-import { getInlinePageLinkProps } from "@/mainview/features/page/lib/inlineFormatting";
-import {
-  getCursorClientRect,
-  getCursorTextOffset
-} from "@/mainview/features/page/web/domSelection";
+import { SearchHighlightOverlay } from "./SearchHighlightOverlay";
 import type {
   InlinePageLinkApplyMode,
   SearchHighlight,
@@ -30,7 +25,7 @@ type EditableTextBlockProps = {
   draftProps: Block["props"];
   editableRef: RefObject<HTMLDivElement | null>;
   isSelected: boolean;
-  onBeforeInput: (event: FormEvent<HTMLDivElement>) => void;
+  onBeforeInput: (event: ReactInputEvent<HTMLDivElement>) => void;
   onBlur: () => Promise<void>;
   onChange: (value: string) => void;
   onDragStart: (event: DragEvent<HTMLDivElement>) => void;
@@ -80,51 +75,20 @@ export function EditableTextBlock({
     onKeyDown,
     onPasteMarkdown
   });
-  const { triggerState, checkTrigger, closeSearch } = useInlinePageSearch();
-  const [inlineSearchRect, setInlineSearchRect] = useState<DOMRect | null>(null);
+  const {
+    closeInlineSearch,
+    handleEditableInput,
+    handlePageSelect,
+    inlineSearchRect,
+    triggerState
+  } = useInlinePageLinkEditing({
+    draft,
+    draftProps,
+    editableRef,
+    onApplyInlinePageLink
+  });
   const isCheckedTodo = checked && block.type === "todo";
   const hasMarks = hasInlineMarks(draftProps);
-
-  function closeInlineSearch() {
-    closeSearch();
-    setInlineSearchRect(null);
-  }
-
-  function handlePageSelect(pageId: string, pageTitle: string) {
-    if (!triggerState || !editableRef.current) return;
-
-    const text = draft;
-    const triggerEnd = triggerState.triggerOffset + (triggerState.triggerChar === "[[" ? 2 : 1);
-    const queryEnd = triggerEnd + triggerState.query.length;
-
-    const beforeTrigger = text.slice(0, triggerState.triggerOffset);
-    const afterQuery = text.slice(queryEnd);
-    const isStandalonePageLink =
-      beforeTrigger.trim().length === 0 && afterQuery.trim().length === 0;
-
-    if (isStandalonePageLink) {
-      onApplyInlinePageLink(
-        "",
-        { targetPageId: pageId, targetTitle: pageTitle },
-        0,
-        "block"
-      );
-      closeInlineSearch();
-      return;
-    }
-
-    const newText = beforeTrigger + pageTitle + afterQuery;
-
-    const markStart = beforeTrigger.length;
-    const markEnd = markStart + pageTitle.length;
-    const newProps = getInlinePageLinkProps(draftProps, { start: markStart, end: markEnd }, pageId);
-
-    if (newProps) {
-      onApplyInlinePageLink(newText, newProps, markEnd);
-    }
-
-    closeInlineSearch();
-  }
 
   return (
     <div className="relative min-w-0 flex-1">
@@ -154,6 +118,8 @@ export function EditableTextBlock({
         )}
         contentEditable="plaintext-only"
         data-has-inline-marks={hasMarks ? "true" : undefined}
+        data-block-focus-target
+        data-block-focus-target-id={block.id}
         data-placeholder="Type '/' for commands"
         draggable={isSelected}
         onBlur={() => void onBlur()}
@@ -175,17 +141,7 @@ export function EditableTextBlock({
 
           const nextValue = event.currentTarget.textContent ?? "";
           onChange(nextValue);
-
-          // Check for page link triggers
-          if (editableRef.current) {
-            const offset = getCursorTextOffset(editableRef.current);
-            if (offset !== null) {
-              const nextTriggerState = checkTrigger(nextValue, offset);
-              setInlineSearchRect(
-                nextTriggerState ? getCursorClientRect(editableRef.current) : null
-              );
-            }
-          }
+          handleEditableInput(nextValue);
         }}
         onKeyDownCapture={handleEditableKeyDown}
         onKeyUp={(event) => {
@@ -227,82 +183,4 @@ function shouldSyncSelectionAfterKey(key: string) {
     "PageUp",
     "PageDown"
   ].includes(key);
-}
-
-function SearchHighlightOverlay({
-  highlights,
-  activeHighlight,
-  text
-}: {
-  highlights: SearchHighlight[];
-  activeHighlight?: SearchHighlight;
-  text: string;
-}) {
-  return (
-    <div
-      aria-hidden
-      className="pointer-events-none absolute inset-0 whitespace-pre-wrap wrap-break-word px-1 py-1"
-    >
-      {buildHighlightSegments(text, highlights, activeHighlight).map((segment) => (
-        <span
-          className={cn(
-            segment.isActive && "bg-orange-300/60 rounded-sm",
-            segment.isHighlight && "bg-yellow-200/60 rounded-sm"
-          )}
-          key={segment.key}
-        >
-          {segment.text}
-        </span>
-      ))}
-    </div>
-  );
-}
-
-type HighlightSegment = {
-  isActive: boolean;
-  isHighlight: boolean;
-  key: string;
-  text: string;
-};
-
-function buildHighlightSegments(
-  text: string,
-  highlights: SearchHighlight[],
-  activeHighlight?: SearchHighlight
-): HighlightSegment[] {
-  const points = new Set<number>();
-
-  points.add(0);
-  points.add(text.length);
-
-  for (const h of highlights) {
-    points.add(h.offset);
-    points.add(h.offset + h.length);
-  }
-
-  const sorted = Array.from(points).sort((a, b) => a - b);
-  const segments: HighlightSegment[] = [];
-
-  for (let i = 0; i < sorted.length - 1; i++) {
-    const start = sorted[i];
-    const end = sorted[i + 1];
-
-    if (start === end) continue;
-
-    const isHighlight = highlights.some(
-      (h) => h.offset <= start && h.offset + h.length >= end
-    );
-    const isActive = activeHighlight
-      ? activeHighlight.offset <= start && activeHighlight.offset + activeHighlight.length >= end
-      : false;
-
-    segments.push({
-      isActive,
-      isHighlight: isHighlight && !isActive,
-      key: `${start}-${end}`,
-      text: text.slice(start, end)
-    });
-  }
-
-  return segments;
 }

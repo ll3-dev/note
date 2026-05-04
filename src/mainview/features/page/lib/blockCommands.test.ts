@@ -110,9 +110,26 @@ describe("block command shortcuts", () => {
 
   test("converts callout shortcut into callout block", () => {
     expect(getMarkdownShortcut(">! ")).toEqual({
+      createChildBlock: {
+        props: {},
+        text: "",
+        type: "paragraph"
+      },
       props: { icon: "💡" },
       text: "",
       type: "callout"
+    });
+  });
+
+  test("callout command requests an editable child paragraph", () => {
+    const calloutCommand = BLOCK_COMMANDS.find(
+      (command) => command.id === "turn-into-callout"
+    );
+
+    expect(calloutCommand?.createChildBlock).toEqual({
+      props: {},
+      text: "",
+      type: "paragraph"
     });
   });
 

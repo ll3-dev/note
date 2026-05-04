@@ -2,12 +2,16 @@ import { describe, expect, test } from "bun:test";
 import type { Block, PageDocument } from "@/shared/contracts";
 import { findAdjacentFocusableBlock } from "./blockFocus";
 
-function block(id: string, type: Block["type"] = "paragraph"): Block {
+function block(
+  id: string,
+  type: Block["type"] = "paragraph",
+  parentBlockId: string | null = null
+): Block {
   return {
     createdAt: "2026-05-01T00:00:00.000Z",
     id,
     pageId: "page-1",
-    parentBlockId: null,
+    parentBlockId,
     props: {},
     sortKey: id,
     text: "",
@@ -59,5 +63,17 @@ describe("block focus", () => {
     const last = block("last");
 
     expect(findAdjacentFocusableBlock(document([divider, last]), last, -1)).toBeNull();
+  });
+
+  test("skips callout container shells when moving out of child blocks", () => {
+    const before = block("a-before");
+    const callout = block("b-callout", "callout");
+    const child = block("c-child", "paragraph", "b-callout");
+    const after = block("d-after");
+
+    const pageDocument = document([before, callout, child, after]);
+
+    expect(findAdjacentFocusableBlock(pageDocument, child, -1)).toBe(before);
+    expect(findAdjacentFocusableBlock(pageDocument, child, 1)).toBe(after);
   });
 });

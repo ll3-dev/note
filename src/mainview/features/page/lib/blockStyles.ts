@@ -9,10 +9,6 @@ export function blockShellClass(type: BlockType) {
     return "rounded-md bg-muted px-2";
   }
 
-  if (type === "callout") {
-    return "rounded-md bg-accent/50 px-3 py-1";
-  }
-
   return "";
 }
 

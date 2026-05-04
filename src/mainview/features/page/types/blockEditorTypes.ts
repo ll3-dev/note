@@ -1,4 +1,4 @@
-import type { PointerEvent } from "react";
+import type { PointerEvent, ReactNode } from "react";
 import type {
   Block,
   BlockProps,
@@ -16,7 +16,9 @@ export type BlockEditorUpdate = {
 export type InlinePageLinkApplyMode = "block" | "inline";
 
 export type CreateBlockOptions = {
+  afterBlockId?: string | null;
   focusPlacement?: "end" | "start";
+  parentBlockId?: string | null;
 };
 
 export type OpenPageLinkOptions = {
@@ -84,10 +86,11 @@ export type BlockEditorProps = {
   onTextHistoryApply: (block: Block, text: string) => void;
   onTextRedo: (block: Block) => Promise<Block | null>;
   onTextUndo: (block: Block) => Promise<Block | null>;
-  onUpdate: (block: Block, changes: BlockEditorUpdate) => void;
+  onUpdate: (block: Block, changes: BlockEditorUpdate) => Promise<void> | void;
   openSearch: () => void;
   searchHighlights?: SearchHighlight[];
   searchActiveHighlight?: SearchHighlight;
+  nestedChildren?: ReactNode;
 };
 
 export type BlockEditorActions = Pick<

@@ -41,8 +41,10 @@ export function BlockEditor({
   onUpdate,
   openSearch,
   searchHighlights,
-  searchActiveHighlight
+  searchActiveHighlight,
+  nestedChildren
 }: BlockEditorProps) {
+  const isCallout = block.type === "callout";
   const {
     checked,
     depth,
@@ -81,6 +83,9 @@ export function BlockEditor({
     openSearch,
     previousBlock
   });
+  const calloutIcon =
+    typeof textEditing.draftProps.icon === "string" ? textEditing.draftProps.icon : "💡";
+  const legacyCalloutText = textEditing.draft.trim();
 
   return (
     <div
@@ -105,34 +110,58 @@ export function BlockEditor({
         onDragStart={onDragStart}
       />
 
-      <div className="min-w-0">
-        <BlockBody
-          block={block}
-          blockIndex={blockIndex}
-          checked={checked}
-          draft={textEditing.draft}
-          draftProps={textEditing.draftProps}
-          isSelected={isSelected}
-          linkedPage={linkedPage}
-          numberedListMarker={numberedListMarker}
-          onApplyInlinePageLink={textEditing.applyInlinePageLinkDraft}
-          onBlur={textEditing.commitDraft}
-          onBeforeInput={handleBeforeInput}
-          onChange={textEditing.changeDraft}
-          onDragStart={handleShellDragStart}
-          onHistoryInput={handleHistoryInput}
-          onKeyDown={handleKeyDown}
-          onOpenPageLink={onOpenPageLink}
-          onRestorePageLink={onRestorePageLink}
-          onPasteMarkdown={onPasteMarkdown}
-          onSelectionChange={textEditing.syncActiveInlineMarksFromSelection}
-          onUpdate={onUpdate}
-          editableRef={editableRef}
-          searchHighlights={searchHighlights}
-          searchActiveHighlight={searchActiveHighlight}
-        />
+      <div
+        className={cn(
+          "min-w-0",
+          isCallout && "rounded-md bg-accent/50 px-3 py-1"
+        )}
+      >
+        {isCallout ? (
+          <div className="flex min-w-0 items-start gap-2">
+            <span className="mt-1 shrink-0 text-lg" role="img" aria-label="callout icon">
+              {calloutIcon}
+            </span>
+            <div className="min-w-0 flex-1">
+              {nestedChildren ??
+                (legacyCalloutText ? (
+                  <div className="min-h-7 whitespace-pre-wrap break-words px-1 py-1.5">
+                    {textEditing.draft}
+                  </div>
+                ) : null)}
+            </div>
+          </div>
+        ) : (
+          <>
+            <BlockBody
+              block={block}
+              blockIndex={blockIndex}
+              checked={checked}
+              draft={textEditing.draft}
+              draftProps={textEditing.draftProps}
+              isSelected={isSelected}
+              linkedPage={linkedPage}
+              numberedListMarker={numberedListMarker}
+              onApplyInlinePageLink={textEditing.applyInlinePageLinkDraft}
+              onBlur={textEditing.commitDraft}
+              onBeforeInput={handleBeforeInput}
+              onChange={textEditing.changeDraft}
+              onDragStart={handleShellDragStart}
+              onHistoryInput={handleHistoryInput}
+              onKeyDown={handleKeyDown}
+              onOpenPageLink={onOpenPageLink}
+              onRestorePageLink={onRestorePageLink}
+              onPasteMarkdown={onPasteMarkdown}
+              onSelectionChange={textEditing.syncActiveInlineMarksFromSelection}
+              onUpdate={onUpdate}
+              editableRef={editableRef}
+              searchHighlights={searchHighlights}
+              searchActiveHighlight={searchActiveHighlight}
+            />
+            {nestedChildren ? <div className="mt-1 pl-6">{nestedChildren}</div> : null}
+          </>
+        )}
 
-        {textEditing.isCommandMenuOpen ? (
+        {!isCallout && textEditing.isCommandMenuOpen ? (
           <BlockCommandMenu
             activeIndex={textEditing.selectedCommandIndex}
             anchorRef={editableRef}
@@ -141,11 +170,13 @@ export function BlockEditor({
             onSelect={textEditing.applyCommand}
           />
         ) : null}
-        <InlineFormattingToolbar
-          onFormat={textEditing.applyInlineFormat}
-          onLink={textEditing.applyInlineLink}
-          rect={textEditing.selectionToolbarRect}
-        />
+        {!isCallout ? (
+          <InlineFormattingToolbar
+            onFormat={textEditing.applyInlineFormat}
+            onLink={textEditing.applyInlineLink}
+            rect={textEditing.selectionToolbarRect}
+          />
+        ) : null}
       </div>
     </div>
   );

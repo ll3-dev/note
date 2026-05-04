@@ -1,22 +1,28 @@
-import { placeCursorAtEnd } from "./domSelection";
+import { placeCursorAtEnd, placeCursorAtStart } from "./domSelection";
 
-export function focusEditableBlockById(blockId: string) {
+type FocusPlacement = "start" | "end";
+
+export function focusEditableBlockById(blockId: string, placement: FocusPlacement = "end") {
   window.requestAnimationFrame(() => {
-    const editable = window.document.querySelector<HTMLElement>(
-      `[data-block-id="${blockId}"] [contenteditable]`
-    );
+    const focusTarget = getBlockFocusTarget(blockId);
 
-    if (editable) {
-      placeCursorAtEnd(editable);
+    if (focusTarget?.isContentEditable) {
+      if (placement === "start") {
+        placeCursorAtStart(focusTarget);
+      } else {
+        placeCursorAtEnd(focusTarget);
+      }
       return;
     }
-
-    const focusTarget = window.document.querySelector<HTMLElement>(
-      `[data-block-id="${blockId}"] [data-block-focus-target]`
-    );
 
     if (focusTarget) {
       focusTarget.focus();
     }
   });
+}
+
+export function getBlockFocusTarget(blockId: string) {
+  return window.document.querySelector<HTMLElement>(
+    `[data-block-focus-target][data-block-focus-target-id="${CSS.escape(blockId)}"]`
+  );
 }

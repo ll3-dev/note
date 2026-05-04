@@ -77,17 +77,57 @@ function createContext(overrides: Partial<BlockShortcutContext> = {}) {
 }
 
 describe("block editor commands", () => {
-  test("continues list blocks when creating a block below", async () => {
+  test("creates paragraph siblings inside the same parent block on Enter", async () => {
     const createdDrafts: unknown[] = [];
+    const createOptions: unknown[] = [];
     const { calls, context } = createContext({
       block: {
         ...block,
+        parentBlockId: "callout-1",
+        text: "inside callout"
+      },
+      draft: "inside callout",
+      isCommandMenuOpen: false,
+      onCreateAfter: async (_block, draft, options) => {
+        calls.push("onCreateAfter");
+        createdDrafts.push(draft);
+        createOptions.push(options);
+      }
+    });
+    const command = resolveKeybinding({
+      activeScopes: ["global", "editor", "block"],
+      commands: BLOCK_EDITOR_COMMANDS,
+      context,
+      event: {
+        altKey: false,
+        ctrlKey: false,
+        key: "Enter",
+        metaKey: false,
+        shiftKey: false
+      }
+    });
+
+    expect(command?.id).toBe("editor.block.createBelow");
+    await command?.run(context);
+    expect(calls).toEqual(["commitDraft", "onCreateAfter"]);
+    expect(createdDrafts).toEqual([{ props: {}, type: "paragraph" }]);
+    expect(createOptions).toEqual([{ parentBlockId: "callout-1" }]);
+  });
+
+  test("continues list blocks when creating a block below", async () => {
+    const createdDrafts: unknown[] = [];
+    const createOptions: unknown[] = [];
+    const { calls, context } = createContext({
+      block: {
+        ...block,
+        parentBlockId: "callout-1",
         props: { depth: 1 },
         type: "bulleted_list"
       },
-      onCreateAfter: async (_block, draft) => {
+      onCreateAfter: async (_block, draft, options) => {
         calls.push("onCreateAfter");
         createdDrafts.push(draft);
+        createOptions.push(options);
       }
     });
     const command = resolveKeybinding({
@@ -110,6 +150,11 @@ describe("block editor commands", () => {
       {
         props: { depth: 1 },
         type: "bulleted_list"
+      }
+    ]);
+    expect(createOptions).toEqual([
+      {
+        parentBlockId: "callout-1"
       }
     ]);
   });
@@ -193,14 +238,17 @@ describe("block editor commands", () => {
 
   test("resets heading blocks to paragraph when creating below", async () => {
     const createdDrafts: unknown[] = [];
+    const createOptions: unknown[] = [];
     const { context } = createContext({
       block: {
         ...block,
+        parentBlockId: "callout-1",
         props: { depth: 2 },
         type: "heading_1"
       },
-      onCreateAfter: async (_block, draft) => {
+      onCreateAfter: async (_block, draft, options) => {
         createdDrafts.push(draft);
+        createOptions.push(options);
       }
     });
     const command = resolveKeybinding({
@@ -221,6 +269,11 @@ describe("block editor commands", () => {
       {
         props: { depth: 2 },
         type: "paragraph"
+      }
+    ]);
+    expect(createOptions).toEqual([
+      {
+        parentBlockId: "callout-1"
       }
     ]);
   });
@@ -340,6 +393,55 @@ describe("block editor commands", () => {
       "undoTextDraft",
       "commitDraft",
       "redoTextDraft"
+    ]);
+  });
+
+  test("moves page link block focus with arrow keys", async () => {
+    const { calls, context } = createContext({
+      block: {
+        ...block,
+        type: "page_link"
+      },
+      draft: "",
+      getCursorOffset: () => null,
+      isCommandMenuOpen: false
+    });
+    const previousCommand = resolveKeybinding({
+      activeScopes: ["global", "editor", "block"],
+      commands: BLOCK_EDITOR_COMMANDS,
+      context,
+      event: {
+        altKey: false,
+        ctrlKey: false,
+        key: "ArrowUp",
+        metaKey: false,
+        shiftKey: false
+      }
+    });
+
+    expect(previousCommand?.id).toBe("editor.block.focusPrevious");
+    await previousCommand?.run(context);
+
+    const nextCommand = resolveKeybinding({
+      activeScopes: ["global", "editor", "block"],
+      commands: BLOCK_EDITOR_COMMANDS,
+      context,
+      event: {
+        altKey: false,
+        ctrlKey: false,
+        key: "ArrowDown",
+        metaKey: false,
+        shiftKey: false
+      }
+    });
+
+    expect(nextCommand?.id).toBe("editor.block.focusNext");
+    await nextCommand?.run(context);
+    expect(calls).toEqual([
+      "commitDraft",
+      "onFocusPrevious",
+      "commitDraft",
+      "onFocusNext"
     ]);
   });
 
