@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, PanelLeft, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, ClipboardCopy, PanelLeft, Plus } from "lucide-react";
 import { useCallback, type MouseEvent } from "react";
 import { Button } from "@/mainview/components/ui/button";
 import { cn } from "@/mainview/lib/utils";
@@ -18,6 +18,7 @@ type WorkspaceTitleBarProps = {
   isCreatingPage: boolean;
   isSidebarCollapsed: boolean;
   onCloseTab: (event: MouseEvent<HTMLButtonElement>, tabId: string) => void;
+  onCopyCurrentPageMarkdown: () => void;
   onCreateUntitledPage: () => void;
   onReorderTab: (
     sourceTabId: string,
@@ -43,6 +44,7 @@ export function WorkspaceTitleBar({
   isCreatingPage,
   isSidebarCollapsed,
   onCloseTab,
+  onCopyCurrentPageMarkdown,
   onCreateUntitledPage,
   onReorderTab,
   onSelectTab,
@@ -64,7 +66,7 @@ export function WorkspaceTitleBar({
     <>
       <header
         className={cn(
-          "workspace-titlebar electrobun-webkit-app-region-no-drag absolute right-0 top-0 z-20 flex h-8 items-center gap-1 overflow-hidden bg-sidebar/95 pr-1.5 transition-[height,opacity,left] duration-150",
+          "workspace-titlebar electrobun-webkit-app-region-no-drag absolute right-0 top-0 z-20 flex h-8 items-center gap-1 overflow-hidden bg-sidebar/95 pr-1.5 transition-[height,opacity,left] duration-200 ease-out",
           isSidebarCollapsed ? "pl-[76px]" : "pl-2"
         )}
         style={{ left: sidebarOffset }}
@@ -144,6 +146,17 @@ export function WorkspaceTitleBar({
           variant="ghost"
         >
           <Plus className="size-3.5" />
+        </Button>
+        <Button
+          aria-label="현재 페이지 Markdown 복사"
+          className="electrobun-webkit-app-region-no-drag"
+          disabled={!activeTabId}
+          onClick={onCopyCurrentPageMarkdown}
+          size="icon-xs"
+          title="현재 페이지 Markdown 복사"
+          variant="ghost"
+        >
+          <ClipboardCopy className="size-3.5" />
         </Button>
       </header>
 

@@ -1,6 +1,7 @@
 import { type MouseEvent, type ReactNode, type SyntheticEvent } from "react";
 import { useWorkspaceStore } from "@/mainview/store/useWorkspaceStore";
 import type { Page } from "@/shared/contracts";
+import { cn } from "@/mainview/lib/utils";
 import { useSidebarResize } from "@/mainview/features/workspace/hooks/useSidebarResize";
 import type { TextSyncStatus } from "@/mainview/features/workspace/hooks/useBlockTextSync";
 import { WorkspaceSidebar } from "./WorkspaceSidebar";
@@ -87,6 +88,7 @@ export function WorkspaceLayout({
         isCreatingPage={isCreatingPage}
         isSidebarCollapsed={isSidebarCollapsed}
         onCloseTab={onCloseTab}
+        onCopyCurrentPageMarkdown={onCopyCurrentPageMarkdown}
         onCreateUntitledPage={onCreateUntitledPage}
         onSelectTab={onSelectTab}
         onToggleSidebar={toggleSidebar}
@@ -95,46 +97,68 @@ export function WorkspaceLayout({
         tabs={tabs}
       />
 
-      <div className="flex h-full min-h-0">
+      <div className="relative h-full min-h-0 overflow-hidden">
         <div
           aria-hidden={isSidebarCollapsed}
-          className={
-            isResizingSidebar
-              ? "shrink-0 overflow-hidden"
-              : "shrink-0 overflow-hidden transition-[width] duration-150 ease-out"
-          }
+          className="absolute bottom-0 left-0 top-0 z-0 overflow-hidden bg-sidebar"
           inert={isSidebarCollapsed ? true : undefined}
-          style={{ width: isSidebarCollapsed ? 0 : sidebarWidth }}
+          style={{ width: sidebarWidth }}
         >
           <aside
-            className={
-              isResizingSidebar
-                ? "relative flex h-full flex-col border-r border-border bg-sidebar"
-                : "relative flex h-full flex-col border-r border-border bg-sidebar transition-transform duration-150 ease-out"
-            }
+            className={cn(
+              "relative flex h-full flex-col border-r border-border bg-sidebar",
+              !isResizingSidebar &&
+                "transition-transform duration-200 ease-out"
+            )}
             style={{
-              transform: isSidebarCollapsed
-                ? "translateX(-100%)"
-                : "translateX(0)",
+              transform: isSidebarCollapsed ? "scale(0.992)" : "scale(1)",
+              transformOrigin: "left center",
               width: sidebarWidth
             }}
           >
-            <WorkspaceSidebar
-              activePageId={activePageId}
-              isCreatingPage={isCreatingPage}
-              onCreatePage={onCreatePage}
-              onDeletePage={onDeletePage}
-              onMovePage={onMovePage}
-              onOpenSettings={onOpenSettings}
-              onRefreshWorkspace={onRefreshWorkspace}
-              onResizeSidebar={handleResizeSidebar}
-              onSelectPage={onSelectPage}
-              pages={pages}
-            />
+            <div
+              className={cn(
+                "h-full",
+                !isResizingSidebar &&
+                  "transition-[opacity,transform] duration-300 ease-out",
+                !isSidebarCollapsed && "delay-75"
+              )}
+              style={{
+                opacity: isSidebarCollapsed ? 0 : 1,
+                transform: isSidebarCollapsed
+                  ? "translate3d(-14px, 0, 0)"
+                  : "translate3d(0, 0, 0)"
+              }}
+            >
+              <WorkspaceSidebar
+                activePageId={activePageId}
+                isCreatingPage={isCreatingPage}
+                onCreatePage={onCreatePage}
+                onDeletePage={onDeletePage}
+                onMovePage={onMovePage}
+                onOpenSettings={onOpenSettings}
+                onRefreshWorkspace={onRefreshWorkspace}
+                onResizeSidebar={handleResizeSidebar}
+                onSelectPage={onSelectPage}
+                pages={pages}
+              />
+            </div>
           </aside>
         </div>
 
-        <section className="workspace-content relative min-w-0 flex-1 bg-background pt-8 transition-[padding-top] duration-150">
+        <section
+          className={cn(
+            "workspace-content absolute bottom-0 left-0 top-0 z-10 min-w-0 bg-background pt-8",
+            isResizingSidebar
+              ? "transition-[padding-top] duration-150"
+              : "transition-[transform,width,padding-top,box-shadow] duration-200 ease-out",
+            isSidebarCollapsed && "shadow-[-18px_0_36px_-30px_var(--foreground)]"
+          )}
+          style={{
+            transform: `translate3d(${isSidebarCollapsed ? 0 : sidebarWidth}px, 0, 0)`,
+            width: isSidebarCollapsed ? "100%" : `calc(100% - ${sidebarWidth}px)`
+          }}
+        >
           {children}
         </section>
       </div>
