@@ -4,13 +4,24 @@ import type {
   KeyboardEvent,
   RefObject
 } from "react";
-import { ChevronDown, ChevronRight } from "lucide-react";
 import { cn } from "@/mainview/lib/utils";
 import type { Block, Page } from "@/shared/contracts";
 import { getBlockDepth } from "@/mainview/features/page/lib/blockEditingBehavior";
 import { blockShellClass } from "@/mainview/features/page/lib/blockStyles";
 import { useEditableHistoryInput } from "@/mainview/features/page/hooks/useEditableHistoryInput";
-import { EditableTextBlock } from "./EditableTextBlock";
+import {
+  EditableTextBlock,
+  type EditableTextBlockActions,
+  type EditableTextBlockState
+} from "./EditableTextBlock";
+import {
+  BulletedListMarker,
+  CalloutMarker,
+  DividerBlockBody,
+  NumberedListMarker,
+  TodoMarker,
+  ToggleMarker
+} from "./BlockBodyParts";
 import { ImageBlock } from "./ImageBlock";
 import { PageLinkBlock } from "./PageLinkBlock";
 import type {
@@ -21,7 +32,7 @@ import type {
   TextSelectionOffsets
 } from "@/mainview/features/page/types/blockEditorTypes";
 
-type BlockBodyProps = {
+export type BlockBodyState = {
   block: Block;
   blockIndex: number;
   checked: boolean;
@@ -30,6 +41,12 @@ type BlockBodyProps = {
   numberedListMarker: number | null;
   isSelected: boolean;
   linkedPage: Page | null;
+  editableRef: RefObject<HTMLDivElement | null>;
+  searchHighlights?: SearchHighlight[];
+  searchActiveHighlight?: SearchHighlight;
+};
+
+export type BlockBodyActions = {
   onBlur: () => Promise<void>;
   onBeforeInput: (event: ReactInputEvent<HTMLDivElement>) => void;
   onChange: (value: string) => void;
@@ -52,103 +69,111 @@ type BlockBodyProps = {
   onRestorePageLink: (pageId: string) => void;
   onSelectionChange: () => void;
   onUpdate: (block: Block, changes: BlockEditorUpdate) => void;
-  editableRef: RefObject<HTMLDivElement | null>;
-  searchHighlights?: SearchHighlight[];
-  searchActiveHighlight?: SearchHighlight;
+};
+
+type BlockBodyProps = {
+  actions: BlockBodyActions;
+  state: BlockBodyState;
 };
 
 export function BlockBody({
-  block,
-  blockIndex,
-  checked,
-  draft,
-  draftProps,
-  numberedListMarker,
-  isSelected,
-  linkedPage,
-  onBlur,
-  onBeforeInput,
-  onChange,
-  onKeyDown,
-  onDragStart,
-  onHistoryInput,
-  onPasteMarkdown,
-  onApplyInlinePageLink,
-  onOpenPageLink,
-  onRestorePageLink,
-  onSelectionChange,
-  onUpdate,
-  editableRef,
-  searchHighlights,
-  searchActiveHighlight
+  actions,
+  state
 }: BlockBodyProps) {
+  const {
+    block,
+    blockIndex,
+    checked,
+    draft,
+    draftProps,
+    numberedListMarker,
+    isSelected,
+    linkedPage,
+    editableRef,
+    searchActiveHighlight,
+    searchHighlights
+  } = state;
+  const {
+    onBlur,
+    onBeforeInput,
+    onChange,
+    onKeyDown,
+    onDragStart,
+    onHistoryInput,
+    onPasteMarkdown,
+    onApplyInlinePageLink,
+    onOpenPageLink,
+    onRestorePageLink,
+    onSelectionChange,
+    onUpdate
+  } = actions;
   const blockDepth = getBlockDepth(block);
+  const isToggleOpen = draftProps.open !== false;
   useEditableHistoryInput({ editableRef, onHistoryInput });
+  const editableState: EditableTextBlockState = {
+    block,
+    checked,
+    draft,
+    draftProps,
+    editableRef,
+    isSelected,
+    searchActiveHighlight,
+    searchHighlights
+  };
+  const editableActions: EditableTextBlockActions = {
+    onApplyInlinePageLink,
+    onBeforeInput,
+    onBlur,
+    onChange,
+    onDragStart,
+    onHistoryInput,
+    onKeyDown,
+    onOpenPageLink,
+    onPasteMarkdown,
+    onSelectionChange
+  };
 
   return (
     <div
       className={cn(
         "flex min-w-0 items-start gap-1",
-        blockShellClass(block.type),
+        blockShellClass(block.type)
       )}
     >
       {block.type === "todo" ? (
-        <input
-          aria-label="완료 여부"
+        <TodoMarker
+          block={block}
           checked={checked}
-          className="mt-2.5 size-4 shrink-0 accent-foreground"
-          onChange={(event) =>
-            onUpdate(block, {
-              props: { ...block.props, checked: event.target.checked },
+          onCheckedChange={(target, nextChecked) =>
+            onUpdate(target, {
+              props: { ...target.props, checked: nextChecked }
             })
           }
-          type="checkbox"
         />
       ) : null}
       {block.type === "bulleted_list" ? (
-        <span className="flex h-7 w-3 shrink-0 items-center justify-center">
-          <BulletMarker depth={blockDepth} />
-        </span>
+        <BulletedListMarker depth={blockDepth} />
       ) : null}
       {block.type === "numbered_list" ? (
-        <span className="flex h-7 w-5 shrink-0 items-center justify-end text-sm font-medium text-muted-foreground">
-          {numberedListMarker ?? blockIndex + 1}.
-        </span>
+        <NumberedListMarker blockIndex={blockIndex} marker={numberedListMarker} />
       ) : null}
       {block.type === "toggle" ? (
-        <button
-          aria-label={isToggleOpen(draftProps) ? "토글 닫기" : "토글 열기"}
-          className="mt-1 flex size-5 shrink-0 items-center justify-center rounded-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-          onMouseDown={(event) => event.preventDefault()}
-          onClick={() =>
+        <ToggleMarker
+          isOpen={isToggleOpen}
+          onToggle={() =>
             onUpdate(block, {
-              props: { ...draftProps, open: !isToggleOpen(draftProps) }
+              props: { ...draftProps, open: !isToggleOpen }
             })
           }
-          type="button"
-        >
-          {isToggleOpen(draftProps) ? (
-            <ChevronDown className="size-4" />
-          ) : (
-            <ChevronRight className="size-4" />
-          )}
-        </button>
+        />
       ) : null}
       {block.type === "callout" ? (
-        <span className="mt-1 shrink-0 text-lg" role="img" aria-label="callout icon">
-          {typeof draftProps.icon === "string" ? draftProps.icon : "💡"}
-        </span>
+        <CalloutMarker icon={draftProps.icon} />
       ) : null}
       {block.type === "image" ? (
         <ImageBlock block={block} onUpdate={onUpdate} props={draftProps} />
       ) : block.type === "divider" ? (
-        <div
-          aria-orientation="horizontal"
-          className="group/divider flex h-7 w-full items-center px-1 outline-none"
-          role="separator"
-        >
-          <span className="h-px w-full rounded-full bg-border transition-colors group-hover/divider:bg-muted-foreground/45" />
-        </div>
+        <DividerBlockBody />
       ) : block.type === "page_link" ? (
         <PageLinkBlock
           blockId={block.id}
@@ -161,42 +186,10 @@ export function BlockBody({
         />
       ) : (
         <EditableTextBlock
-          block={block}
-          checked={checked}
-          draft={draft}
-          draftProps={draftProps}
-          editableRef={editableRef}
-          isSelected={isSelected}
-          onApplyInlinePageLink={onApplyInlinePageLink}
-          onBeforeInput={onBeforeInput}
-          onBlur={onBlur}
-          onChange={onChange}
-          onDragStart={onDragStart}
-          onHistoryInput={onHistoryInput}
-          onKeyDown={onKeyDown}
-          onOpenPageLink={onOpenPageLink}
-          onPasteMarkdown={onPasteMarkdown}
-          onSelectionChange={onSelectionChange}
-          searchHighlights={searchHighlights}
-          searchActiveHighlight={searchActiveHighlight}
+          actions={editableActions}
+          state={editableState}
         />
       )}
     </div>
   );
-}
-
-function BulletMarker({ depth }: { depth: number }) {
-  if (depth % 3 === 1) {
-    return <span className="size-1.5 rounded-[1px] bg-foreground/70" />;
-  }
-
-  if (depth % 3 === 2) {
-    return <span className="size-1.5 rounded-full border border-foreground/70" />;
-  }
-
-  return <span className="size-1.5 rounded-full bg-foreground/70" />;
-}
-
-function isToggleOpen(props: Block["props"]) {
-  return props.open !== false;
 }

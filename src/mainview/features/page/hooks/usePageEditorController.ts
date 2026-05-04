@@ -14,32 +14,17 @@ import type {
 import type { PageEditorControllerOptions } from "@/mainview/features/page/types/pageEditorTypes";
 
 export function usePageEditorController({
+  blockActions,
+  blockCollectionActions,
   document,
-  onCreateBlockAfter,
-  onCreatePageLink,
-  onDeleteBlock,
-  onDeleteBlocks,
-  onDuplicateBlocks,
-  onFocusNextBlock,
-  onFocusPreviousBlock,
-  onIndentBlocks,
-  onMergeBlockWithPrevious,
-  onMoveBlockOutOfParent,
-  onMoveBlocks,
-  onOpenPageLink,
-  onPasteBlocks,
-  onPasteMarkdown,
-  onRestorePageLink,
-  onTextDraftChange,
-  onTextDraftFlush,
-  onTextHistoryApply,
-  onTextRedo,
-  onTextUndo,
-  onUpdateBlock,
+  textActions,
   openSearch
 }: PageEditorControllerOptions) {
   useInputMode();
-  const focusLastBlock = useLastBlockFocus({ document, onCreateBlockAfter });
+  const focusLastBlock = useLastBlockFocus({
+    document,
+    onCreateBlockAfter: blockActions.createAfter
+  });
   const {
     beginBlockSelectionDrag,
     clearBlockSelection,
@@ -62,7 +47,7 @@ export function usePageEditorController({
     startDrag
   } = useBlockDragState({
     blocks: document.blocks,
-    onMoveBlocks
+    onMoveBlocks: blockCollectionActions.moveMany
   });
   const {
     focusPreviousBlock,
@@ -78,7 +63,7 @@ export function usePageEditorController({
     onClearBlockSelection: clearBlockSelection,
     onConsumeCompletedBlockRangeSelection: consumeCompletedBlockRangeSelection,
     onFocusLastBlock: focusLastBlock,
-    onFocusPreviousBlock,
+    onFocusPreviousBlock: blockActions.focusPrevious,
     onStartDrag: startDrag
   });
   const clearBlockSelectionRef = useRef(clearBlockSelection);
@@ -90,14 +75,14 @@ export function usePageEditorController({
   useSelectedBlockShortcuts({
     clearSelection: clearBlockSelection,
     document,
-    onDeleteBlocks,
-    onDuplicateBlocks,
+    onDeleteBlocks: blockCollectionActions.deleteMany,
+    onDuplicateBlocks: blockCollectionActions.duplicateMany,
     onFocusBlock: focusEditableBlockById,
     onFocusTitle: () => titleRef.current?.focus(),
-    onIndentBlocks,
+    onIndentBlocks: blockCollectionActions.indentMany,
     onKeyboardSelection: applyKeyboardBlockSelection,
-    onMoveBlocks,
-    onPasteBlocks,
+    onMoveBlocks: blockCollectionActions.moveMany,
+    onPasteBlocks: blockCollectionActions.pasteAfter,
     selectionAnchorBlockId,
     selectionFocusBlockId,
     setSelection: setBlockSelection,
@@ -144,22 +129,22 @@ export function usePageEditorController({
   }, [selectionFocusBlockId]);
 
   const blockEditorActions = {
-    onCreateAfter: onCreateBlockAfter,
-    onCreatePageLink,
-    onDelete: onDeleteBlock,
-    onFocusNext: onFocusNextBlock,
-    onFocusPrevious: onFocusPreviousBlock,
-    onMergeWithPrevious: onMergeBlockWithPrevious,
-    onMoveOutOfParent: onMoveBlockOutOfParent,
-    onOpenPageLink,
-    onPasteMarkdown,
-    onRestorePageLink,
-    onTextDraftChange,
-    onTextDraftFlush,
-    onTextHistoryApply,
-    onTextRedo,
-    onTextUndo,
-    onUpdate: onUpdateBlock,
+    onCreateAfter: blockActions.createAfter,
+    onCreatePageLink: blockActions.createPageLink,
+    onDelete: blockActions.deleteOne,
+    onFocusNext: blockActions.focusNext,
+    onFocusPrevious: blockActions.focusPrevious,
+    onMergeWithPrevious: blockActions.mergeWithPrevious,
+    onMoveOutOfParent: blockActions.moveOutOfParent,
+    onOpenPageLink: blockActions.openPageLink,
+    onPasteMarkdown: textActions.pasteMarkdown,
+    onRestorePageLink: blockActions.restorePageLink,
+    onTextDraftChange: textActions.changeDraft,
+    onTextDraftFlush: textActions.flushDraft,
+    onTextHistoryApply: textActions.applyHistory,
+    onTextRedo: textActions.redo,
+    onTextUndo: textActions.undo,
+    onUpdate: blockActions.update,
     openSearch
   } satisfies BlockEditorActions;
   const blockDragActions = {

@@ -18,13 +18,18 @@ import type {
   TextSelectionOffsets
 } from "@/mainview/features/page/types/blockEditorTypes";
 
-type EditableTextBlockProps = {
+export type EditableTextBlockState = {
   block: Block;
   checked: boolean;
   draft: string;
   draftProps: Block["props"];
   editableRef: RefObject<HTMLDivElement | null>;
   isSelected: boolean;
+  searchHighlights?: SearchHighlight[];
+  searchActiveHighlight?: SearchHighlight;
+};
+
+export type EditableTextBlockActions = {
   onBeforeInput: (event: ReactInputEvent<HTMLDivElement>) => void;
   onBlur: () => Promise<void>;
   onChange: (value: string) => void;
@@ -45,30 +50,39 @@ type EditableTextBlockProps = {
   ) => void;
   onOpenPageLink: (pageId: string) => void;
   onSelectionChange: () => void;
-  searchHighlights?: SearchHighlight[];
-  searchActiveHighlight?: SearchHighlight;
+};
+
+type EditableTextBlockProps = {
+  actions: EditableTextBlockActions;
+  state: EditableTextBlockState;
 };
 
 export function EditableTextBlock({
-  block,
-  checked,
-  draft,
-  draftProps,
-  editableRef,
-  isSelected,
-  onBeforeInput,
-  onBlur,
-  onChange,
-  onDragStart,
-  onHistoryInput,
-  onKeyDown,
-  onPasteMarkdown,
-  onApplyInlinePageLink,
-  onOpenPageLink,
-  onSelectionChange,
-  searchHighlights,
-  searchActiveHighlight
+  actions,
+  state
 }: EditableTextBlockProps) {
+  const {
+    block,
+    checked,
+    draft,
+    draftProps,
+    editableRef,
+    isSelected,
+    searchActiveHighlight,
+    searchHighlights
+  } = state;
+  const {
+    onBeforeInput,
+    onBlur,
+    onChange,
+    onDragStart,
+    onHistoryInput,
+    onKeyDown,
+    onPasteMarkdown,
+    onApplyInlinePageLink,
+    onOpenPageLink,
+    onSelectionChange
+  } = actions;
   const { handleDrop, handleEditableKeyDown, handlePaste } = useBlockClipboardEditing({
     block,
     onChange,

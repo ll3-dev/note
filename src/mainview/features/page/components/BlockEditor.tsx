@@ -1,8 +1,14 @@
 import { cn } from "@/mainview/lib/utils";
-import { BlockBody } from "./BlockBody";
-import { BlockCommandMenu } from "./BlockCommandMenu";
-import { BlockDragHandle } from "./BlockDragHandle";
-import { InlineFormattingToolbar } from "./InlineFormattingToolbar";
+import {
+  BlockBody,
+  type BlockBodyActions,
+  type BlockBodyState
+} from "./BlockBody";
+import {
+  BlockDragHandleSlot,
+  BlockEditorFloatingControls,
+  CalloutBlockContent
+} from "./BlockEditorParts";
 import { useBlockEditorController } from "@/mainview/features/page/hooks/useBlockEditorController";
 import type { BlockEditorProps } from "@/mainview/features/page/types/blockEditorTypes";
 import type { MouseEvent } from "react";
@@ -91,6 +97,33 @@ export function BlockEditor({
   const calloutIcon =
     typeof textEditing.draftProps.icon === "string" ? textEditing.draftProps.icon : "💡";
   const legacyCalloutText = textEditing.draft.trim();
+  const blockBodyState: BlockBodyState = {
+    block,
+    blockIndex,
+    checked,
+    draft: textEditing.draft,
+    draftProps: textEditing.draftProps,
+    editableRef,
+    isSelected,
+    linkedPage,
+    numberedListMarker,
+    searchActiveHighlight,
+    searchHighlights
+  };
+  const blockBodyActions: BlockBodyActions = {
+    onApplyInlinePageLink: textEditing.applyInlinePageLinkDraft,
+    onBeforeInput: handleBeforeInput,
+    onBlur: textEditing.commitDraft,
+    onChange: textEditing.changeDraft,
+    onDragStart: handleShellDragStart,
+    onHistoryInput: handleHistoryInput,
+    onKeyDown: handleKeyDown,
+    onOpenPageLink,
+    onPasteMarkdown,
+    onRestorePageLink,
+    onSelectionChange: textEditing.syncActiveInlineMarksFromSelection,
+    onUpdate
+  };
 
   function handleShellMouseDown(event: MouseEvent<HTMLDivElement>) {
     if (!isCallout || !(event.target instanceof Element)) {
@@ -123,18 +156,14 @@ export function BlockEditor({
       role="presentation"
       style={{ marginLeft: depth * 24 }}
     >
-      {dragHandleVisibility === "visible" ? (
-        <BlockDragHandle
-          block={block}
-          onDragEnd={onDragEnd}
-          onDragPointerDown={onDragPointerDown}
-          onSelectBlock={onSelectBlock}
-          onDragStart={onDragStart}
-          variant={
-            block.type === "callout" ? "callout" : block.parentBlockId ? "nested" : "root"
-          }
-        />
-      ) : null}
+      <BlockDragHandleSlot
+        block={block}
+        dragHandleVisibility={dragHandleVisibility}
+        onDragEnd={onDragEnd}
+        onDragPointerDown={onDragPointerDown}
+        onDragStart={onDragStart}
+        onSelectBlock={onSelectBlock}
+      />
 
       <div
         className={cn(
@@ -143,66 +172,26 @@ export function BlockEditor({
         )}
       >
         {isCallout ? (
-          <div className="flex min-w-0 items-start gap-2">
-            <span className="mt-1 shrink-0 text-lg" role="img" aria-label="callout icon">
-              {calloutIcon}
-            </span>
-            <div className="min-w-0 flex-1">
-              {nestedChildren ??
-                (legacyCalloutText ? (
-                  <div className="min-h-7 whitespace-pre-wrap break-words px-1 py-1.5">
-                    {textEditing.draft}
-                  </div>
-                ) : null)}
-            </div>
-          </div>
+          <CalloutBlockContent
+            icon={calloutIcon}
+            legacyText={legacyCalloutText}
+            nestedChildren={nestedChildren}
+          />
         ) : (
           <>
             <BlockBody
-              block={block}
-              blockIndex={blockIndex}
-              checked={checked}
-              draft={textEditing.draft}
-              draftProps={textEditing.draftProps}
-              isSelected={isSelected}
-              linkedPage={linkedPage}
-              numberedListMarker={numberedListMarker}
-              onApplyInlinePageLink={textEditing.applyInlinePageLinkDraft}
-              onBlur={textEditing.commitDraft}
-              onBeforeInput={handleBeforeInput}
-              onChange={textEditing.changeDraft}
-              onDragStart={handleShellDragStart}
-              onHistoryInput={handleHistoryInput}
-              onKeyDown={handleKeyDown}
-              onOpenPageLink={onOpenPageLink}
-              onRestorePageLink={onRestorePageLink}
-              onPasteMarkdown={onPasteMarkdown}
-              onSelectionChange={textEditing.syncActiveInlineMarksFromSelection}
-              onUpdate={onUpdate}
-              editableRef={editableRef}
-              searchHighlights={searchHighlights}
-              searchActiveHighlight={searchActiveHighlight}
+              actions={blockBodyActions}
+              state={blockBodyState}
             />
             {nestedChildren ? <div className="mt-1 pl-6">{nestedChildren}</div> : null}
           </>
         )}
 
-        {!isCallout && textEditing.isCommandMenuOpen ? (
-          <BlockCommandMenu
-            activeIndex={textEditing.selectedCommandIndex}
-            anchorRef={editableRef}
-            commands={textEditing.visibleCommands}
-            onActiveIndexChange={textEditing.setSelectedCommandIndex}
-            onSelect={textEditing.applyCommand}
-          />
-        ) : null}
-        {!isCallout ? (
-          <InlineFormattingToolbar
-            onFormat={textEditing.applyInlineFormat}
-            onLink={textEditing.applyInlineLink}
-            rect={textEditing.selectionToolbarRect}
-          />
-        ) : null}
+        <BlockEditorFloatingControls
+          anchorRef={editableRef}
+          isCallout={isCallout}
+          textEditing={textEditing}
+        />
       </div>
     </div>
   );

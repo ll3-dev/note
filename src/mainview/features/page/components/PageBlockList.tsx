@@ -9,6 +9,12 @@ import {
   buildBlockTree,
   type BlockTreeNode
 } from "@/mainview/features/page/lib/blockTree";
+import { shouldShowBlockDragHandle } from "@/mainview/features/page/lib/blockDrag";
+import {
+  BlockListManagerProvider,
+  type BlockListSelectionState,
+  useBlockListManager
+} from "@/mainview/features/page/context/BlockListManagerContext";
 import type {
   BlockEditorActions,
   BlockEditorDragActions,
@@ -20,11 +26,7 @@ type PageBlockListProps = {
   document: PageDocument;
   dragActions: BlockEditorDragActions;
   editorActions: BlockEditorActions;
-  selectionState: {
-    draggedBlockId: string | null;
-    isBlockRangeSelecting: boolean;
-    selectedBlockIds: string[];
-  };
+  selectionState: BlockListSelectionState;
   searchMatches?: SearchResult[];
   searchActiveIndex?: number;
   onFocusPreviousBlock: (block: Block, blockIndex: number) => void;
@@ -57,56 +59,51 @@ export function PageBlockList({
   }
 
   const activeMatch = searchMatches?.[searchActiveIndex];
+  const manager = {
+    activeMatch,
+    blockMatches,
+    document,
+    dragActions,
+    editorActions,
+    numberedListMarkers,
+    onFocusPreviousBlock,
+    pagesById,
+    selectionState,
+    visibleBlocks
+  };
 
   return (
-    <>
+    <BlockListManagerProvider manager={manager}>
       {blockTree.map((node) => (
         <BlockTreeItem
-          activeMatch={activeMatch}
-          blockMatches={blockMatches}
-          document={document}
-          dragActions={dragActions}
-          editorActions={editorActions}
           key={node.block.id}
           node={node}
-          numberedListMarkers={numberedListMarkers}
-          onFocusPreviousBlock={onFocusPreviousBlock}
-          pagesById={pagesById}
-          searchActiveIndex={searchActiveIndex}
-          selectionState={selectionState}
-          visibleBlocks={visibleBlocks}
+          siblingCount={blockTree.length}
         />
       ))}
-    </>
+    </BlockListManagerProvider>
   );
 }
 
 function BlockTreeItem({
-  activeMatch,
-  blockMatches,
-  document,
-  dragActions,
-  editorActions,
   node,
-  numberedListMarkers,
-  onFocusPreviousBlock,
-  pagesById,
-  selectionState,
-  visibleBlocks
+  siblingCount
 }: {
-  activeMatch?: SearchResult;
-  blockMatches: Map<string, SearchResult[]>;
-  document: PageDocument;
-  dragActions: BlockEditorDragActions;
-  editorActions: BlockEditorActions;
   node: BlockTreeNode;
-  numberedListMarkers: Map<string, number>;
-  onFocusPreviousBlock: (block: Block, blockIndex: number) => void;
-  pagesById: Map<string, Page>;
-  searchActiveIndex: number;
-  selectionState: PageBlockListProps["selectionState"];
-  visibleBlocks: Block[];
+  siblingCount: number;
 }) {
+  const {
+    activeMatch,
+    blockMatches,
+    document,
+    dragActions,
+    editorActions,
+    numberedListMarkers,
+    onFocusPreviousBlock,
+    pagesById,
+    selectionState,
+    visibleBlocks
+  } = useBlockListManager();
   const block = node.block;
   const blockIndex = document.blocks.findIndex((item) => item.id === block.id);
   const visibleIndex = visibleBlocks.findIndex((item) => item.id === block.id);
@@ -124,6 +121,9 @@ function BlockTreeItem({
       block={block}
       blockIndex={blockIndex}
       blocksCount={document.blocks.length}
+      dragHandleVisibility={
+        shouldShowBlockDragHandle(block, siblingCount) ? "visible" : "hidden"
+      }
       isDragging={selectionState.draggedBlockId === block.id}
       isBlockRangeSelecting={selectionState.isBlockRangeSelecting}
       isSelected={selectionState.selectedBlockIds.includes(block.id)}
@@ -152,19 +152,9 @@ function BlockTreeItem({
         shouldRenderChildren
           ? node.children.map((child) => (
               <BlockTreeItem
-                activeMatch={activeMatch}
-                blockMatches={blockMatches}
-                document={document}
-                dragActions={dragActions}
-                editorActions={editorActions}
                 key={child.block.id}
                 node={child}
-                numberedListMarkers={numberedListMarkers}
-                onFocusPreviousBlock={onFocusPreviousBlock}
-                pagesById={pagesById}
-                searchActiveIndex={0}
-                selectionState={selectionState}
-                visibleBlocks={visibleBlocks}
+                siblingCount={node.children.length}
               />
             ))
           : null

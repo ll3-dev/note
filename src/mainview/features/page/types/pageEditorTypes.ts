@@ -26,71 +26,66 @@ export type TextDraftFlushHandler = (
   props?: Block["props"]
 ) => Promise<void>;
 
-export type PageEditorProps = {
-  document: PageDocument;
-  onCreateBlockAfter: (
+export type PageEditorBlockActions = {
+  createAfter: (
     block: Block,
     draft?: CreateBlockDraft,
     options?: CreateBlockOptions
   ) => Promise<void>;
-  onCreatePageLink: (block: Block) => Promise<void> | void;
-  onDeleteBlock: (block: Block) => void;
-  onDeleteBlocks: (blocks: Block[]) => void;
-  onDuplicateBlocks: (blocks: Block[]) => void;
-  onPasteBlocks: (afterBlock: Block) => Promise<Block[]> | Block[];
-  onFocusNextBlock: (block: Block) => boolean;
-  onFocusFirstBlock: () => void;
-  onFocusPreviousBlock: (block: Block) => boolean;
-  onIndentBlocks: (blocks: Array<{ block: Block; props: Block["props"] }>) => void;
-  onMergeBlockWithPrevious: (
+  createPageLink: (block: Block) => Promise<void> | void;
+  deleteOne: (block: Block) => void;
+  focusNext: (block: Block) => boolean;
+  focusPrevious: (block: Block) => boolean;
+  mergeWithPrevious: (
     previousBlock: Block,
     block: Block,
     text: string,
     props: Block["props"]
   ) => Promise<void> | void;
-  onMoveBlocks: (
+  moveOutOfParent: (block: Block) => Promise<void> | void;
+  openPageLink: (pageId: string, options?: OpenPageLinkOptions) => void;
+  restorePageLink: (pageId: string) => void;
+  update: (block: Block, changes: BlockEditorUpdate) => Promise<void> | void;
+};
+
+export type PageEditorBlockCollectionActions = {
+  deleteMany: (blocks: Block[]) => void;
+  duplicateMany: (blocks: Block[]) => void;
+  indentMany: (blocks: Array<{ block: Block; props: Block["props"] }>) => void;
+  moveMany: (
     blocks: Block[],
     afterBlockId: string | null,
     parentBlockId?: string | null
   ) => Promise<void> | void;
-  onMoveBlockOutOfParent: (block: Block) => Promise<void> | void;
-  onPasteMarkdown: PasteMarkdownHandler;
-  onOpenPageLink: (pageId: string, options?: OpenPageLinkOptions) => void;
-  onRestorePageLink: (pageId: string) => void;
-  onTextDraftChange: TextDraftChangeHandler;
-  onTextDraftFlush: TextDraftFlushHandler;
-  onTextHistoryApply: (block: Block, text: string) => void;
-  onTextRedo: (block: Block) => Promise<Block | null>;
-  onTextUndo: (block: Block) => Promise<Block | null>;
-  onUpdateBlock: (block: Block, changes: BlockEditorUpdate) => Promise<void> | void;
-  onUpdatePageTitle: (page: Page, title: string) => void;
+  pasteAfter: (afterBlock: Block) => Promise<Block[]> | Block[];
+};
+
+export type PageEditorTextActions = {
+  changeDraft: TextDraftChangeHandler;
+  flushDraft: TextDraftFlushHandler;
+  pasteMarkdown: PasteMarkdownHandler;
+  applyHistory: (block: Block, text: string) => void;
+  redo: (block: Block) => Promise<Block | null>;
+  undo: (block: Block) => Promise<Block | null>;
+};
+
+export type PageEditorTitleActions = {
+  focusFirstBlock: () => void;
+  updateTitle: (page: Page, title: string) => void;
+};
+
+export type PageEditorProps = {
+  blockActions: PageEditorBlockActions;
+  blockCollectionActions: PageEditorBlockCollectionActions;
+  document: PageDocument;
   pages: Page[];
+  textActions: PageEditorTextActions;
+  titleActions: PageEditorTitleActions;
 };
 
 export type PageEditorControllerOptions = Pick<
   PageEditorProps,
-  | "document"
-  | "onCreateBlockAfter"
-  | "onCreatePageLink"
-  | "onDeleteBlock"
-  | "onDeleteBlocks"
-  | "onDuplicateBlocks"
-  | "onFocusNextBlock"
-  | "onFocusPreviousBlock"
-  | "onIndentBlocks"
-  | "onMergeBlockWithPrevious"
-  | "onMoveBlocks"
-  | "onMoveBlockOutOfParent"
-  | "onOpenPageLink"
-  | "onPasteBlocks"
-  | "onPasteMarkdown"
-  | "onRestorePageLink"
-  | "onTextDraftChange"
-  | "onTextDraftFlush"
-  | "onTextHistoryApply"
-  | "onTextRedo"
-  | "onTextUndo"
-  | "onUpdateBlock"
+  "blockActions" | "blockCollectionActions" | "document" | "textActions"
 > & {
   openSearch: () => void;
 };

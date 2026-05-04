@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import type { Block, BlockProps, Page, PageDocument } from "@/shared/contracts";
-import type { WorkspacePageEditorProps } from "@/mainview/features/workspace/components/WorkspaceEditorPane";
+import type { WorkspacePageEditorManager } from "@/mainview/features/workspace/components/WorkspaceEditorPane";
 import { useBlockBatchActions } from "./useBlockBatchActions";
 import type { TextSyncStatus } from "./useBlockTextSync";
 import { useMarkdownClipboard } from "./useMarkdownClipboard";
@@ -129,44 +129,52 @@ export function useWorkspacePageEditorController({
     updatePageMutation
   });
 
-  const pageEditorProps = {
-    onCreateBlockAfter: editorActions.createBlockAfter,
-    onCreatePageLink: editorActions.createPageLink,
-    onDeleteBlock: (target) => {
-      void flushAllTextDrafts().then(() => deleteBlockMutation.mutate(target));
+  const pageEditorManager = {
+    blockActions: {
+      createAfter: editorActions.createBlockAfter,
+      createPageLink: editorActions.createPageLink,
+      deleteOne: (target) => {
+        void flushAllTextDrafts().then(() => deleteBlockMutation.mutate(target));
+      },
+      focusNext: focusNextBlock,
+      focusPrevious: focusPreviousBlock,
+      mergeWithPrevious: editorActions.mergeBlockWithPrevious,
+      moveOutOfParent: editorActions.moveBlockOutOfParent,
+      openPageLink: editorActions.openPageLink,
+      restorePageLink: onRestorePageLink,
+      update: editorActions.updateBlock
     },
-    onDeleteBlocks: (targets) =>
-      void deleteBlocks(editorActions.expandBlocksWithDescendants(targets)),
-    onDuplicateBlocks: (targets) =>
-      void duplicateBlocks(editorActions.expandBlocksWithDescendants(targets)),
-    onFocusFirstBlock: editorActions.focusFirstBlock,
-    onFocusNextBlock: focusNextBlock,
-    onFocusPreviousBlock: focusPreviousBlock,
-    onIndentBlocks: (updates) => {
-      for (const { block, props } of updates) {
-        void editorActions.updateBlock(block, { props });
-      }
+    blockCollectionActions: {
+      deleteMany: (targets) =>
+        void deleteBlocks(editorActions.expandBlocksWithDescendants(targets)),
+      duplicateMany: (targets) =>
+        void duplicateBlocks(editorActions.expandBlocksWithDescendants(targets)),
+      indentMany: (updates) => {
+        for (const { block, props } of updates) {
+          void editorActions.updateBlock(block, { props });
+        }
+      },
+      moveMany: editorActions.moveBlocksWithDescendants,
+      pasteAfter: (target) => pasteBlocksAfter(target)
     },
-    onMergeBlockWithPrevious: editorActions.mergeBlockWithPrevious,
-    onMoveBlockOutOfParent: editorActions.moveBlockOutOfParent,
-    onMoveBlocks: editorActions.moveBlocksWithDescendants,
-    onOpenPageLink: editorActions.openPageLink,
-    onRestorePageLink,
-    onPasteBlocks: (target) => pasteBlocksAfter(target),
-    onPasteMarkdown: pasteMarkdown,
-    onTextDraftChange: queueTextDraft,
-    onTextDraftFlush: flushTextDraft,
-    onTextHistoryApply: (block) => clearPendingText(block.id),
-    onTextRedo: redoBlockText,
-    onTextUndo: undoBlockText,
-    onUpdateBlock: editorActions.updateBlock,
-    onUpdatePageTitle: editorActions.updatePageTitle
-  } satisfies WorkspacePageEditorProps;
+    textActions: {
+      changeDraft: queueTextDraft,
+      flushDraft: flushTextDraft,
+      pasteMarkdown,
+      applyHistory: (block) => clearPendingText(block.id),
+      redo: redoBlockText,
+      undo: undoBlockText
+    },
+    titleActions: {
+      focusFirstBlock: editorActions.focusFirstBlock,
+      updateTitle: editorActions.updatePageTitle
+    }
+  } satisfies WorkspacePageEditorManager;
 
   return {
     copyCurrentPageMarkdown,
     editorActions,
-    pageEditorProps,
+    pageEditorManager,
     flushAllTextDrafts,
     saveStatus,
     setFocusBlockId

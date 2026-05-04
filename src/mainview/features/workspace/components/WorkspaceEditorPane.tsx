@@ -5,7 +5,7 @@ import { EmptyEditorState } from "./EmptyEditorState";
 import { WorkspaceHome } from "./WorkspaceHome";
 import { getPageTitleDisplay } from "@/shared/pageDisplay";
 
-export type WorkspacePageEditorProps = Omit<
+export type WorkspacePageEditorManager = Omit<
   ComponentProps<typeof PageEditor>,
   "document" | "pages"
 >;
@@ -20,7 +20,7 @@ type WorkspaceEditorPaneProps = {
   onOpenQuickSwitcher: () => void;
   onRestorePageLink?: (pageId: string) => void;
   onSelectPage: (page: PageDocument["page"]) => void;
-  pageEditorProps: WorkspacePageEditorProps;
+  pageEditorManager: WorkspacePageEditorManager;
   pages: PageDocument["page"][];
 };
 
@@ -33,7 +33,7 @@ export function WorkspaceEditorPane({
   onCreateUntitledPage,
   onOpenQuickSwitcher,
   onSelectPage,
-  pageEditorProps,
+  pageEditorManager,
   pages
 }: WorkspaceEditorPaneProps) {
   return (
@@ -42,7 +42,7 @@ export function WorkspaceEditorPane({
         <PageEditor
           document={document}
           pages={editorPages}
-          {...pageEditorProps}
+          {...pageEditorManager}
         />
       ) : !isLoading ? (
         <WorkspaceHome
@@ -63,7 +63,7 @@ export function WorkspaceEditorPane({
               <button
                 className="rounded-sm border border-border/80 px-2 py-1 hover:bg-accent hover:text-accent-foreground"
                 key={backlink.blockId}
-                onClick={() => pageEditorProps.onOpenPageLink(backlink.pageId)}
+                onClick={() => pageEditorManager.blockActions.openPageLink(backlink.pageId)}
                 type="button"
               >
                 {getPageTitleDisplay(backlink.pageTitle)}

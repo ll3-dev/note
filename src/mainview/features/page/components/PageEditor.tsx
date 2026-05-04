@@ -11,31 +11,12 @@ import { usePageSearch } from "@/mainview/features/page/hooks/usePageSearch";
 import type { PageEditorProps } from "@/mainview/features/page/types/pageEditorTypes";
 
 export function PageEditor({
+  blockActions,
+  blockCollectionActions,
   document,
-  onCreateBlockAfter,
-  onCreatePageLink,
-  onDeleteBlock,
-  onDeleteBlocks,
-  onDuplicateBlocks,
-  onPasteBlocks,
-  onFocusFirstBlock,
-  onFocusNextBlock,
-  onFocusPreviousBlock,
-  onIndentBlocks,
-  onMergeBlockWithPrevious,
-  onMoveBlockOutOfParent,
-  onMoveBlocks,
-  onPasteMarkdown,
-  onOpenPageLink,
-  onRestorePageLink,
-  onTextDraftChange,
-  onTextDraftFlush,
-  onTextHistoryApply,
-  onTextRedo,
-  onTextUndo,
-  onUpdateBlock,
-  onUpdatePageTitle,
-  pages
+  pages,
+  textActions,
+  titleActions
 }: PageEditorProps) {
   const search = usePageSearch();
   const {
@@ -53,28 +34,10 @@ export function PageEditor({
     selectionBox,
     titleRef
   } = usePageEditorController({
+    blockActions,
+    blockCollectionActions,
     document,
-    onCreateBlockAfter,
-    onCreatePageLink,
-    onDeleteBlock,
-    onDeleteBlocks,
-    onDuplicateBlocks,
-    onFocusNextBlock,
-    onFocusPreviousBlock,
-    onIndentBlocks,
-    onMergeBlockWithPrevious,
-    onMoveBlockOutOfParent,
-    onMoveBlocks,
-    onOpenPageLink,
-    onPasteBlocks,
-    onPasteMarkdown,
-    onRestorePageLink,
-    onTextDraftChange,
-    onTextDraftFlush,
-    onTextHistoryApply,
-    onTextRedo,
-    onTextUndo,
-    onUpdateBlock,
+    textActions,
     openSearch: search.openSearch
   });
 
@@ -105,8 +68,8 @@ export function PageEditor({
       <ScrollArea className="min-h-0 flex-1">
         <div className="mx-auto flex min-h-full w-full max-w-230 flex-col px-10 py-8">
           <PageTitleEditor
-            onFocusFirstBlock={onFocusFirstBlock}
-            onUpdatePageTitle={onUpdatePageTitle}
+            onFocusFirstBlock={titleActions.focusFirstBlock}
+            onUpdatePageTitle={titleActions.updateTitle}
             page={document.page}
             ref={titleRef}
           />
