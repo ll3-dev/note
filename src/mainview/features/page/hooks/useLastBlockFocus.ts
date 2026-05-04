@@ -2,6 +2,7 @@ import type { MouseEvent } from "react";
 import type { PageDocument } from "@/shared/contracts";
 import type { CreateBlockDraft } from "@/mainview/features/page/lib/blockEditingBehavior";
 import { findLastFocusableBlock } from "@/mainview/features/page/lib/blockFocus";
+import { buildBlockTree } from "@/mainview/features/page/lib/blockTree";
 import type { CreateBlockOptions } from "@/mainview/features/page/types/blockEditorTypes";
 import { placeCursorAtEnd } from "@/mainview/features/page/web/domSelection";
 
@@ -31,7 +32,7 @@ export function useLastBlockFocus({
       return false;
     }
 
-    const lastBlock = findLastFocusableBlock(document) ?? document.blocks.at(-1);
+    const lastBlock = findBlankClickTargetBlock(document);
 
     if (!lastBlock) {
       return false;
@@ -55,8 +56,15 @@ export function useLastBlockFocus({
   };
 }
 
+export function findBlankClickTargetBlock(document: PageDocument) {
+  return buildBlockTree(document.blocks).at(-1)?.block
+    ?? findLastFocusableBlock(document)
+    ?? document.blocks.at(-1)
+    ?? null;
+}
+
 export function shouldCreateBlockAfterBlankClick(
   block: PageDocument["blocks"][number]
 ) {
-  return block.type === "divider" || block.text.length > 0;
+  return block.type === "divider" || block.type === "callout" || block.text.length > 0;
 }
