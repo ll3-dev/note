@@ -5,7 +5,6 @@ import { getNextSortKey } from "./blockOrdering";
 import { normalizeBlockProps } from "./blockProps";
 import { getBlock } from "./blockReadRepository";
 import { recordOperation } from "./noteOperations";
-import { archivePagesWithDescendants } from "./pageArchiveRepository";
 import { touchPage } from "./pageTouch";
 import {
   deleteBlockFromSearchIndex,
@@ -153,7 +152,6 @@ export function deleteBlock(
 
   runInTransaction(handle, () => {
     capturePageHistoryBeforeChange(handle, current.pageId);
-    archiveLinkedPagesForBlocks(handle, [current]);
     deleteBlockFromSearchIndex(handle, input.blockId);
     handle.orm.delete(blocks).where(eq(blocks.id, input.blockId)).run();
     touchPage(handle, current.pageId);
@@ -184,8 +182,6 @@ export function deleteBlocks(
       return block;
     });
 
-    archiveLinkedPagesForBlocks(handle, blocksToDelete);
-
     for (const block of blocksToDelete) {
       const blockId = block.id;
 
@@ -215,22 +211,6 @@ export function deleteBlocks(
   });
 
   return createdBlock ? { createdBlock, deleted: true } : { deleted: true };
-}
-
-function archiveLinkedPagesForBlocks(handle: DatabaseHandle, deletedBlocks: Block[]) {
-  const linkedPageIds = deletedBlocks.flatMap((block) => {
-    if (block.type !== "page_link") {
-      return [];
-    }
-
-    const targetPageId = block.props.targetPageId;
-
-    return typeof targetPageId === "string" && targetPageId
-      ? [targetPageId]
-      : [];
-  });
-
-  archivePagesWithDescendants(handle, linkedPageIds);
 }
 
 export function insertBlock(

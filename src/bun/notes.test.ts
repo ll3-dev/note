@@ -194,11 +194,9 @@ describe("notes repository", () => {
 
     deleteBlock(handle, { blockId: pageLink.id });
 
-    expect(listPages(handle).map((page) => page.id)).toEqual([
-      parent.id,
-      child.id,
-      grandchild.id
-    ]);
+    expect(listPages(handle).map((page) => page.id).sort()).toEqual(
+      [parent.id, child.id, grandchild.id].sort()
+    );
     expect(searchPages(handle, { query: "Child" }).map((result) => result.pageId))
       .toContain(child.id);
     expect(getPageDocument(handle, { pageId: child.id }).page.archivedAt).toBeNull();
