@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useState, type SubmitEvent as ReactSubmitEvent } from "react";
 import { Bold, Code, Italic, Link } from "lucide-react";
 import { cn } from "@/mainview/lib/utils";
 
@@ -41,7 +41,7 @@ export function InlineFormattingToolbar({
   const left = Math.max(12, rect.left + rect.width / 2);
   const top = rect.bottom + 8;
 
-  function handleLinkSubmit(event: FormEvent<HTMLFormElement>) {
+  function handleLinkSubmit(event: ReactSubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     const href = linkHref.trim();
 

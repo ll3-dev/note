@@ -1,4 +1,3 @@
-import type { QueryClient } from "@tanstack/react-query";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { noteApi } from "@/mainview/lib/rpc";
 import { queryKeys } from "@/mainview/lib/queryClient";
@@ -18,6 +17,14 @@ import {
   getBlockMutationSyncState,
   shouldApplyBlockMutationResponse
 } from "@/mainview/features/workspace/lib/blockMutationSyncMachine";
+import {
+  definedValues,
+  getCachedBlock,
+  getCachedPageTitle,
+  invalidatePageDocument,
+  updateBlockInCache,
+  updatePageInCache
+} from "@/mainview/features/workspace/lib/workspaceQueryCache";
 
 type UseWorkspaceMutationsOptions = {
   navigateToPage: (pageId: string) => Promise<void>;
@@ -54,6 +61,7 @@ export function useWorkspaceMutations({
     mutationFn: (input: {
       pageId: string;
       afterBlockId?: string | null;
+      parentBlockId?: string | null;
       type?: BlockType;
       text?: string;
       props?: BlockProps;
@@ -61,12 +69,13 @@ export function useWorkspaceMutations({
       noteApi.createBlock({
         pageId: input.pageId,
         afterBlockId: input.afterBlockId ?? null,
+        parentBlockId: input.parentBlockId ?? null,
         type: input.type ?? "paragraph",
         text: input.text ?? "",
         props: input.props ?? {}
       }),
     onSuccess: async (block) => {
-      await invalidateDocument(queryClient, block.pageId);
+      await invalidatePageDocument(queryClient, block.pageId);
     }
   });
 
@@ -78,7 +87,7 @@ export function useWorkspaceMutations({
     }
 
     const createdBlocks = await noteApi.createBlocks({ blocks: inputs });
-    await invalidateDocument(queryClient, pageId);
+    await invalidatePageDocument(queryClient, pageId);
     await queryClient.invalidateQueries({ queryKey: queryKeys.databaseStatus });
 
     return createdBlocks;
@@ -104,7 +113,7 @@ export function useWorkspaceMutations({
       fallbackBlock
     });
 
-    await invalidateDocument(queryClient, pageId);
+    await invalidatePageDocument(queryClient, pageId);
     await queryClient.invalidateQueries({ queryKey: queryKeys.databaseStatus });
 
     return result;
@@ -183,7 +192,7 @@ export function useWorkspaceMutations({
   const deleteBlockMutation = useMutation({
     mutationFn: (block: Block) => noteApi.deleteBlock({ blockId: block.id }),
     onSuccess: async (_result, block) => {
-      await invalidateDocument(queryClient, block.pageId);
+      await invalidatePageDocument(queryClient, block.pageId);
       await queryClient.invalidateQueries({ queryKey: queryKeys.databaseStatus });
     }
   });
@@ -231,7 +240,7 @@ export function useWorkspaceMutations({
         blockId: block.id
       }),
     onSuccess: async (block) => {
-      await invalidateDocument(queryClient, block.pageId);
+      await invalidatePageDocument(queryClient, block.pageId);
     }
   });
 
@@ -272,7 +281,7 @@ export function useWorkspaceMutations({
         blockId: block.id
       });
     });
-    await invalidateDocument(queryClient, pageId);
+    await invalidatePageDocument(queryClient, pageId);
   }
 
   const movePageMutation = useMutation({
@@ -310,55 +319,4 @@ export function useWorkspaceMutations({
     restorePage,
     updateBlockMutation
   };
-}
-
-async function invalidateDocument(client: QueryClient, pageId: string) {
-  await client.invalidateQueries({ queryKey: queryKeys.pageDocument(pageId) });
-  await client.invalidateQueries({ queryKey: queryKeys.pages });
-}
-
-function updateBlockInCache(
-  client: QueryClient,
-  pageId: string,
-  blockId: string,
-  update: (block: Block) => Block
-) {
-  client.setQueryData<PageDocument>(queryKeys.pageDocument(pageId), (document) => {
-    if (!document) {
-      return document;
-    }
-
-    return {
-      ...document,
-      blocks: document.blocks.map((block) =>
-        block.id === blockId ? update(block) : block
-      )
-    };
-  });
-}
-
-function updatePageInCache(client: QueryClient, page: Page) {
-  client.setQueryData<PageDocument>(queryKeys.pageDocument(page.id), (document) =>
-    document ? { ...document, page } : document
-  );
-  client.setQueryData<Page[]>(queryKeys.pages, (pages) =>
-    pages?.map((item) => (item.id === page.id ? page : item))
-  );
-}
-
-function getCachedPageTitle(client: QueryClient, pageId: string) {
-  return client.getQueryData<PageDocument>(queryKeys.pageDocument(pageId))?.page
-    .title;
-}
-
-function getCachedBlock(client: QueryClient, pageId: string, blockId: string) {
-  return client
-    .getQueryData<PageDocument>(queryKeys.pageDocument(pageId))
-    ?.blocks.find((block) => block.id === blockId) ?? null;
-}
-
-function definedValues<T extends Record<string, unknown>>(values: T) {
-  return Object.fromEntries(
-    Object.entries(values).filter(([, value]) => value !== undefined)
-  ) as Partial<T>;
 }

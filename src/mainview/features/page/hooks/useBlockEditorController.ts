@@ -1,4 +1,8 @@
-import { useRef, type DragEvent, type FormEvent } from "react";
+import {
+  useRef,
+  type DragEvent,
+  type InputEvent as ReactInputEvent
+} from "react";
 import { useKeybindingStore } from "@/mainview/features/commands/keybindingStore";
 import { useKeyboardShortcuts } from "@/mainview/features/commands/useKeyboardShortcuts";
 import { useBlockTextEditing } from "@/mainview/features/page/hooks/useBlockTextEditing";
@@ -101,8 +105,8 @@ export function useBlockEditorController({
     onDrop(block, getDropPlacement(event.clientY, event.currentTarget));
   }
 
-  function handleBeforeInput(event: FormEvent<HTMLDivElement>) {
-    const inputType = (event.nativeEvent as InputEvent).inputType;
+  function handleBeforeInput(event: ReactInputEvent<HTMLDivElement>) {
+    const inputType = event.nativeEvent.inputType;
 
     if (inputType !== "historyUndo" && inputType !== "historyRedo") {
       return;
