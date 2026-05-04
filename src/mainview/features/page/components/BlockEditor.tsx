@@ -5,11 +5,13 @@ import { BlockDragHandle } from "./BlockDragHandle";
 import { InlineFormattingToolbar } from "./InlineFormattingToolbar";
 import { useBlockEditorController } from "@/mainview/features/page/hooks/useBlockEditorController";
 import type { BlockEditorProps } from "@/mainview/features/page/types/blockEditorTypes";
+import type { MouseEvent } from "react";
 
 export function BlockEditor({
   block,
   blockIndex,
   blocksCount,
+  dragHandleVisibility,
   isDragging,
   isBlockRangeSelecting,
   isSelected,
@@ -24,6 +26,7 @@ export function BlockEditor({
   onDragEnd,
   onDragOver,
   onDragPointerDown,
+  onSelectBlock,
   onDragStart,
   onDrop,
   onFocusNext,
@@ -89,6 +92,19 @@ export function BlockEditor({
     typeof textEditing.draftProps.icon === "string" ? textEditing.draftProps.icon : "💡";
   const legacyCalloutText = textEditing.draft.trim();
 
+  function handleShellMouseDown(event: MouseEvent<HTMLDivElement>) {
+    if (!isCallout || !(event.target instanceof Element)) {
+      return;
+    }
+
+    if (event.target.closest("[data-block-id]") !== event.currentTarget) {
+      return;
+    }
+
+    event.preventDefault();
+    onSelectBlock(block);
+  }
+
   return (
     <div
       className={cn(
@@ -103,14 +119,22 @@ export function BlockEditor({
       onDragStart={handleShellDragStart}
       onDragEnd={onDragEnd}
       onDrop={handleDrop}
+      onMouseDown={handleShellMouseDown}
+      role="presentation"
       style={{ marginLeft: depth * 24 }}
     >
-      <BlockDragHandle
-        block={block}
-        onDragEnd={onDragEnd}
-        onDragPointerDown={onDragPointerDown}
-        onDragStart={onDragStart}
-      />
+      {dragHandleVisibility === "visible" ? (
+        <BlockDragHandle
+          block={block}
+          onDragEnd={onDragEnd}
+          onDragPointerDown={onDragPointerDown}
+          onSelectBlock={onSelectBlock}
+          onDragStart={onDragStart}
+          variant={
+            block.type === "callout" ? "callout" : block.parentBlockId ? "nested" : "root"
+          }
+        />
+      ) : null}
 
       <div
         className={cn(

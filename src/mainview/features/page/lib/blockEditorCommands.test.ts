@@ -448,6 +448,54 @@ describe("block editor commands", () => {
     ]);
   });
 
+  test("moves to previous block with ArrowUp without requiring the cursor at start", async () => {
+    const { calls, context } = createContext({
+      draft: "middle",
+      getCursorOffset: () => 3,
+      isCommandMenuOpen: false
+    });
+    const command = resolveKeybinding({
+      activeScopes: ["global", "editor", "block"],
+      commands: BLOCK_EDITOR_COMMANDS,
+      context,
+      event: {
+        altKey: false,
+        ctrlKey: false,
+        key: "ArrowUp",
+        metaKey: false,
+        shiftKey: false
+      }
+    });
+
+    expect(command?.id).toBe("editor.block.focusPrevious");
+    await command?.run(context);
+    expect(calls).toEqual(["commitDraft", "onFocusPrevious"]);
+  });
+
+  test("moves to next block with ArrowDown without requiring the cursor at end", async () => {
+    const { calls, context } = createContext({
+      draft: "middle",
+      getCursorOffset: () => 3,
+      isCommandMenuOpen: false
+    });
+    const command = resolveKeybinding({
+      activeScopes: ["global", "editor", "block"],
+      commands: BLOCK_EDITOR_COMMANDS,
+      context,
+      event: {
+        altKey: false,
+        ctrlKey: false,
+        key: "ArrowDown",
+        metaKey: false,
+        shiftKey: false
+      }
+    });
+
+    expect(command?.id).toBe("editor.block.focusNext");
+    await command?.run(context);
+    expect(calls).toEqual(["commitDraft", "onFocusNext"]);
+  });
+
   test("resets a non-paragraph block before deleting an empty block", () => {
     const { calls, context } = createContext({
       block: {

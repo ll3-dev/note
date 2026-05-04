@@ -1,6 +1,7 @@
 import type { Block } from "@/shared/contracts";
 import { readBlockClipboardPaste } from "@/mainview/features/page/lib/blockClipboard";
 import {
+  buildEmptyCalloutFallbackBlockInputs,
   buildPasteBlockInputs,
   shouldCreateFallbackBlockAfterDelete,
   type CreateBlockInput
@@ -14,6 +15,7 @@ type UseBlockBatchActionsOptions = {
     fallbackBlock?: CreateBlockInput
   ) => Promise<{ createdBlock?: Block; deleted: true }>;
   flushAllTextDrafts: () => Promise<void>;
+  getBlocks: () => Block[];
   getBlocksCount: () => number;
   setFocusBlockId: (blockId: string, placement?: "start" | "end") => void;
 };
@@ -23,6 +25,7 @@ export function useBlockBatchActions({
   createBlocks,
   deleteBlocksBatch,
   flushAllTextDrafts,
+  getBlocks,
   getBlocksCount,
   setFocusBlockId
 }: UseBlockBatchActionsOptions) {
@@ -61,9 +64,14 @@ export function useBlockBatchActions({
 
   async function deleteBlocks(blocks: Block[]) {
     const pageId = blocks[0]?.pageId;
+    const currentBlocks = getBlocks();
     const shouldCreateFallbackBlock =
       Boolean(pageId) &&
       shouldCreateFallbackBlockAfterDelete(blocks.length, getBlocksCount());
+    const emptyCalloutFallbackBlocks = buildEmptyCalloutFallbackBlockInputs(
+      currentBlocks,
+      blocks
+    );
 
     await flushAllTextDrafts();
     blocks.forEach((block) => clearPendingText(block.id));
@@ -82,6 +90,16 @@ export function useBlockBatchActions({
 
     if (result.createdBlock) {
       setFocusBlockId(result.createdBlock.id, "start");
+      return;
+    }
+
+    if (emptyCalloutFallbackBlocks.length > 0) {
+      const createdBlocks = await createBlocks(emptyCalloutFallbackBlocks);
+      const firstCreatedBlock = createdBlocks[0];
+
+      if (firstCreatedBlock) {
+        setFocusBlockId(firstCreatedBlock.id, "start");
+      }
     }
   }
 

@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import {
   getBlockSelectAllShortcutIds,
   getSelectedBlockEditTargetId,
+  getSelectedBlockShortcutScopeIds,
   shouldIgnoreSelectedBlockShortcutTarget
 } from "./useSelectedBlockShortcuts";
 import type { PageDocument } from "@/shared/contracts";
@@ -57,6 +58,36 @@ describe("selected block shortcuts", () => {
     expect(getSelectedBlockEditTargetId(["block-1", "block-2"], null))
       .toBe("block-2");
     expect(getSelectedBlockEditTargetId([], null)).toBeNull();
+  });
+
+  test("keeps selected parent shortcuts active from nested child editors", () => {
+    const scopedDocument: PageDocument = {
+      ...document,
+      blocks: [
+        {
+          ...document.blocks[0],
+          id: "callout-1",
+          type: "callout"
+        },
+        {
+          ...document.blocks[1],
+          id: "child-1",
+          parentBlockId: "callout-1"
+        }
+      ]
+    };
+    const shortcutScopeIds = getSelectedBlockShortcutScopeIds(scopedDocument, [
+      scopedDocument.blocks[0]
+    ]);
+    const childEditable = createClosestTarget({
+      "[data-block-id]": { getAttribute: () => "child-1" },
+      "input,textarea,select,[contenteditable]": {}
+    });
+
+    expect(shortcutScopeIds).toEqual(["callout-1", "child-1"]);
+    expect(
+      shouldIgnoreSelectedBlockShortcutTarget(childEditable, shortcutScopeIds)
+    ).toBe(false);
   });
 });
 

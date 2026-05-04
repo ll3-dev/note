@@ -80,6 +80,7 @@ export function useWorkspacePageEditorController({
     createBlocks,
     deleteBlocksBatch,
     flushAllTextDrafts,
+    getBlocks: () => selectedDocument?.blocks ?? [],
     getBlocksCount: () => selectedDocument?.blocks.length ?? 0,
     setFocusBlockId
   });

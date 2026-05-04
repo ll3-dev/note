@@ -8,6 +8,7 @@ import {
 export {
   getBlockSelectAllShortcutIds,
   getSelectedBlockEditTargetId,
+  getSelectedBlockShortcutScopeIds,
   shouldIgnoreSelectedBlockShortcutTarget
 } from "@/mainview/features/page/lib/selectedBlockShortcuts";
 
@@ -20,7 +21,11 @@ type UseSelectedBlockShortcutsOptions = {
   onFocusTitle: () => void;
   onIndentBlocks: (blocks: Array<{ block: Block; props: Block["props"] }>) => void;
   onKeyboardSelection: (selection: KeyboardBlockSelectionResult) => void;
-  onMoveBlocks: (blocks: Block[], afterBlockId: string | null) => Promise<void> | void;
+  onMoveBlocks: (
+    blocks: Block[],
+    afterBlockId: string | null,
+    parentBlockId?: string | null
+  ) => Promise<void> | void;
   onPasteBlocks: (afterBlock: Block) => Promise<Block[]> | Block[];
   selectionAnchorBlockId: string | null;
   selectionFocusBlockId: string | null;
@@ -67,10 +72,10 @@ export function useSelectedBlockShortcuts({
       });
     }
 
-    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown, { capture: true });
 
     return () => {
-      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keydown", handleKeyDown, { capture: true });
     };
   }, [
     clearSelection,

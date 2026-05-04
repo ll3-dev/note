@@ -3,7 +3,8 @@ import type { Block } from "@/shared/contracts";
 import {
   getAfterBlockIdForKeyboardBlockMove,
   getAfterBlockIdForMovingBlocks,
-  getBlocksAfterMove
+  getBlocksAfterMove,
+  shouldShowBlockDragHandle
 } from "./blockDrag";
 
 const blocks = ["a", "b", "c", "d", "e"].map((id, index) =>
@@ -60,6 +61,22 @@ describe("block drag", () => {
       .toBeUndefined();
     expect(getAfterBlockIdForKeyboardBlockMove(blocks, ["e"], "down"))
       .toBeUndefined();
+  });
+
+  test("hides nested handles only when the parent has one child", () => {
+    expect(shouldShowBlockDragHandle(createBlock("root", 0), 1)).toBe(true);
+    expect(
+      shouldShowBlockDragHandle({
+        ...createBlock("child", 1),
+        parentBlockId: "callout"
+      }, 1)
+    ).toBe(false);
+    expect(
+      shouldShowBlockDragHandle({
+        ...createBlock("child", 1),
+        parentBlockId: "callout"
+      }, 2)
+    ).toBe(true);
   });
 });
 

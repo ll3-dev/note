@@ -26,6 +26,15 @@ export {
   shouldIgnoreSelectedBlockShortcutTarget
 };
 
+export function getSelectedBlockShortcutScopeIds(
+  document: PageDocument,
+  selectedBlocks: Block[]
+) {
+  return getBlocksWithDescendants(document.blocks, selectedBlocks).map(
+    (block) => block.id
+  );
+}
+
 type SelectedBlockShortcutContext = {
   clearSelection: () => void;
   document: PageDocument;
@@ -142,7 +151,7 @@ function handleKeyboardBlockMove(
   if (
     shouldIgnoreSelectedBlockShortcutTarget(
       event.target,
-      context.selectedBlockIds
+      getSelectedBlockShortcutScopeIds(context.document, context.selectedBlocks)
     )
   ) {
     return false;
@@ -179,7 +188,7 @@ function handleIndentShortcut(
   if (
     shouldIgnoreSelectedBlockShortcutTarget(
       event.target,
-      context.selectedBlockIds
+      getSelectedBlockShortcutScopeIds(context.document, context.selectedBlocks)
     )
   ) {
     return false;
@@ -240,7 +249,7 @@ function handleSelectionNavigation(
   if (
     shouldIgnoreSelectedBlockShortcutTarget(
       event.target,
-      context.selectedBlockIds
+      getSelectedBlockShortcutScopeIds(context.document, context.selectedBlocks)
     )
   ) {
     return false;
@@ -288,7 +297,7 @@ function handleEditSelectedBlock(
   if (
     shouldIgnoreSelectedBlockShortcutTarget(
       event.target,
-      context.selectedBlockIds
+      getSelectedBlockShortcutScopeIds(context.document, context.selectedBlocks)
     )
   ) {
     return false;

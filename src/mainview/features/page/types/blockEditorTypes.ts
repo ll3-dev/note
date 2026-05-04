@@ -39,6 +39,7 @@ export type BlockEditorProps = {
   block: Block;
   blockIndex: number;
   blocksCount: number;
+  dragHandleVisibility: "hidden" | "visible";
   isDragging: boolean;
   isBlockRangeSelecting: boolean;
   isSelected: boolean;
@@ -65,6 +66,7 @@ export type BlockEditorProps = {
   onDragEnd: () => void;
   onDragOver: (block: Block, placement: "before" | "after") => void;
   onDragPointerDown: (block: Block, event: PointerEvent<HTMLElement>) => void;
+  onSelectBlock: (block: Block) => void;
   onDragStart: (block: Block, event?: React.DragEvent<HTMLElement>) => void;
   onDrop: (block: Block, placement: "before" | "after") => void;
   onFocusNext: (block: Block) => void;
@@ -117,5 +119,10 @@ export type BlockEditorActions = Pick<
 
 export type BlockEditorDragActions = Pick<
   BlockEditorProps,
-  "onDragEnd" | "onDragOver" | "onDragPointerDown" | "onDragStart" | "onDrop"
+  | "onDragEnd"
+  | "onDragOver"
+  | "onDragPointerDown"
+  | "onDragStart"
+  | "onDrop"
+  | "onSelectBlock"
 >;

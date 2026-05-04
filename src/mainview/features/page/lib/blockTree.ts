@@ -70,6 +70,7 @@ export function getBlocksWithDescendants(
 
   const selectedIds = new Set(selectedBlocks.map((block) => block.id));
   const expandedIds = new Set<string>();
+  const childIdsByParentId = getChildIdsByParentId(blocks);
 
   for (let index = 0; index < blocks.length; index += 1) {
     const block = blocks[index];
@@ -79,12 +80,45 @@ export function getBlocksWithDescendants(
     }
 
     expandedIds.add(block.id);
+    addParentBlockDescendantIds(block.id, childIdsByParentId, expandedIds);
+
     for (const descendant of getFollowingDescendants(blocks, index)) {
       expandedIds.add(descendant.id);
     }
   }
 
   return blocks.filter((block) => expandedIds.has(block.id));
+}
+
+function getChildIdsByParentId(blocks: Block[]) {
+  const childIdsByParentId = new Map<string, string[]>();
+
+  for (const block of blocks) {
+    if (!block.parentBlockId) {
+      continue;
+    }
+
+    const childIds = childIdsByParentId.get(block.parentBlockId) ?? [];
+    childIds.push(block.id);
+    childIdsByParentId.set(block.parentBlockId, childIds);
+  }
+
+  return childIdsByParentId;
+}
+
+function addParentBlockDescendantIds(
+  blockId: string,
+  childIdsByParentId: Map<string, string[]>,
+  expandedIds: Set<string>
+) {
+  for (const childId of childIdsByParentId.get(blockId) ?? []) {
+    if (expandedIds.has(childId)) {
+      continue;
+    }
+
+    expandedIds.add(childId);
+    addParentBlockDescendantIds(childId, childIdsByParentId, expandedIds);
+  }
 }
 
 export function getFollowingDescendants(blocks: Block[], index: number) {

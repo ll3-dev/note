@@ -7,6 +7,10 @@ export type BlockDropTarget = {
   placement: BlockDropPlacement;
 };
 
+export function shouldShowBlockDragHandle(block: Block, siblingCount: number) {
+  return block.parentBlockId === null || siblingCount > 1;
+}
+
 export function getAfterBlockId(
   blocks: Block[],
   draggedBlockId: string,

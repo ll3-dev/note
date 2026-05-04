@@ -138,6 +138,7 @@ export function useBlockDragState({
 
     event.preventDefault();
     event.stopPropagation();
+    blurActiveEditableElement();
 
     const nextSelectedBlockIds = getPointerBlockSelection(block, event);
     const previewOffset = getDragPreviewOffset(event);
@@ -255,4 +256,19 @@ export function useBlockDragState({
     setDropPlacement,
     startDrag
   };
+}
+
+function blurActiveEditableElement() {
+  const activeElement = document.activeElement;
+
+  if (!(activeElement instanceof HTMLElement)) {
+    return;
+  }
+
+  if (!activeElement.closest("[contenteditable]")) {
+    return;
+  }
+
+  activeElement.blur();
+  window.getSelection()?.removeAllRanges();
 }

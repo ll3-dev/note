@@ -51,6 +51,7 @@ export function usePageEditorController({
     dropTarget,
     isBlockRangeSelecting,
     pressBlockDragHandle,
+    selectBlock,
     selectionAnchorBlockId,
     selectionFocusBlockId,
     applyKeyboardBlockSelection,
@@ -165,6 +166,7 @@ export function usePageEditorController({
     onDragEnd: clearDragState,
     onDragOver: setDropPlacement,
     onDragPointerDown: pressBlockDragHandle,
+    onSelectBlock: selectBlock,
     onDragStart: startDrag,
     onDrop: dropBlock
   } satisfies BlockEditorDragActions;

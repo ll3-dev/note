@@ -274,8 +274,6 @@ export const BLOCK_EDITOR_COMMANDS: Command<BlockShortcutContext>[] = [
     }
   },
   {
-    canRun: ({ block, getCursorOffset }) =>
-      block.type === "page_link" || getCursorOffset() === 0,
     defaultKeybindings: ["ArrowUp"],
     id: "editor.block.focusPrevious",
     scope: "block",
@@ -286,8 +284,6 @@ export const BLOCK_EDITOR_COMMANDS: Command<BlockShortcutContext>[] = [
     }
   },
   {
-    canRun: ({ block, draft, getCursorOffset }) =>
-      block.type === "page_link" || getCursorOffset() === draft.length,
     defaultKeybindings: ["ArrowDown"],
     id: "editor.block.focusNext",
     scope: "block",

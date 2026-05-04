@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { Block, PageDocument } from "@/shared/contracts";
-import { findAdjacentFocusableBlock } from "./blockFocus";
+import { findAdjacentFocusableBlock, findLastFocusableBlock } from "./blockFocus";
 
 function block(
   id: string,
@@ -75,5 +75,13 @@ describe("block focus", () => {
 
     expect(findAdjacentFocusableBlock(pageDocument, child, -1)).toBe(before);
     expect(findAdjacentFocusableBlock(pageDocument, child, 1)).toBe(after);
+  });
+
+  test("finds the last editable child when the last visible root is a callout", () => {
+    const before = block("a-before");
+    const child = block("b-child", "paragraph", "c-callout");
+    const callout = block("c-callout", "callout");
+
+    expect(findLastFocusableBlock(document([before, child, callout]))).toBe(child);
   });
 });

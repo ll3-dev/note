@@ -103,6 +103,41 @@ describe("block tree helpers", () => {
     });
     expect(getParentBlockOutdentTarget(treeBlocks, treeBlocks[1])).toBeNull();
   });
+
+  test("collects parentBlockId descendants with selected blocks", () => {
+    const treeBlocks = [
+      block("before", "paragraph", 0),
+      block("callout", "callout", 0),
+      block("child", "paragraph", 0, {}, "callout"),
+      block("grandchild", "paragraph", 0, {}, "child"),
+      block("after", "paragraph", 0)
+    ];
+
+    expect(getBlocksWithDescendants(treeBlocks, [treeBlocks[1]]).map((item) => item.id))
+      .toEqual(["callout", "child", "grandchild"]);
+  });
+
+  test("indents selected parentBlockId subtree together", () => {
+    const treeBlocks = [
+      block("before", "paragraph", 0),
+      block("callout", "callout", 0),
+      block("child", "paragraph", 0, {}, "callout"),
+      block("grandchild", "paragraph", 0, {}, "child")
+    ];
+
+    expect(
+      getIndentedSubtreeBlockUpdates(treeBlocks, [treeBlocks[1]], "in").map(
+        (update) => ({
+          id: update.block.id,
+          props: update.props
+        })
+      )
+    ).toEqual([
+      { id: "callout", props: { depth: 1 } },
+      { id: "child", props: { depth: 1 } },
+      { id: "grandchild", props: { depth: 1 } }
+    ]);
+  });
 });
 
 const blocks = [

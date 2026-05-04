@@ -28,6 +28,10 @@ export function findAdjacentFocusableBlock(
   return null;
 }
 
+export function findLastFocusableBlock(document: PageDocument | null) {
+  return getFocusableBlocks(document).at(-1) ?? null;
+}
+
 function getFocusableBlocks(document: PageDocument | null) {
   if (!document) {
     return [];

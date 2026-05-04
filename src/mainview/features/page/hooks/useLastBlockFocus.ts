@@ -1,6 +1,7 @@
 import type { MouseEvent } from "react";
 import type { PageDocument } from "@/shared/contracts";
 import type { CreateBlockDraft } from "@/mainview/features/page/lib/blockEditingBehavior";
+import { findLastFocusableBlock } from "@/mainview/features/page/lib/blockFocus";
 import type { CreateBlockOptions } from "@/mainview/features/page/types/blockEditorTypes";
 import { placeCursorAtEnd } from "@/mainview/features/page/web/domSelection";
 
@@ -30,7 +31,7 @@ export function useLastBlockFocus({
       return false;
     }
 
-    const lastBlock = document.blocks.at(-1);
+    const lastBlock = findLastFocusableBlock(document) ?? document.blocks.at(-1);
 
     if (!lastBlock) {
       return false;
