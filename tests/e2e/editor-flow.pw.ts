@@ -88,6 +88,68 @@ test("creates page link targets as child pages", async ({ page }) => {
     });
 });
 
+test("links an existing page from @ search result click", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("textbox", { name: "새 페이지 제목" }).fill("Roadmap");
+  await page
+    .getByRole("complementary")
+    .getByRole("button", { name: "새 페이지" })
+    .click();
+  await expect(page).toHaveURL(/\/pages\/page-3$/);
+
+  await page
+    .getByRole("navigation")
+    .getByRole("button", { exact: true, name: "Untitled" })
+    .click();
+
+  const firstBlock = page.getByRole("textbox", { name: "paragraph block" }).first();
+  await firstBlock.click();
+  await page.keyboard.type("@Road");
+  await page.getByRole("option", { name: /Roadmap/ }).click();
+
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const block = window.__noteE2E.getDocument("page-1").blocks[0];
+
+        return {
+          blocksCount: window.__noteE2E.getDocument("page-1").blocks.length,
+          nextBlockText: window.__noteE2E.getDocument("page-1").blocks[1]?.text,
+          nextBlockType: window.__noteE2E.getDocument("page-1").blocks[1]?.type,
+          targetPageId: block?.props.targetPageId,
+          targetTitle: block?.props.targetTitle,
+          text: block?.text,
+          type: block?.type
+        };
+      })
+    )
+    .toEqual({
+      blocksCount: 2,
+      nextBlockText: "",
+      nextBlockType: "paragraph",
+      targetPageId: "page-3",
+      targetTitle: "Roadmap",
+      text: "",
+      type: "page_link"
+    });
+
+  await page
+    .locator("section")
+    .getByRole("button", { exact: true, name: "Roadmap" })
+    .click();
+
+  await expect(page).toHaveURL(/\/pages\/page-3$/);
+
+  await page
+    .getByRole("navigation")
+    .getByRole("button", { exact: true, name: "Roadmap" })
+    .click();
+  await expect(page.getByText("Backlinks")).toBeVisible();
+  await expect(
+    page.locator("text=Backlinks").locator("..").getByRole("button", { name: "Untitled" })
+  ).toBeVisible();
+});
+
 test("selects slash menu commands on pointer hover without scrolling the menu", async ({ page }) => {
   await openInitialPage(page);
 

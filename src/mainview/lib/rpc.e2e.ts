@@ -14,6 +14,7 @@ import type {
   UpdateBlockInput,
   UpdatePageInput
 } from "@/shared/contracts";
+import { getConnectedPageIdsFromProps } from "@/shared/pageConnections";
 
 let idCounter = 0;
 
@@ -238,9 +239,8 @@ export const noteApi = {
   async listBacklinks(input: { pageId: string }) {
     return [...state.documents.values()].flatMap((document) =>
       document.blocks.flatMap((block) =>
-        block.type === "page_link" &&
         block.pageId !== input.pageId &&
-        block.props.targetPageId === input.pageId
+        getConnectedPageIdsFromProps(block.props).includes(input.pageId)
           ? [
               {
                 blockId: block.id,
