@@ -6,14 +6,15 @@ import {
 
 const MAX_MARKDOWN_DEPTH = 6;
 const BLOCK_MARKDOWN_PATTERNS = [
-  /^#{1,3}\s+/,
+  /^#{1,6}\s+/,
   /^\s*[-*+]\s+/,
   /^\s*\d+\.\s+/,
   /^\s*>!\s+/,
   /^\s*>\s+/,
   /^\s*[-*]\s+\[[ xX]\]\s+/,
-  /^```\w*/,
-  /^---$/
+  /^[`~]{3}[\w-]*/,
+  /^[-*_]\s*[-*_]\s*[-*_][\s-*_]*$/,
+  /^!\[[^\]]*]\([^)]+\)$/
 ];
 
 export function parseMarkdownToBlockDrafts(markdown: string) {
@@ -33,21 +34,42 @@ export function parseMarkdownToImportBlocks(markdown: string) {
       continue;
     }
 
-    const codeFence = /^```(\w*)\s*$/.exec(line);
+    const codeFence = /^(```|~~~)([\w-]*)\s*$/.exec(line);
 
     if (codeFence) {
       flushParagraph();
       const codeLines: string[] = [];
       index += 1;
 
-      while (index < lines.length && !/^```\s*$/.test(lines[index])) {
+      const closeFence = codeFence[1];
+
+      while (index < lines.length && lines[index].trim() !== closeFence) {
         codeLines.push(lines[index]);
         index += 1;
       }
 
       blocks.push({
-        ...(codeFence[1] ? { language: codeFence[1] } : {}),
+        ...(codeFence[2] ? { language: codeFence[2] } : {}),
         text: codeLines.join("\n"),
+        type: "code"
+      });
+      continue;
+    }
+
+    if (isMarkdownTableStart(lines, index)) {
+      flushParagraph();
+      const tableLines = [line, lines[index + 1]];
+      index += 2;
+
+      while (index < lines.length && isMarkdownTableRow(lines[index])) {
+        tableLines.push(lines[index]);
+        index += 1;
+      }
+
+      index -= 1;
+      blocks.push({
+        language: "markdown",
+        text: tableLines.join("\n"),
         type: "code"
       });
       continue;
@@ -96,7 +118,7 @@ export function shouldHandleMarkdownPaste(text: string) {
 }
 
 function parseMarkdownLine(line: string): ImportBlock | null {
-  const heading = /^(#{1,3})\s+(.+)$/.exec(line);
+  const heading = /^(#{1,6})\s+(.+)$/.exec(line);
 
   if (heading) {
     return {
@@ -105,8 +127,22 @@ function parseMarkdownLine(line: string): ImportBlock | null {
     };
   }
 
-  if (/^---$/.test(line.trim())) {
+  if (/^[-*_]\s*[-*_]\s*[-*_][\s-*_]*$/.test(line.trim())) {
     return { type: "divider" };
+  }
+
+  const image = /^!\[([^\]]*)]\(([^)\s]+)(?:\s+"[^"]*")?\)$/.exec(line.trim());
+
+  if (image) {
+    const src = getSafeMarkdownImageSrc(image[2]);
+
+    if (src) {
+      return {
+        alt: image[1],
+        src,
+        type: "image"
+      };
+    }
   }
 
   const todo = /^(\s*)[-*]\s+\[([ xX])\]\s+(.+)$/.exec(line);
@@ -175,4 +211,48 @@ function getHeadingBlockType(depth: number) {
   }
 
   return "heading_3";
+}
+
+function isMarkdownTableStart(lines: string[], index: number) {
+  return (
+    isMarkdownTableRow(lines[index]) &&
+    index + 1 < lines.length &&
+    isMarkdownTableDivider(lines[index + 1])
+  );
+}
+
+function isMarkdownTableRow(line: string) {
+  const trimmed = line.trim();
+
+  return trimmed.includes("|") && trimmed.split("|").length >= 3;
+}
+
+function isMarkdownTableDivider(line: string) {
+  const cells = line
+    .trim()
+    .split("|")
+    .map((cell) => cell.trim())
+    .filter(Boolean);
+
+  return (
+    cells.length > 0 &&
+    cells.every((cell) => /^:?-{3,}:?$/.test(cell))
+  );
+}
+
+function getSafeMarkdownImageSrc(src: string) {
+  const normalized = src.trim().slice(0, 2048);
+
+  if (
+    normalized.startsWith("http://") ||
+    normalized.startsWith("https://") ||
+    normalized.startsWith("/") ||
+    normalized.startsWith("./") ||
+    normalized.startsWith("../") ||
+    /^data:image\/[a-zA-Z0-9.+-]+;base64,/.test(normalized)
+  ) {
+    return normalized;
+  }
+
+  return "";
 }

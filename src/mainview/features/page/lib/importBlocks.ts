@@ -15,6 +15,7 @@ export type ImportBlock =
   | { children: ImportInline[]; depth: number; start: number; type: "numbered_list" }
   | { checked: boolean; children: ImportInline[]; depth: number; type: "todo" }
   | { language?: string; text: string; type: "code" }
+  | { alt: string; src: string; type: "image" }
   | { type: "divider" };
 
 type InlineMarkDraft = {
@@ -39,6 +40,17 @@ export function importBlockToDraft(block: ImportBlock): Required<CreateBlockDraf
 
   if (block.type === "divider") {
     return { props: {}, text: "", type: "divider" };
+  }
+
+  if (block.type === "image") {
+    return {
+      props: {
+        ...(block.alt ? { alt: block.alt } : {}),
+        src: block.src
+      },
+      text: block.alt,
+      type: "image"
+    };
   }
 
   const inline = flattenImportInline(block.children);
@@ -93,6 +105,8 @@ function importBlockToMarkdownLines(block: ImportBlock): string[] {
       ];
     case "code":
       return [`\`\`\`${block.language ?? ""}`, block.text, "```"];
+    case "image":
+      return [`![${block.alt}](${block.src})`];
     case "divider":
       return ["---"];
   }

@@ -239,7 +239,7 @@ function getStartNumber(node: Extract<HtmlMarkdownNode, { kind: "element" }>) {
 
 function compactImportBlocks(blocks: ImportBlock[]) {
   return blocks.filter((block) => {
-    if (block.type === "code" || block.type === "divider") {
+    if (block.type === "code" || block.type === "divider" || block.type === "image") {
       return true;
     }
 

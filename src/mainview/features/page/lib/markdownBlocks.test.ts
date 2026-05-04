@@ -63,6 +63,41 @@ describe("markdown blocks", () => {
     ]);
   });
 
+  test("parses broader Markdown blocks without losing structure", () => {
+    expect(
+      parseMarkdownToBlockDrafts(
+        [
+          "#### Deep heading",
+          "![Diagram](https://example.com/diagram.png)",
+          "***",
+          "~~~tsx",
+          "const view = <Panel />;",
+          "~~~",
+          "| Name | Status |",
+          "| --- | --- |",
+          "| Note | Local |"
+        ].join("\n")
+      )
+    ).toEqual([
+      { props: {}, text: "Deep heading", type: "heading_3" },
+      {
+        props: {
+          alt: "Diagram",
+          src: "https://example.com/diagram.png"
+        },
+        text: "Diagram",
+        type: "image"
+      },
+      { props: {}, text: "", type: "divider" },
+      { props: { language: "tsx" }, text: "const view = <Panel />;", type: "code" },
+      {
+        props: { language: "markdown" },
+        text: "| Name | Status |\n| --- | --- |\n| Note | Local |",
+        type: "code"
+      }
+    ]);
+  });
+
   test("parses Markdown inline syntax through import block inline nodes", () => {
     expect(
       parseMarkdownToBlockDrafts(
