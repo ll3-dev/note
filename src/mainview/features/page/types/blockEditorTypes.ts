@@ -60,6 +60,7 @@ export type BlockEditorProps = {
     text: string,
     props: BlockProps
   ) => Promise<void> | void;
+  onMoveOutOfParent: (block: Block) => Promise<void> | void;
   onDelete: (block: Block) => void;
   onDragEnd: () => void;
   onDragOver: (block: Block, placement: "before" | "after") => void;
@@ -101,6 +102,7 @@ export type BlockEditorActions = Pick<
   | "onFocusNext"
   | "onFocusPrevious"
   | "onMergeWithPrevious"
+  | "onMoveOutOfParent"
   | "onOpenPageLink"
   | "onPasteMarkdown"
   | "onRestorePageLink"

@@ -47,6 +47,7 @@ export type BlockShortcutContext = {
     text: string,
     props: Block["props"]
   ) => Promise<void> | void;
+  onMoveOutOfParent: (block: Block) => Promise<void> | void;
   onUpdate: (block: Block, changes: BlockEditorUpdate) => void;
   openSearch: () => void;
   previousBlock: Block | null;
@@ -308,6 +309,17 @@ export const BLOCK_EDITOR_COMMANDS: Command<BlockShortcutContext>[] = [
         updateNumberedListStart(block, update, numberedListStartAfterIndent);
         onUpdate(block, update);
       }
+    }
+  },
+  {
+    canRun: ({ block }) => block.parentBlockId !== null,
+    defaultKeybindings: ["Shift+Tab"],
+    id: "editor.block.outdentFromParent",
+    scope: "block",
+    title: "Move block out of parent",
+    run: async ({ block, commitDraft, onMoveOutOfParent }) => {
+      await commitDraft();
+      await onMoveOutOfParent(block);
     }
   },
   {

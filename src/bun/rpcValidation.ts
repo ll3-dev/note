@@ -187,7 +187,8 @@ export function validateMoveBlockInput(input: unknown): MoveBlockInput {
   const record = asRecord(input);
   return {
     afterBlockId: optionalId(record.afterBlockId, "afterBlockId"),
-    blockId: idValue(record.blockId, "blockId")
+    blockId: idValue(record.blockId, "blockId"),
+    parentBlockId: optionalId(record.parentBlockId, "parentBlockId")
   };
 }
 

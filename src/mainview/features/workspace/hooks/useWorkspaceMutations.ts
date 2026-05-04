@@ -246,10 +246,12 @@ export function useWorkspaceMutations({
 
   async function moveBlocks({
     afterBlockId,
-    blocks
+    blocks,
+    parentBlockId
   }: {
     afterBlockId: string | null;
     blocks: Block[];
+    parentBlockId?: string | null;
   }) {
     const pageId = blocks[0]?.pageId;
 
@@ -269,7 +271,8 @@ export function useWorkspaceMutations({
               blocks: getBlocksAfterMove(
                 document.blocks,
                 movingBlockIds,
-                afterBlockId
+                afterBlockId,
+                parentBlockId
               )
             }
           : document
@@ -278,7 +281,8 @@ export function useWorkspaceMutations({
     await moveBlocksSequentially(blocks, afterBlockId, async (block, nextAfterBlockId) => {
       await noteApi.moveBlock({
         afterBlockId: nextAfterBlockId,
-        blockId: block.id
+        blockId: block.id,
+        parentBlockId
       });
     });
     await invalidatePageDocument(queryClient, pageId);

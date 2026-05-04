@@ -30,6 +30,7 @@ export function useBlockEditorController({
   onFocusNext,
   onFocusPrevious,
   onMergeWithPrevious,
+  onMoveOutOfParent,
   onTextDraftChange,
   onTextDraftFlush,
   onTextHistoryApply,
@@ -84,6 +85,7 @@ export function useBlockEditorController({
       onFocusNext,
       onFocusPrevious,
       onMergeWithPrevious,
+      onMoveOutOfParent,
       onUpdate,
       openSearch,
       previousBlock,
@@ -168,6 +170,7 @@ type BlockEditorControllerOptions = Pick<
   | "onFocusNext"
   | "onFocusPrevious"
   | "onMergeWithPrevious"
+  | "onMoveOutOfParent"
   | "onTextDraftChange"
   | "onTextDraftFlush"
   | "onTextHistoryApply"

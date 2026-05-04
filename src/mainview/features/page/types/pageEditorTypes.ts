@@ -50,8 +50,10 @@ export type PageEditorProps = {
   ) => Promise<void> | void;
   onMoveBlocks: (
     blocks: Block[],
-    afterBlockId: string | null
+    afterBlockId: string | null,
+    parentBlockId?: string | null
   ) => Promise<void> | void;
+  onMoveBlockOutOfParent: (block: Block) => Promise<void> | void;
   onPasteMarkdown: PasteMarkdownHandler;
   onOpenPageLink: (pageId: string, options?: OpenPageLinkOptions) => void;
   onRestorePageLink: (pageId: string) => void;
@@ -78,6 +80,7 @@ export type PageEditorControllerOptions = Pick<
   | "onIndentBlocks"
   | "onMergeBlockWithPrevious"
   | "onMoveBlocks"
+  | "onMoveBlockOutOfParent"
   | "onOpenPageLink"
   | "onPasteBlocks"
   | "onPasteMarkdown"

@@ -147,6 +147,7 @@ export function useWorkspacePageEditorController({
       }
     },
     onMergeBlockWithPrevious: editorActions.mergeBlockWithPrevious,
+    onMoveBlockOutOfParent: editorActions.moveBlockOutOfParent,
     onMoveBlocks: editorActions.moveBlocksWithDescendants,
     onOpenPageLink: editorActions.openPageLink,
     onRestorePageLink,

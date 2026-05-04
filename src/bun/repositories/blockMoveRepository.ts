@@ -15,20 +15,26 @@ export function moveBlock(
   input: MoveBlockInput
 ): Block {
   const movingBlock = getBlock(handle, input.blockId);
+  const nextParentBlockId =
+    input.parentBlockId === undefined ? movingBlock.parentBlockId : input.parentBlockId;
   const afterBlock = input.afterBlockId ? getBlock(handle, input.afterBlockId) : null;
 
   if (
     afterBlock &&
     (afterBlock.id === movingBlock.id ||
       afterBlock.pageId !== movingBlock.pageId ||
-      afterBlock.parentBlockId !== movingBlock.parentBlockId)
+      afterBlock.parentBlockId !== nextParentBlockId)
   ) {
     throw new Error("afterBlockId must belong to the same block list");
   }
 
+  if (nextParentBlockId === movingBlock.id) {
+    throw new Error("parentBlockId cannot be the moved block");
+  }
+
   runInTransaction(handle, () => {
     capturePageHistoryBeforeChange(handle, movingBlock.pageId);
-    const nextIds = getSiblingBlockIds(handle, movingBlock);
+    const nextIds = getSiblingBlockIds(handle, movingBlock, nextParentBlockId);
     const afterIndex = afterBlock ? nextIds.indexOf(afterBlock.id) : -1;
     const insertIndex = afterBlock ? afterIndex + 1 : 0;
 
@@ -37,7 +43,7 @@ export function moveBlock(
     }
 
     nextIds.splice(insertIndex, 0, movingBlock.id);
-    rewriteSortKeys(handle, nextIds, movingBlock.id);
+    rewriteSortKeys(handle, nextIds, movingBlock.id, nextParentBlockId);
 
     touchPage(handle, movingBlock.pageId);
     syncPageHistoryAfterChange(handle, movingBlock.pageId);
@@ -49,14 +55,18 @@ export function moveBlock(
   return getBlock(handle, movingBlock.id);
 }
 
-function getSiblingBlockIds(handle: DatabaseHandle, movingBlock: Block) {
+function getSiblingBlockIds(
+  handle: DatabaseHandle,
+  movingBlock: Block,
+  parentBlockId: string | null
+) {
   const rows = handle.orm
     .select({ id: blocks.id })
     .from(blocks)
     .where(
       and(
         eq(blocks.page_id, movingBlock.pageId),
-        getParentBlockCondition(movingBlock.parentBlockId),
+        getParentBlockCondition(parentBlockId),
         ne(blocks.id, movingBlock.id)
       )
     )
@@ -69,12 +79,14 @@ function getSiblingBlockIds(handle: DatabaseHandle, movingBlock: Block) {
 function rewriteSortKeys(
   handle: DatabaseHandle,
   blockIds: string[],
-  movedBlockId: string
+  movedBlockId: string,
+  parentBlockId: string | null
 ) {
   for (const [index, blockId] of blockIds.entries()) {
     handle.orm
       .update(blocks)
       .set({
+        parent_block_id: sql`CASE WHEN ${blocks.id} = ${movedBlockId} THEN ${parentBlockId} ELSE ${blocks.parent_block_id} END`,
         sort_key: sql`printf('%08d', ${index})`,
         updated_at: sql`CASE WHEN ${blocks.id} = ${movedBlockId} THEN CURRENT_TIMESTAMP ELSE ${blocks.updated_at} END`
       })

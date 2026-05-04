@@ -112,6 +112,7 @@ export type DeleteBlocksInput = {
 export type MoveBlockInput = {
   blockId: string;
   afterBlockId?: string | null;
+  parentBlockId?: string | null;
 };
 
 export type MovePageInput = {

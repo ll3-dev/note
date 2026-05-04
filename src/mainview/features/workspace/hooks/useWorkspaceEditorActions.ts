@@ -6,6 +6,7 @@ import {
 } from "@/mainview/features/page/lib/blockEditingBehavior";
 import {
   getBlocksWithDescendants,
+  getParentBlockOutdentTarget,
   getSubtreeSafeAfterBlockId
 } from "@/mainview/features/page/lib/blockTree";
 import type {
@@ -36,7 +37,11 @@ type WorkspaceEditorActionsOptions = {
   };
   flushAllTextDrafts: () => Promise<void>;
   flushQueuedTextDraft: (blockId: string) => Promise<void>;
-  moveBlocks: (input: { afterBlockId: string | null; blocks: Block[] }) => Promise<void>;
+  moveBlocks: (input: {
+    afterBlockId: string | null;
+    blocks: Block[];
+    parentBlockId?: string | null;
+  }) => Promise<void>;
   openPage: (page: Page, options?: OpenPageLinkOptions) => Promise<void>;
   openPageById: (pageId: string, options?: OpenPageLinkOptions) => Promise<void>;
   pageTitleDraft: string;
@@ -198,7 +203,8 @@ export function useWorkspaceEditorActions({
 
   async function moveBlocksWithDescendants(
     targets: Block[],
-    afterBlockId: string | null
+    afterBlockId: string | null,
+    parentBlockId?: string | null
   ) {
     await flushAllTextDrafts();
     const movingBlocks = expandBlocksWithDescendants(targets);
@@ -212,7 +218,26 @@ export function useWorkspaceEditorActions({
       return;
     }
 
-    await moveBlocks({ afterBlockId: safeAfterBlockId, blocks: movingBlocks });
+    await moveBlocks({ afterBlockId: safeAfterBlockId, blocks: movingBlocks, parentBlockId });
+  }
+
+  async function moveBlockOutOfParent(block: Block) {
+    if (!selectedDocument) {
+      return;
+    }
+
+    const target = getParentBlockOutdentTarget(selectedDocument.blocks, block);
+
+    if (!target) {
+      return;
+    }
+
+    await moveBlocksWithDescendants(
+      [block],
+      target.afterBlockId,
+      target.parentBlockId
+    );
+    setFocusBlockId(block.id, "start");
   }
 
   return {
@@ -222,6 +247,7 @@ export function useWorkspaceEditorActions({
     focusFirstBlock,
     handleCreatePage,
     mergeBlockWithPrevious,
+    moveBlockOutOfParent,
     moveBlocksWithDescendants,
     openPageLink,
     updateBlock,

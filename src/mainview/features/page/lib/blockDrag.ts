@@ -45,10 +45,17 @@ export function getAfterBlockIdForMovingBlocks(
 export function getBlocksAfterMove(
   blocks: Block[],
   movingBlockIds: string[],
-  afterBlockId: string | null
+  afterBlockId: string | null,
+  parentBlockId?: string | null
 ) {
   const movingBlockIdSet = new Set(movingBlockIds);
-  const movingBlocks = blocks.filter((block) => movingBlockIdSet.has(block.id));
+  const movingBlocks = blocks
+    .filter((block) => movingBlockIdSet.has(block.id))
+    .map((block) =>
+      movingBlockIdSet.has(block.id) && parentBlockId !== undefined
+        ? { ...block, parentBlockId }
+        : block
+    );
   const remainingBlocks = blocks.filter((block) => !movingBlockIdSet.has(block.id));
   const insertIndex =
     afterBlockId === null

@@ -4,6 +4,7 @@ import { getAfterBlockIdForKeyboardBlockMove } from "@/mainview/features/page/li
 import {
   getBlocksWithDescendants,
   getIndentedSubtreeBlockUpdates,
+  getParentBlockOutdentTarget,
   getSubtreeSafeAfterBlockId
 } from "@/mainview/features/page/lib/blockTree";
 import {
@@ -34,7 +35,11 @@ type SelectedBlockShortcutContext = {
   onFocusTitle: () => void;
   onIndentBlocks: (blocks: Array<{ block: Block; props: Block["props"] }>) => void;
   onKeyboardSelection: (selection: KeyboardBlockSelectionResult) => void;
-  onMoveBlocks: (blocks: Block[], afterBlockId: string | null) => Promise<void> | void;
+  onMoveBlocks: (
+    blocks: Block[],
+    afterBlockId: string | null,
+    parentBlockId?: string | null
+  ) => Promise<void> | void;
   onPasteBlocks: (afterBlock: Block) => Promise<Block[]> | Block[];
   selectionAnchorBlockId: string | null;
   selectionFocusBlockId: string | null;
@@ -180,6 +185,23 @@ function handleIndentShortcut(
     return false;
   }
 
+  if (event.shiftKey) {
+    const target = getSelectedParentOutdentTarget(
+      context.document.blocks,
+      context.selectedBlocks
+    );
+
+    if (target) {
+      event.preventDefault();
+      void context.onMoveBlocks(
+        context.selectedBlocks,
+        target.afterBlockId,
+        target.parentBlockId
+      );
+      return true;
+    }
+  }
+
   const updates = getIndentedSubtreeBlockUpdates(
     context.document.blocks,
     context.selectedBlocks,
@@ -193,6 +215,22 @@ function handleIndentShortcut(
   event.preventDefault();
   context.onIndentBlocks(updates);
   return true;
+}
+
+function getSelectedParentOutdentTarget(blocks: Block[], selectedBlocks: Block[]) {
+  const firstBlock = selectedBlocks[0];
+
+  if (!firstBlock?.parentBlockId) {
+    return null;
+  }
+
+  const parentBlockId = firstBlock.parentBlockId;
+
+  if (selectedBlocks.some((block) => block.parentBlockId !== parentBlockId)) {
+    return null;
+  }
+
+  return getParentBlockOutdentTarget(blocks, firstBlock);
 }
 
 function handleSelectionNavigation(

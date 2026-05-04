@@ -36,6 +36,21 @@ describe("block drag", () => {
       .toEqual(["d", "e", "a", "b", "c"]);
   });
 
+  test("updates parent when reparenting moved blocks in one snapshot", () => {
+    expect(
+      getBlocksAfterMove(blocks, ["b"], "d", "callout").map((block) => ({
+        id: block.id,
+        parentBlockId: block.parentBlockId
+      }))
+    ).toEqual([
+      { id: "a", parentBlockId: null },
+      { id: "c", parentBlockId: null },
+      { id: "d", parentBlockId: null },
+      { id: "b", parentBlockId: "callout" },
+      { id: "e", parentBlockId: null }
+    ]);
+  });
+
   test("finds keyboard move targets for selected blocks", () => {
     expect(getAfterBlockIdForKeyboardBlockMove(blocks, ["b", "c"], "up"))
       .toBeNull();

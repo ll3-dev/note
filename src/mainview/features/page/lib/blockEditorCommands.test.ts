@@ -54,6 +54,9 @@ function createContext(overrides: Partial<BlockShortcutContext> = {}) {
     onMergeWithPrevious: async () => {
       calls.push("onMergeWithPrevious");
     },
+    onMoveOutOfParent: async () => {
+      calls.push("onMoveOutOfParent");
+    },
     onUpdate: (_block, changes) => {
       calls.push(`onUpdate:${changes.type}`);
     },
@@ -517,6 +520,32 @@ describe("block editor commands", () => {
     });
 
     expect(outdentCommand?.id).toBe("editor.block.outdent");
+  });
+
+  test("moves child blocks out of their parent on Shift+Tab", async () => {
+    const { calls, context } = createContext({
+      block: {
+        ...block,
+        parentBlockId: "callout-1"
+      },
+      isCommandMenuOpen: false
+    });
+    const command = resolveKeybinding({
+      activeScopes: ["global", "editor", "block"],
+      commands: BLOCK_EDITOR_COMMANDS,
+      context,
+      event: {
+        altKey: false,
+        ctrlKey: false,
+        key: "Tab",
+        metaKey: false,
+        shiftKey: true
+      }
+    });
+
+    expect(command?.id).toBe("editor.block.outdentFromParent");
+    await command?.run(context);
+    expect(calls).toEqual(["commitDraft", "onMoveOutOfParent"]);
   });
 
   test("does not skip parent depth when indenting", () => {

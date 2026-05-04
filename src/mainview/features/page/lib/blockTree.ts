@@ -124,6 +124,23 @@ export function getSubtreeSafeAfterBlockId(
   return movingIds.has(afterBlockId) ? undefined : afterBlockId;
 }
 
+export function getParentBlockOutdentTarget(blocks: Block[], block: Block) {
+  if (!block.parentBlockId) {
+    return null;
+  }
+
+  const parentBlock = blocks.find((item) => item.id === block.parentBlockId);
+
+  if (!parentBlock) {
+    return null;
+  }
+
+  return {
+    afterBlockId: parentBlock.id,
+    parentBlockId: parentBlock.parentBlockId
+  };
+}
+
 export function getIndentedSubtreeBlockUpdates(
   blocks: Block[],
   selectedBlocks: Block[],
