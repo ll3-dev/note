@@ -1,9 +1,13 @@
 import { useState, useCallback } from "react";
+import {
+  getInlinePageSearchTrigger,
+  type InlinePageSearchTriggerChar
+} from "@/mainview/features/page/lib/inlinePageSearchTrigger";
 
 export type PageSearchTriggerState = {
   active: boolean;
   query: string;
-  triggerChar: "@" | "[[";
+  triggerChar: InlinePageSearchTriggerChar;
   triggerOffset: number;
 };
 
@@ -11,35 +15,19 @@ export function useInlinePageSearch() {
   const [triggerState, setTriggerState] = useState<PageSearchTriggerState | null>(null);
 
   const checkTrigger = useCallback((text: string, cursorOffset: number) => {
-    const textBeforeCursor = text.slice(0, cursorOffset);
-
-    // Check [[ trigger — match unclosed [[
-    const bracketMatch = textBeforeCursor.match(/\[\[([^\]]*?)$/);
-    if (bracketMatch) {
-      const query = bracketMatch[1] ?? "";
-      setTriggerState({
+    const triggerMatch = getInlinePageSearchTrigger(text, cursorOffset);
+    if (triggerMatch) {
+      const nextState = {
         active: true,
-        query,
-        triggerChar: "[[",
-        triggerOffset: cursorOffset - bracketMatch[0].length
-      });
-      return;
-    }
+        ...triggerMatch
+      } as const;
 
-    // Check @ trigger — must be after whitespace or at start of text
-    const atMatch = textBeforeCursor.match(/(?:^|\s)@([^\s@]*)$/);
-    if (atMatch) {
-      const query = atMatch[1] ?? "";
-      setTriggerState({
-        active: true,
-        query,
-        triggerChar: "@",
-        triggerOffset: cursorOffset - atMatch[0].length
-      });
-      return;
+      setTriggerState(nextState);
+      return nextState;
     }
 
     setTriggerState(null);
+    return null;
   }, []);
 
   const updateQuery = useCallback((text: string, cursorOffset: number) => {

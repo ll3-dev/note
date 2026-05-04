@@ -56,6 +56,7 @@ export function BlockEditor({
     textEditing
   } = useBlockEditorController({
     block,
+    blockIndex,
     blocksCount,
     isCommandShellSelected: isSelected,
     maxIndentDepth,
@@ -114,6 +115,7 @@ export function BlockEditor({
           isSelected={isSelected}
           linkedPage={linkedPage}
           numberedListMarker={numberedListMarker}
+          onApplyInlinePageLink={textEditing.applyInlinePageLinkDraft}
           onBlur={textEditing.commitDraft}
           onBeforeInput={handleBeforeInput}
           onChange={textEditing.changeDraft}

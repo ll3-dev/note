@@ -30,6 +30,24 @@ describe("block mutation sync machine", () => {
     expect(shouldApplyBlockMutationResponse(state)).toBe(false);
   });
 
+  test("drops a stale text response from an older block type", () => {
+    const state = getBlockMutationSyncState(
+      block({
+        props: { icon: "💡" },
+        text: "typed",
+        type: "callout"
+      }),
+      {
+        props: { icon: "💡" },
+        text: "typed",
+        type: "paragraph"
+      }
+    );
+
+    expect(state).toBe("cache-ahead");
+    expect(shouldApplyBlockMutationResponse(state)).toBe(false);
+  });
+
   test("does not resurrect a missing cached block from a late response", () => {
     const state = getBlockMutationSyncState(null, { text: "a" });
 

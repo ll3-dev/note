@@ -10,6 +10,7 @@ import type { BlockEditorProps } from "@/mainview/features/page/types/blockEdito
 
 export function useBlockEditorController({
   block,
+  blockIndex,
   blocksCount,
   isCommandShellSelected,
   maxIndentDepth,
@@ -39,6 +40,8 @@ export function useBlockEditorController({
   const checked = Boolean(block.props.checked);
   const textEditing = useBlockTextEditing({
     block,
+    blockIndex,
+    blocksCount,
     checked,
     editableRef,
     onTextDraftChange,
@@ -146,6 +149,7 @@ export function useBlockEditorController({
 type BlockEditorControllerOptions = Pick<
   BlockEditorProps,
   | "block"
+  | "blockIndex"
   | "blocksCount"
   | "maxIndentDepth"
   | "numberedListMarker"

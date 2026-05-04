@@ -15,6 +15,7 @@ import { ImageBlock } from "./ImageBlock";
 import { PageLinkBlock } from "./PageLinkBlock";
 import type {
   BlockEditorUpdate,
+  InlinePageLinkApplyMode,
   OpenPageLinkOptions,
   SearchHighlight,
   TextSelectionOffsets
@@ -41,6 +42,12 @@ type BlockBodyProps = {
     editableElement: HTMLElement,
     selection: TextSelectionOffsets
   ) => Promise<void> | void;
+  onApplyInlinePageLink: (
+    text: string,
+    props: Block["props"],
+    cursorOffset: number,
+    mode?: InlinePageLinkApplyMode
+  ) => void;
   onOpenPageLink: (pageId: string, options?: OpenPageLinkOptions) => void;
   onRestorePageLink: (pageId: string) => void;
   onSelectionChange: () => void;
@@ -66,6 +73,7 @@ export function BlockBody({
   onDragStart,
   onHistoryInput,
   onPasteMarkdown,
+  onApplyInlinePageLink,
   onOpenPageLink,
   onRestorePageLink,
   onSelectionChange,
@@ -158,12 +166,14 @@ export function BlockBody({
           draftProps={draftProps}
           editableRef={editableRef}
           isSelected={isSelected}
+          onApplyInlinePageLink={onApplyInlinePageLink}
           onBeforeInput={onBeforeInput}
           onBlur={onBlur}
           onChange={onChange}
           onDragStart={onDragStart}
           onHistoryInput={onHistoryInput}
           onKeyDown={onKeyDown}
+          onOpenPageLink={onOpenPageLink}
           onPasteMarkdown={onPasteMarkdown}
           onSelectionChange={onSelectionChange}
           searchHighlights={searchHighlights}

@@ -7,7 +7,10 @@ export function getMaxIndentDepth(blocks: Block[], index: number) {
     return 0;
   }
 
-  return getBlockDepth(blocks[index - 1]) + 1;
+  const prevDepth = getBlockDepth(blocks[index - 1]);
+  const currentDepth = getBlockDepth(blocks[index]);
+
+  return Math.max(prevDepth, currentDepth) + 1;
 }
 
 export function getNumberedListStartAfterDepthChange(

@@ -21,5 +21,19 @@ describe("block props comparison", () => {
         { inlineMarks: [{ end: 4, start: 0, type: "bold" }] }
       )
     ).toBe(false);
+
+    expect(
+      areBlockPropsEqual(
+        { inlineMarks: [{ end: 5, pageId: "page-1", start: 0, type: "pageLink" }] },
+        { inlineMarks: [{ end: 5, pageId: "page-1", start: 0, type: "pageLink" }] }
+      )
+    ).toBe(true);
+
+    expect(
+      areBlockPropsEqual(
+        { inlineMarks: [{ end: 5, pageId: "page-1", start: 0, type: "pageLink" }] },
+        { inlineMarks: [{ end: 5, pageId: "page-2", start: 0, type: "pageLink" }] }
+      )
+    ).toBe(false);
   });
 });

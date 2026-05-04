@@ -56,7 +56,7 @@ export function WorkspaceScreen({ routePageId }: WorkspaceScreenProps) {
   const { focusNextBlock, focusPreviousBlock } = useBlockKeyboardFocus(selectedDocument, setFocusBlockId);
   const saveBlockText = useCallback(
     async (block: Block, text: string, props?: BlockProps) => {
-      await updateBlockMutation.mutateAsync({ block, props, text });
+      await updateBlockMutation.mutateAsync({ block, props, text, type: block.type });
     },
     [updateBlockMutation]
   );

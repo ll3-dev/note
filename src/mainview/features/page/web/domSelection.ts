@@ -83,6 +83,40 @@ export function getCursorTextOffset(element: HTMLElement) {
   return getCursorOffset(element);
 }
 
+export function getCursorClientRect(element: HTMLElement) {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const selection = window.getSelection();
+
+  if (!selection?.rangeCount || !selection.isCollapsed) {
+    return null;
+  }
+
+  const range = selection.getRangeAt(0);
+
+  if (!element.contains(range.startContainer)) {
+    return null;
+  }
+
+  const rect = range.getBoundingClientRect();
+
+  if (rect.width > 0 || rect.height > 0) {
+    return rect;
+  }
+
+  const marker = window.document.createElement("span");
+  marker.textContent = "\u200b";
+  range.insertNode(marker);
+  const markerRect = marker.getBoundingClientRect();
+  marker.remove();
+  selection.removeAllRanges();
+  selection.addRange(range);
+
+  return markerRect.width > 0 || markerRect.height > 0 ? markerRect : null;
+}
+
 export function insertPlainTextAtSelection(element: HTMLElement, text: string) {
   const selection = window.getSelection();
 

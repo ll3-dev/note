@@ -4,19 +4,21 @@ import { getInlineTextSegments } from "@/mainview/features/page/lib/inlineFormat
 
 type InlineMarksViewerProps = {
   className?: string;
+  onOpenPageLink?: (pageId: string) => void;
   props: BlockProps;
   text: string;
 };
 
 export function InlineMarksViewer({
   className,
+  onOpenPageLink,
   props,
   text
 }: InlineMarksViewerProps) {
   const segments = getInlineTextSegments(text, props);
   let segmentOffset = 0;
 
-  if (segments.length === 1 && segments[0]?.marks.length === 0) {
+  if (segments.length === 1 && !isRenderableInlineSegment(segments[0])) {
     return null;
   }
 
@@ -37,6 +39,7 @@ export function InlineMarksViewer({
             href={segment.href}
             key={`${segmentStart}-${segmentOffset}-${segment.text}`}
             marks={segment.marks}
+            onOpenPageLink={onOpenPageLink}
             pageId={segment.pageId}
             text={segment.text}
           />
@@ -46,14 +49,20 @@ export function InlineMarksViewer({
   );
 }
 
+function isRenderableInlineSegment(segment: ReturnType<typeof getInlineTextSegments>[number]) {
+  return segment.marks.length > 0 || Boolean(segment.href) || Boolean(segment.pageId);
+}
+
 function InlineSegment({
   href,
   marks,
+  onOpenPageLink,
   pageId,
   text
 }: {
   href?: string;
   marks: Array<"bold" | "italic" | "code">;
+  onOpenPageLink?: (pageId: string) => void;
   pageId?: string;
   text: string;
 }) {
@@ -66,12 +75,18 @@ function InlineSegment({
 
   if (pageId) {
     return (
-      <a
-        className={cn(className, "text-primary underline underline-offset-2")}
+      <button
+        className={cn(
+          className,
+          "pointer-events-auto cursor-pointer rounded-sm bg-muted/80 px-0.5 text-left font-medium text-primary"
+        )}
         data-page-link-id={pageId}
+        onClick={() => onOpenPageLink?.(pageId)}
+        onMouseDown={(event) => event.preventDefault()}
+        type="button"
       >
         {text}
-      </a>
+      </button>
     );
   }
 

@@ -139,6 +139,7 @@ export function useWorkspaceMutations({
   }
 
   const updateBlockMutation = useMutation({
+    scope: { id: "update-block" },
     mutationFn: ({
       block,
       props,
@@ -168,7 +169,7 @@ export function useWorkspaceMutations({
       await queryClient.invalidateQueries({ queryKey: queryKeys.backlinksRoot });
       const syncState = getBlockMutationSyncState(
         getCachedBlock(queryClient, block.pageId, block.id),
-        variables
+        { ...variables, type: block.type }
       );
 
       if (!shouldApplyBlockMutationResponse(syncState)) {

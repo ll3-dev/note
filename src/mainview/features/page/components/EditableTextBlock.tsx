@@ -4,6 +4,7 @@ import type {
   KeyboardEvent,
   RefObject
 } from "react";
+import { useState } from "react";
 import { cn } from "@/mainview/lib/utils";
 import type { Block } from "@/shared/contracts";
 import { editableClass } from "@/mainview/features/page/lib/blockStyles";
@@ -12,9 +13,15 @@ import { useInlinePageSearch } from "@/mainview/features/page/hooks/useInlinePag
 import { InlineMarksViewer } from "./InlineMarksViewer";
 import { InlinePageSearchMenu } from "./InlinePageSearchMenu";
 import { getInlinePageLinkProps } from "@/mainview/features/page/lib/inlineFormatting";
-import { getCursorTextOffset } from "@/mainview/features/page/web/domSelection";
-import type { TextSelectionOffsets } from "@/mainview/features/page/types/blockEditorTypes";
-import type { SearchHighlight } from "@/mainview/features/page/types/blockEditorTypes";
+import {
+  getCursorClientRect,
+  getCursorTextOffset
+} from "@/mainview/features/page/web/domSelection";
+import type {
+  InlinePageLinkApplyMode,
+  SearchHighlight,
+  TextSelectionOffsets
+} from "@/mainview/features/page/types/blockEditorTypes";
 
 type EditableTextBlockProps = {
   block: Block;
@@ -23,7 +30,6 @@ type EditableTextBlockProps = {
   draftProps: Block["props"];
   editableRef: RefObject<HTMLDivElement | null>;
   isSelected: boolean;
-  onApplyPageLink?: (block: Block, changes: { props: Block["props"]; text: string }) => void;
   onBeforeInput: (event: FormEvent<HTMLDivElement>) => void;
   onBlur: () => Promise<void>;
   onChange: (value: string) => void;
@@ -36,6 +42,13 @@ type EditableTextBlockProps = {
     editableElement: HTMLElement,
     selection: TextSelectionOffsets
   ) => Promise<void> | void;
+  onApplyInlinePageLink: (
+    text: string,
+    props: Block["props"],
+    cursorOffset: number,
+    mode?: InlinePageLinkApplyMode
+  ) => void;
+  onOpenPageLink: (pageId: string) => void;
   onSelectionChange: () => void;
   searchHighlights?: SearchHighlight[];
   searchActiveHighlight?: SearchHighlight;
@@ -48,7 +61,6 @@ export function EditableTextBlock({
   draftProps,
   editableRef,
   isSelected,
-  onApplyPageLink,
   onBeforeInput,
   onBlur,
   onChange,
@@ -56,6 +68,8 @@ export function EditableTextBlock({
   onHistoryInput,
   onKeyDown,
   onPasteMarkdown,
+  onApplyInlinePageLink,
+  onOpenPageLink,
   onSelectionChange,
   searchHighlights,
   searchActiveHighlight
@@ -67,8 +81,14 @@ export function EditableTextBlock({
     onPasteMarkdown
   });
   const { triggerState, checkTrigger, closeSearch } = useInlinePageSearch();
+  const [inlineSearchRect, setInlineSearchRect] = useState<DOMRect | null>(null);
   const isCheckedTodo = checked && block.type === "todo";
   const hasMarks = hasInlineMarks(draftProps);
+
+  function closeInlineSearch() {
+    closeSearch();
+    setInlineSearchRect(null);
+  }
 
   function handlePageSelect(pageId: string, pageTitle: string) {
     if (!triggerState || !editableRef.current) return;
@@ -79,6 +99,20 @@ export function EditableTextBlock({
 
     const beforeTrigger = text.slice(0, triggerState.triggerOffset);
     const afterQuery = text.slice(queryEnd);
+    const isStandalonePageLink =
+      beforeTrigger.trim().length === 0 && afterQuery.trim().length === 0;
+
+    if (isStandalonePageLink) {
+      onApplyInlinePageLink(
+        "",
+        { targetPageId: pageId, targetTitle: pageTitle },
+        0,
+        "block"
+      );
+      closeInlineSearch();
+      return;
+    }
+
     const newText = beforeTrigger + pageTitle + afterQuery;
 
     const markStart = beforeTrigger.length;
@@ -86,14 +120,10 @@ export function EditableTextBlock({
     const newProps = getInlinePageLinkProps(draftProps, { start: markStart, end: markEnd }, pageId);
 
     if (newProps) {
-      editableRef.current.textContent = newText;
-      onChange(newText);
-      if (onApplyPageLink) {
-        onApplyPageLink(block, { props: newProps, text: newText });
-      }
+      onApplyInlinePageLink(newText, newProps, markEnd);
     }
 
-    closeSearch();
+    closeInlineSearch();
   }
 
   return (
@@ -103,6 +133,7 @@ export function EditableTextBlock({
           editableClass(block.type),
           isCheckedTodo && "text-muted-foreground line-through"
         )}
+        onOpenPageLink={onOpenPageLink}
         props={draftProps}
         text={draft}
       />
@@ -149,7 +180,10 @@ export function EditableTextBlock({
           if (editableRef.current) {
             const offset = getCursorTextOffset(editableRef.current);
             if (offset !== null) {
-              checkTrigger(nextValue, offset);
+              const nextTriggerState = checkTrigger(nextValue, offset);
+              setInlineSearchRect(
+                nextTriggerState ? getCursorClientRect(editableRef.current) : null
+              );
             }
           }
         }}
@@ -168,10 +202,10 @@ export function EditableTextBlock({
       />
       {triggerState?.active && (
         <InlinePageSearchMenu
-          onClose={closeSearch}
+          onClose={closeInlineSearch}
           onSelect={handlePageSelect}
           query={triggerState.query}
-          rect={editableRef.current?.getBoundingClientRect() ?? null}
+          rect={inlineSearchRect}
         />
       )}
     </div>

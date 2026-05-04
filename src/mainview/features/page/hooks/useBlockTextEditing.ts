@@ -8,7 +8,8 @@ import {
 import { areBlockPropsEqual } from "@/mainview/features/page/lib/blockProps";
 import type {
   BlockEditorUpdate,
-  CreateBlockOptions
+  CreateBlockOptions,
+  InlinePageLinkApplyMode
 } from "@/mainview/features/page/types/blockEditorTypes";
 import type { CreateBlockDraft } from "@/mainview/features/page/lib/blockEditingBehavior";
 import { useBlockCommandMenu } from "./useBlockCommandMenu";
@@ -17,6 +18,8 @@ import { useInlineMarkEditing } from "./useInlineMarkEditing";
 
 type UseBlockTextEditingOptions = {
   block: Block;
+  blockIndex: number;
+  blocksCount: number;
   checked: boolean;
   editableRef: RefObject<HTMLDivElement | null>;
   onTextDraftChange: (block: Block, text: string, props?: BlockProps) => void;
@@ -40,6 +43,8 @@ type UseBlockTextEditingOptions = {
 
 export function useBlockTextEditing({
   block,
+  blockIndex,
+  blocksCount,
   checked,
   editableRef,
   onTextDraftChange,
@@ -54,6 +59,7 @@ export function useBlockTextEditing({
 }: UseBlockTextEditingOptions) {
   const [draft, setDraft] = useState(block.text);
   const [draftProps, setDraftProps] = useState<BlockProps>(block.props);
+  const [draftType, setDraftType] = useState(block.type);
   const commandMenu = useBlockCommandMenu({ draft });
 
   const syncEditableText = useCallback(
@@ -76,8 +82,10 @@ export function useBlockTextEditing({
     block,
     draft,
     draftProps,
+    draftType,
     setDraft,
     setDraftProps,
+    setDraftType,
     syncEditableText
   });
 
@@ -96,8 +104,12 @@ export function useBlockTextEditing({
   });
 
   async function commitDraft() {
-    if (draft !== block.text || !areBlockPropsEqual(draftProps, block.props)) {
-      await onTextDraftFlush(block, draft, draftProps);
+    if (
+      draft !== block.text ||
+      draftType !== block.type ||
+      !areBlockPropsEqual(draftProps, block.props)
+    ) {
+      await onTextDraftFlush(getDraftBlock(draft, draftProps), draft, draftProps);
     }
   }
 
@@ -136,6 +148,7 @@ export function useBlockTextEditing({
 
     setDraft(nextText);
     setDraftProps(nextProps);
+    setDraftType(command.type);
     syncEditableText(nextText);
     commandMenu.closeCommandMenu();
     onUpdate(block, {
@@ -166,6 +179,7 @@ export function useBlockTextEditing({
     if (shortcut) {
       setDraft(shortcut.text);
       setDraftProps(shortcut.props);
+      setDraftType(shortcut.type);
       syncEditableText(shortcut.text);
       commandMenu.closeCommandMenu();
       onUpdate(block, shortcut);
@@ -185,11 +199,38 @@ export function useBlockTextEditing({
 
     if (nextProps) {
       setDraftProps(nextProps);
-      onTextDraftChange(block, nextValue, nextProps);
+      onTextDraftChange(getDraftBlock(nextValue, nextProps), nextValue, nextProps);
       return;
     }
 
-    onTextDraftChange(block, nextValue, draftProps);
+    onTextDraftChange(getDraftBlock(nextValue, draftProps), nextValue, draftProps);
+  }
+
+  function applyInlinePageLinkDraft(
+    nextText: string,
+    nextProps: BlockProps,
+    cursorOffset: number,
+    mode: InlinePageLinkApplyMode = "inline"
+  ) {
+    const nextType = mode === "block" ? "page_link" : draftType;
+
+    setDraft(nextText);
+    setDraftProps(nextProps);
+    setDraftType(nextType);
+    syncEditableText(nextText, cursorOffset);
+    onUpdate(block, {
+      props: nextProps,
+      text: nextText,
+      type: nextType
+    });
+
+    if (mode === "block" && blockIndex === blocksCount - 1) {
+      void onCreateBlockAfter(
+        { ...block, props: nextProps, text: nextText, type: nextType },
+        { props: {}, text: "", type: "paragraph" },
+        { focusPlacement: "start" }
+      );
+    }
   }
 
   async function redoTextDraft() {
@@ -207,14 +248,25 @@ export function useBlockTextEditing({
 
     setDraft(nextBlock.text);
     setDraftProps(nextBlock.props);
+    setDraftType(nextBlock.type);
     syncEditableText(nextBlock.text);
     onTextHistoryApply(nextBlock, nextBlock.text);
+  }
+
+  function getDraftBlock(text: string, props: BlockProps): Block {
+    return {
+      ...block,
+      props,
+      text,
+      type: draftType
+    };
   }
 
   return {
     applyCommand,
     applyInlineFormat,
     applyInlineLink,
+    applyInlinePageLinkDraft,
     applySelectedCommand,
     changeDraft,
     closeCommandMenu: commandMenu.closeCommandMenu,

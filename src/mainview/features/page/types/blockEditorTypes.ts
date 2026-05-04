@@ -13,6 +13,8 @@ export type BlockEditorUpdate = {
   type?: BlockType;
 };
 
+export type InlinePageLinkApplyMode = "block" | "inline";
+
 export type CreateBlockOptions = {
   focusPlacement?: "end" | "start";
 };
