@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import {
   validateCreateBlockInput,
   validateCreatePageInput,
+  validateMoveBlocksInput,
   validateUpdateBlockInput
 } from "./rpcValidation";
 
@@ -64,6 +65,17 @@ describe("RPC input validation", () => {
       blockId: "block-1",
       props: { icon: "💡" },
       type: "callout"
+    });
+    expect(
+      validateMoveBlocksInput({
+        afterBlockId: "block-4",
+        blockIds: ["block-2", "block-3"],
+        parentBlockId: null
+      })
+    ).toEqual({
+      afterBlockId: "block-4",
+      blockIds: ["block-2", "block-3"],
+      parentBlockId: null
     });
   });
 

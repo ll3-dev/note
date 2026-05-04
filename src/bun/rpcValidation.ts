@@ -9,6 +9,7 @@ import type {
   DeletePageInput,
   GetPageDocumentInput,
   MoveBlockInput,
+  MoveBlocksInput,
   MovePageInput,
   PageHistoryInput,
   ListBacklinksInput,
@@ -188,6 +189,24 @@ export function validateMoveBlockInput(input: unknown): MoveBlockInput {
   return {
     afterBlockId: optionalId(record.afterBlockId, "afterBlockId"),
     blockId: idValue(record.blockId, "blockId"),
+    parentBlockId: optionalId(record.parentBlockId, "parentBlockId")
+  };
+}
+
+export function validateMoveBlocksInput(input: unknown): MoveBlocksInput {
+  const record = asRecord(input);
+
+  if (!Array.isArray(record.blockIds)) {
+    throw new Error("blockIds must be an array");
+  }
+
+  if (record.blockIds.length === 0 || record.blockIds.length > 1000) {
+    throw new Error("blockIds length is invalid");
+  }
+
+  return {
+    afterBlockId: optionalId(record.afterBlockId, "afterBlockId"),
+    blockIds: record.blockIds.map((blockId) => idValue(blockId, "blockId")),
     parentBlockId: optionalId(record.parentBlockId, "parentBlockId")
   };
 }

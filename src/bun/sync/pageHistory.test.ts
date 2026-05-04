@@ -11,6 +11,7 @@ import {
   deleteBlock,
   getPageDocument,
   moveBlock,
+  moveBlocks,
   updateBlock
 } from "@/bun/notes";
 import { insertBlock } from "@/bun/repositories/blockRepository";
@@ -73,6 +74,42 @@ describe("page history", () => {
     deleteBlock(handle, { blockId: second.id });
     expect(getPageDocument(handle, { pageId: first.pageId }).blocks).toHaveLength(1);
     expect(undoPageHistory(handle, { pageId: first.pageId })?.blocks).toHaveLength(2);
+  });
+
+  test("records moving multiple blocks as one undo step", () => {
+    const handle = openTempDatabase();
+    const document = createPage(handle, { title: "Batch move" });
+    const first = document.blocks[0];
+    const second = createBlock(handle, {
+      afterBlockId: first.id,
+      pageId: first.pageId,
+      text: "Second"
+    });
+    const third = createBlock(handle, {
+      afterBlockId: second.id,
+      pageId: first.pageId,
+      text: "Third"
+    });
+    const fourth = createBlock(handle, {
+      afterBlockId: third.id,
+      pageId: first.pageId,
+      text: "Fourth"
+    });
+    const historyCountBeforeMove = getPageHistoryEntryCount(handle, first.pageId);
+
+    moveBlocks(handle, {
+      afterBlockId: fourth.id,
+      blockIds: [second.id, third.id],
+      parentBlockId: null
+    });
+
+    expect(getPageHistoryEntryCount(handle, first.pageId)).toBe(
+      historyCountBeforeMove + 1
+    );
+    expect(getPageDocument(handle, { pageId: first.pageId }).blocks.map((block) => block.id))
+      .toEqual([first.id, fourth.id, second.id, third.id]);
+    expect(undoPageHistory(handle, { pageId: first.pageId })?.blocks.map((block) => block.id))
+      .toEqual([first.id, second.id, third.id, fourth.id]);
   });
 
   test("undoes and redoes inline mark props", () => {
@@ -201,6 +238,14 @@ function openTempDatabase(): DatabaseHandle {
   const root = mkdtempSync(path.join(tmpdir(), "note-history-test-"));
   tempRoots.push(root);
   return openDatabase(root);
+}
+
+function getPageHistoryEntryCount(handle: DatabaseHandle, pageId: string) {
+  return handle.orm
+    .select({ count: count() })
+    .from(pageHistoryEntries)
+    .where(eq(pageHistoryEntries.page_id, pageId))
+    .get()?.count ?? 0;
 }
 
 function updateBlockWithoutHistory(

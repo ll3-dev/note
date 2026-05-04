@@ -6,7 +6,7 @@ import {
   deleteBlocks,
   updateBlock,
 } from "./repositories/blockRepository";
-import { moveBlock } from "./repositories/blockMoveRepository";
+import { moveBlock, moveBlocks } from "./repositories/blockMoveRepository";
 import { listBlocksForPage } from "./repositories/blockReadRepository";
 import {
   deletePage,
@@ -43,6 +43,7 @@ export {
   listPages,
   listBacklinks,
   moveBlock,
+  moveBlocks,
   movePage,
   purgeExpiredArchivedPages,
   restorePage,

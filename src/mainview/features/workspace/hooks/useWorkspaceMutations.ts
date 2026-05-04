@@ -9,10 +9,7 @@ import type {
   Page,
   PageDocument
 } from "@/shared/contracts";
-import {
-  getBlocksAfterMove,
-  moveBlocksSequentially
-} from "@/mainview/features/page/lib/blockDrag";
+import { getBlocksAfterMove } from "@/mainview/features/page/lib/blockDrag";
 import {
   getBlockMutationSyncState,
   shouldApplyBlockMutationResponse
@@ -278,12 +275,10 @@ export function useWorkspaceMutations({
           : document
     );
 
-    await moveBlocksSequentially(blocks, afterBlockId, async (block, nextAfterBlockId) => {
-      await noteApi.moveBlock({
-        afterBlockId: nextAfterBlockId,
-        blockId: block.id,
-        parentBlockId
-      });
+    await noteApi.moveBlocks({
+      afterBlockId,
+      blockIds: movingBlockIds,
+      parentBlockId: parentBlockId ?? null
     });
     await invalidatePageDocument(queryClient, pageId);
   }

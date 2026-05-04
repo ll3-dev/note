@@ -115,6 +115,12 @@ export type MoveBlockInput = {
   parentBlockId?: string | null;
 };
 
+export type MoveBlocksInput = {
+  blockIds: string[];
+  afterBlockId?: string | null;
+  parentBlockId?: string | null;
+};
+
 export type MovePageInput = {
   pageId: string;
   parentPageId?: string | null;
@@ -243,6 +249,10 @@ export type NoteRPC = {
       moveBlock: {
         params: MoveBlockInput;
         response: Block;
+      };
+      moveBlocks: {
+        params: MoveBlocksInput;
+        response: Block[];
       };
       movePage: {
         params: MovePageInput;
