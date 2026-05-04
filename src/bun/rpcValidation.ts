@@ -32,7 +32,8 @@ const BLOCK_TYPES = new Set<BlockType>([
   "toggle",
   "divider",
   "image",
-  "page_link"
+  "page_link",
+  "callout"
 ]);
 
 const MAX_ID_LENGTH = 128;

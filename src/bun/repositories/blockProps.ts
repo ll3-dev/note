@@ -1,7 +1,7 @@
 import type { BlockProps } from "@/shared/contracts";
 import { normalizeLinkHref } from "@/shared/linkSanitization";
 
-const INLINE_MARK_TYPES = new Set(["bold", "italic", "code", "link"]);
+const INLINE_MARK_TYPES = new Set(["bold", "italic", "code", "link", "pageLink"]);
 
 export function normalizeBlockProps(props: BlockProps, text: string): BlockProps {
   const inlineMarks = normalizeInlineMarks(props.inlineMarks, text.length);
@@ -9,6 +9,14 @@ export function normalizeBlockProps(props: BlockProps, text: string): BlockProps
 
   if (typeof props.checked === "boolean") {
     nextProps.checked = props.checked;
+  }
+
+  if (typeof props.open === "boolean") {
+    nextProps.open = props.open;
+  }
+
+  if (typeof props.icon === "string") {
+    nextProps.icon = props.icon.slice(0, 32);
   }
 
   if (typeof props.depth === "number" && Number.isInteger(props.depth)) {
@@ -63,6 +71,7 @@ function normalizeInlineMarks(value: unknown, textLength: number) {
     const mark = item as {
       end?: unknown;
       href?: unknown;
+      pageId?: unknown;
       start?: unknown;
       type?: unknown;
     };
@@ -88,6 +97,13 @@ function normalizeInlineMarks(value: unknown, textLength: number) {
         typeof mark.href === "string" ? normalizeLinkHref(mark.href) : "";
 
       return href ? [{ end, href, start, type: mark.type }] : [];
+    }
+
+    if (mark.type === "pageLink") {
+      const pageId =
+        typeof mark.pageId === "string" ? mark.pageId.slice(0, 128) : "";
+
+      return pageId ? [{ end, pageId, start, type: mark.type }] : [];
     }
 
     return [{ end, start, type: mark.type }];

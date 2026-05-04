@@ -4,12 +4,14 @@ import { blocks, pages } from "@/bun/schema";
 import { buildFtsQuery } from "./searchIndexRepository";
 import type {
   Backlink,
+  BlockProps,
   ListBacklinksInput,
   PageSearchResult,
   SearchPagesInput,
   SearchWorkspaceInput,
   SearchWorkspaceResult
 } from "@/shared/contracts";
+import { getConnectedPageIdsFromProps } from "@/shared/pageConnections";
 
 export function searchPages(
   handle: DatabaseHandle,
@@ -61,7 +63,6 @@ export function listBacklinks(
     .where(
       and(
         ne(blocks.page_id, input.pageId),
-        eq(blocks.type, "page_link"),
         isNull(pages.archived_at)
       )
     )
@@ -71,7 +72,7 @@ export function listBacklinks(
   return rows.flatMap((row) => {
     const props = parseProps(row.propsJson);
 
-    return props.targetPageId === input.pageId
+    return getConnectedPageIdsFromProps(props).includes(input.pageId)
       ? [
           {
             blockId: row.blockId,
@@ -136,13 +137,11 @@ export function searchWorkspace(
   return [...pageResults, ...blockResults].slice(0, limit);
 }
 
-function parseProps(value: string) {
+function parseProps(value: string): BlockProps {
   try {
-    const parsed = JSON.parse(value) as { targetPageId?: unknown };
+    const parsed = JSON.parse(value);
 
-    return typeof parsed.targetPageId === "string"
-      ? { targetPageId: parsed.targetPageId }
-      : {};
+    return parsed && typeof parsed === "object" ? (parsed as BlockProps) : {};
   } catch {
     return {};
   }

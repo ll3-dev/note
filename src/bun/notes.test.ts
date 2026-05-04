@@ -11,6 +11,7 @@ import {
   deleteBlocks,
   deletePage,
   getPageDocument,
+  listBacklinks,
   listArchivedPages,
   listPages,
   moveBlock,
@@ -293,6 +294,30 @@ describe("notes repository", () => {
     });
   });
 
+  test("lists inline page mentions as backlinks", () => {
+    const handle = openTempDatabase();
+    const source = createPage(handle, { title: "Source" }).page;
+    const target = createPage(handle, { title: "Target" }).page;
+    const block = createBlock(handle, {
+      pageId: source.id,
+      text: "See Target",
+      props: {
+        inlineMarks: [
+          { end: 10, pageId: target.id, start: 4, type: "pageLink" }
+        ]
+      }
+    });
+
+    expect(listBacklinks(handle, { pageId: target.id })).toEqual([
+      {
+        blockId: block.id,
+        pageId: source.id,
+        pageTitle: "Source",
+        text: "See Target"
+      }
+    ]);
+  });
+
   test("normalizes inline marks before storing block props", () => {
     const handle = openTempDatabase();
     const page = createPage(handle, { title: "Formatting" }).page;
@@ -305,6 +330,8 @@ describe("notes repository", () => {
           { end: 5, start: 0, type: "bold" },
           { end: 50, start: 6, type: "code" },
           { end: 11, href: "https://example.com", start: 6, type: "link" },
+          { end: 5, pageId: "page-123", start: 0, type: "pageLink" },
+          { end: 5, start: 0, type: "pageLink" },
           { end: 5, href: "javascript:alert", start: 0, type: "link" },
           { end: 2, start: 2, type: "italic" },
           { end: 4, start: 1, type: "unknown" }
@@ -316,7 +343,8 @@ describe("notes repository", () => {
       inlineMarks: [
         { end: 5, start: 0, type: "bold" },
         { end: 11, start: 6, type: "code" },
-        { end: 11, href: "https://example.com", start: 6, type: "link" }
+        { end: 11, href: "https://example.com", start: 6, type: "link" },
+        { end: 5, pageId: "page-123", start: 0, type: "pageLink" }
       ]
     });
 
@@ -327,7 +355,65 @@ describe("notes repository", () => {
     });
 
     expect(updated.props).toEqual({
-      inlineMarks: [{ end: 5, start: 0, type: "bold" }]
+      inlineMarks: [
+        { end: 5, start: 0, type: "bold" },
+        { end: 5, pageId: "page-123", start: 0, type: "pageLink" }
+      ]
+    });
+  });
+
+  test("preserves callout icon props when storing blocks", () => {
+    const handle = openTempDatabase();
+    const page = createPage(handle, { title: "Callouts" }).page;
+
+    const block = createBlock(handle, {
+      pageId: page.id,
+      props: { icon: "💡" },
+      text: "Remember this",
+      type: "callout"
+    });
+
+    expect(block.props).toEqual({ icon: "💡" });
+    expect(getPageDocument(handle, { pageId: page.id }).blocks[1]?.props)
+      .toEqual({ icon: "💡" });
+
+    const updated = updateBlock(handle, {
+      blockId: block.id,
+      props: { icon: "⚠️" },
+      text: "Check this"
+    });
+
+    expect(updated.props).toEqual({ icon: "⚠️" });
+  });
+
+  test("keeps callout type and icon when saving text after conversion", () => {
+    const handle = openTempDatabase();
+    const page = createPage(handle, { title: "Callout editing" }).page;
+    const block = getPageDocument(handle, { pageId: page.id }).blocks[0];
+
+    const converted = updateBlock(handle, {
+      blockId: block.id,
+      props: { icon: "💡" },
+      text: "",
+      type: "callout"
+    });
+
+    expect(converted).toMatchObject({
+      props: { icon: "💡" },
+      text: "",
+      type: "callout"
+    });
+
+    const edited = updateBlock(handle, {
+      blockId: block.id,
+      props: { icon: "💡" },
+      text: "Typed in callout"
+    });
+
+    expect(edited).toMatchObject({
+      props: { icon: "💡" },
+      text: "Typed in callout",
+      type: "callout"
     });
   });
 

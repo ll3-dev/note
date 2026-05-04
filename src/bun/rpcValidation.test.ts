@@ -27,6 +27,21 @@ describe("RPC input validation", () => {
     expect(
       validateCreateBlockInput({
         pageId: "page-1",
+        props: { icon: "💡" },
+        text: "Call this out",
+        type: "callout"
+      })
+    ).toEqual({
+      afterBlockId: null,
+      pageId: "page-1",
+      parentBlockId: null,
+      props: { icon: "💡" },
+      text: "Call this out",
+      type: "callout"
+    });
+    expect(
+      validateCreateBlockInput({
+        pageId: "page-1",
         props: { checked: true },
         text: "Task",
         type: "todo"
@@ -38,6 +53,17 @@ describe("RPC input validation", () => {
       props: { checked: true },
       text: "Task",
       type: "todo"
+    });
+    expect(
+      validateUpdateBlockInput({
+        blockId: "block-1",
+        props: { icon: "💡" },
+        type: "callout"
+      })
+    ).toEqual({
+      blockId: "block-1",
+      props: { icon: "💡" },
+      type: "callout"
     });
   });
 
