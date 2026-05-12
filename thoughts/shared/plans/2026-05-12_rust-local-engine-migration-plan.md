@@ -20,11 +20,11 @@ Desktop runtime 기준 Phase 1-3은 구현 완료 상태다.
 - 완료: workspace search, page search, backlinks.
 - 완료: page history undo/redo.
 - 완료: engine HTTP smoke test.
+- 완료: Bun legacy SQLite 저장소 제거.
+- 완료: Bun SQLite Automerge storage adapter 제거.
+- 완료: `drizzle-orm`, `@automerge/automerge-repo` 의존성 제거.
 
-현재 Bun에 남아 있는 DB/repository 코드는 앱 런타임 경로가 아니라 legacy parity/unit test와 Automerge storage adapter 테스트가 참조한다. 다음 정리는 두 갈래로 진행한다.
-
-1. Rust `note-core`/`note-engine` 테스트를 기준 테스트로 계속 승격한다.
-2. `src/bun/notes.ts`, `src/bun/repositories/*`, `src/bun/sync/pageHistory*`를 runtime 코드가 아닌 legacy 테스트 fixture로 이동하거나 제거한다.
+Bun shell은 이제 app lifecycle, OS 이벤트, engine lifecycle, RPC validation, engine HTTP client만 담당한다. SQLite 파일은 Rust Engine만 직접 연다.
 
 검증 기준:
 

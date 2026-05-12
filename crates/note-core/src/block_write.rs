@@ -179,6 +179,11 @@ pub fn update_block(connection: &mut Connection, input: UpdateBlockInput) -> Res
     let next_text = input.text.unwrap_or_else(|| current.text.clone());
     let props = input.props.unwrap_or_else(|| current.props.clone());
     let next_props = normalize_block_props(&props, next_text.len());
+
+    if next_type == current.block_type && next_text == current.text && next_props == current.props {
+        return Ok(current);
+    }
+
     let tx = connection.transaction()?;
 
     tx.execute(
@@ -951,6 +956,93 @@ mod tests {
     }
 
     #[test]
+    fn skips_history_for_noop_block_updates() {
+        let temp_dir = tempdir().expect("create temp dir");
+        let mut connection = open_database(temp_dir.path()).expect("open database");
+        let document = create_page(
+            &mut connection,
+            CreatePageInput {
+                parent_page_id: None,
+                title: "No-op".to_string(),
+            },
+        )
+        .expect("create page");
+        let block = document.blocks[0].clone();
+
+        update_block(
+            &mut connection,
+            UpdateBlockInput {
+                block_id: block.id.clone(),
+                block_type: None,
+                props: None,
+                text: Some(block.text),
+            },
+        )
+        .expect("noop update");
+
+        let history_count: i64 = connection
+            .query_row(
+                "SELECT COUNT(*) FROM page_history_entries WHERE page_id = ?1",
+                params![document.page.id],
+                |row| row.get(0),
+            )
+            .expect("history count");
+        assert_eq!(history_count, 0);
+    }
+
+    #[test]
+    fn normalizes_inline_marks_and_preserves_block_props() {
+        let temp_dir = tempdir().expect("create temp dir");
+        let mut connection = open_database(temp_dir.path()).expect("open database");
+        let document = create_page(
+            &mut connection,
+            CreatePageInput {
+                parent_page_id: None,
+                title: "Formatting".to_string(),
+            },
+        )
+        .expect("create page");
+        let block = create_block(
+            &mut connection,
+            CreateBlockInput {
+                after_block_id: None,
+                block_type: Some("callout".to_string()),
+                page_id: document.page.id,
+                parent_block_id: None,
+                props: Some(json!({
+                    "icon": "💡",
+                    "inlineMarks": [
+                        { "end": 5, "start": 0, "type": "bold" },
+                        { "end": 50, "start": 6, "type": "code" },
+                        { "end": 11, "href": "https://example.com", "start": 6, "type": "link" },
+                        { "end": 5, "pageId": "page-123", "start": 0, "type": "pageLink" },
+                        { "end": 5, "start": 0, "type": "pageLink" },
+                        { "end": 5, "href": "javascript:alert", "start": 0, "type": "link" },
+                        { "end": 2, "start": 2, "type": "italic" },
+                        { "end": 4, "start": 1, "type": "unknown" }
+                    ]
+                })),
+                text: Some("Hello world".to_string()),
+            },
+        )
+        .expect("create formatted block");
+
+        assert_eq!(block.block_type, "callout");
+        assert_eq!(
+            block.props,
+            json!({
+                "icon": "💡",
+                "inlineMarks": [
+                    { "end": 5, "start": 0, "type": "bold" },
+                    { "end": 11, "start": 6, "type": "code" },
+                    { "end": 11, "href": "https://example.com", "start": 6, "type": "link" },
+                    { "end": 5, "pageId": "page-123", "start": 0, "type": "pageLink" }
+                ]
+            })
+        );
+    }
+
+    #[test]
     fn moves_blocks_and_batches_creation() {
         let temp_dir = tempdir().expect("create temp dir");
         let mut connection = open_database(temp_dir.path()).expect("open database");
@@ -998,6 +1090,46 @@ mod tests {
         .expect("move block");
 
         assert_eq!(moved.sort_key, "00000000");
+    }
+
+    #[test]
+    fn batch_delete_can_create_a_fallback_block() {
+        let temp_dir = tempdir().expect("create temp dir");
+        let mut connection = open_database(temp_dir.path()).expect("open database");
+        let document = create_page(
+            &mut connection,
+            CreatePageInput {
+                parent_page_id: None,
+                title: "Fallback".to_string(),
+            },
+        )
+        .expect("create page");
+        let initial_block = document.blocks[0].clone();
+
+        let output = delete_blocks(
+            &mut connection,
+            DeleteBlocksInput {
+                block_ids: vec![initial_block.id],
+                fallback_block: Some(FallbackBlockInput {
+                    block_type: None,
+                    page_id: document.page.id.clone(),
+                    props: None,
+                    text: Some("".to_string()),
+                }),
+            },
+        )
+        .expect("delete with fallback");
+
+        let created_block = output.created_block.expect("created block");
+        assert!(output.deleted);
+        assert_eq!(created_block.page_id, document.page.id);
+        assert_eq!(
+            get_page_document(&connection, &document.page.id)
+                .expect("document")
+                .blocks
+                .len(),
+            1
+        );
     }
 
     #[test]
