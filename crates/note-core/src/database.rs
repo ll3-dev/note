@@ -45,22 +45,28 @@ pub fn get_database_status(
 fn run_migrations(connection: &Connection) -> Result<()> {
     connection.execute_batch(
         r#"
+        CREATE TABLE IF NOT EXISTS schema_migrations (
+          version INTEGER PRIMARY KEY,
+          name TEXT NOT NULL,
+          applied_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
+
         CREATE TABLE IF NOT EXISTS pages (
           id TEXT PRIMARY KEY,
-          parent_page_id TEXT,
+          parent_page_id TEXT NULL REFERENCES pages(id) ON DELETE CASCADE,
           title TEXT NOT NULL DEFAULT '',
           sort_key TEXT NOT NULL DEFAULT '00000000',
-          icon TEXT,
-          cover TEXT,
-          archived_at TEXT,
+          icon TEXT NULL,
+          cover TEXT NULL,
+          archived_at TEXT NULL,
           created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
           updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
         );
 
         CREATE TABLE IF NOT EXISTS blocks (
           id TEXT PRIMARY KEY,
-          page_id TEXT NOT NULL,
-          parent_block_id TEXT,
+          page_id TEXT NOT NULL REFERENCES pages(id) ON DELETE CASCADE,
+          parent_block_id TEXT NULL REFERENCES blocks(id) ON DELETE CASCADE,
           type TEXT NOT NULL,
           sort_key TEXT NOT NULL,
           text TEXT NOT NULL DEFAULT '',
@@ -68,6 +74,33 @@ fn run_migrations(connection: &Connection) -> Result<()> {
           created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
           updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
         );
+
+        CREATE INDEX IF NOT EXISTS idx_pages_parent_sort
+        ON pages(parent_page_id, sort_key);
+
+        CREATE INDEX IF NOT EXISTS idx_blocks_page_parent_sort
+        ON blocks(page_id, parent_block_id, sort_key);
+
+        CREATE TABLE IF NOT EXISTS assets (
+          id TEXT PRIMARY KEY,
+          local_path TEXT NOT NULL,
+          mime_type TEXT NOT NULL,
+          byte_size INTEGER NOT NULL,
+          sha256 TEXT NULL,
+          created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_assets_sha256 ON assets(sha256);
+
+        CREATE TABLE IF NOT EXISTS block_assets (
+          block_id TEXT NOT NULL REFERENCES blocks(id) ON DELETE CASCADE,
+          asset_id TEXT NOT NULL REFERENCES assets(id) ON DELETE CASCADE,
+          role TEXT NOT NULL DEFAULT 'content',
+          PRIMARY KEY (block_id, asset_id, role)
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_block_assets_asset
+        ON block_assets(asset_id);
 
         CREATE VIRTUAL TABLE IF NOT EXISTS pages_fts
         USING fts5(
@@ -81,6 +114,78 @@ fn run_migrations(connection: &Connection) -> Result<()> {
           page_id UNINDEXED,
           text
         );
+
+        CREATE TABLE IF NOT EXISTS block_operations (
+          id TEXT PRIMARY KEY,
+          entity_type TEXT NOT NULL,
+          entity_id TEXT NOT NULL,
+          op_type TEXT NOT NULL,
+          payload_json TEXT NOT NULL DEFAULT '{}',
+          created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_block_operations_entity
+        ON block_operations(entity_type, entity_id, created_at);
+
+        CREATE TABLE IF NOT EXISTS sync_documents (
+          id TEXT PRIMARY KEY,
+          entity_type TEXT NOT NULL,
+          entity_id TEXT NOT NULL,
+          sync_scope TEXT NOT NULL,
+          crdt_kind TEXT NULL,
+          created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE(entity_type, entity_id, sync_scope)
+        );
+
+        CREATE TABLE IF NOT EXISTS sync_changes (
+          id TEXT PRIMARY KEY,
+          document_id TEXT NOT NULL REFERENCES sync_documents(id) ON DELETE CASCADE,
+          peer_id TEXT NULL,
+          sequence INTEGER NOT NULL,
+          change_payload BLOB NOT NULL,
+          created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE(document_id, peer_id, sequence)
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_sync_changes_document_sequence
+        ON sync_changes(document_id, sequence);
+
+        CREATE TABLE IF NOT EXISTS sync_peer_states (
+          peer_id TEXT PRIMARY KEY,
+          state_json TEXT NOT NULL DEFAULT '{}',
+          last_seen_at TEXT NULL,
+          updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE TABLE IF NOT EXISTS automerge_repo_chunks (
+          storage_key TEXT PRIMARY KEY,
+          data BLOB NOT NULL,
+          updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE TABLE IF NOT EXISTS page_history_entries (
+          id TEXT PRIMARY KEY,
+          page_id TEXT NOT NULL,
+          origin TEXT NOT NULL,
+          actor_id TEXT NOT NULL,
+          before_json TEXT NOT NULL,
+          after_json TEXT NOT NULL,
+          undone_at TEXT NULL,
+          discarded_at TEXT NULL,
+          created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_page_history_page_local_undo
+        ON page_history_entries(page_id, origin, actor_id, undone_at, discarded_at, created_at);
+
+        INSERT OR IGNORE INTO schema_migrations(version, name)
+        VALUES
+          (1, 'create block note schema'),
+          (2, 'add page tree sort key'),
+          (3, 'add automerge repo chunk storage'),
+          (4, 'add page history entries'),
+          (5, 'add page fts index and backfill search');
         "#,
     )?;
     Ok(())
@@ -117,5 +222,51 @@ mod tests {
         assert_eq!(status.pages_count, 0);
         assert_eq!(status.blocks_count, 0);
         assert_eq!(status.database_path, database_path);
+    }
+
+    #[test]
+    fn bootstraps_current_schema_objects() {
+        let temp_dir = tempfile::tempdir().expect("create temp dir");
+        let connection = open_database(temp_dir.path()).expect("open database");
+        let expected_names = [
+            "assets",
+            "automerge_repo_chunks",
+            "block_assets",
+            "block_operations",
+            "blocks",
+            "blocks_fts",
+            "idx_assets_sha256",
+            "idx_block_assets_asset",
+            "idx_block_operations_entity",
+            "idx_blocks_page_parent_sort",
+            "idx_page_history_page_local_undo",
+            "idx_pages_parent_sort",
+            "idx_sync_changes_document_sequence",
+            "page_history_entries",
+            "pages",
+            "pages_fts",
+            "schema_migrations",
+            "sync_changes",
+            "sync_documents",
+            "sync_peer_states",
+        ];
+
+        for name in expected_names {
+            let exists: i64 = connection
+                .query_row(
+                    "SELECT COUNT(*) FROM sqlite_master WHERE name = ?1",
+                    [name],
+                    |row| row.get(0),
+                )
+                .expect("query schema object");
+
+            assert_eq!(exists, 1, "missing schema object: {name}");
+        }
+
+        let schema_version: i64 = connection
+            .query_row("SELECT MAX(version) FROM schema_migrations", [], |row| row.get(0))
+            .expect("schema version");
+
+        assert_eq!(schema_version, 5);
     }
 }
