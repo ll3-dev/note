@@ -22,11 +22,12 @@ Desktop runtime 기준 Phase 1-3은 구현 완료 상태다.
 - 완료: engine HTTP smoke test.
 - 완료: engine 오류 응답을 `{ error: { code, message } }` 형태로 구조화.
 - 완료: engine HTTP client를 `src/shared`로 이동해 desktop/mobile shell에서 재사용 가능한 경계로 정리.
+- 완료: RPC input validation을 `src/shared`로 이동해 desktop/mobile shell에서 같은 입력 정규화 규칙을 쓰도록 정리.
 - 완료: Bun legacy SQLite 저장소 제거.
 - 완료: Bun SQLite Automerge storage adapter 제거.
 - 완료: `drizzle-orm`, `@automerge/automerge-repo` 의존성 제거.
 
-Bun shell은 이제 app lifecycle, OS 이벤트, engine lifecycle, RPC validation만 담당한다. Engine HTTP client는 host-agnostic shared module이며, SQLite 파일은 Rust Engine만 직접 연다.
+Bun shell은 이제 app lifecycle, OS 이벤트, engine lifecycle만 담당한다. Engine HTTP client와 RPC input validation은 host-agnostic shared module이며, SQLite 파일은 Rust Engine만 직접 연다.
 
 검증 기준:
 

@@ -28,7 +28,7 @@ import {
   validateSearchWorkspaceInput,
   validateUpdateBlockInput,
   validateUpdatePageInput
-} from "./rpcValidation";
+} from "@/shared/rpcValidation";
 
 let mainWindow: BrowserWindow | null = null;
 let navigationMouseButtons = 0n;

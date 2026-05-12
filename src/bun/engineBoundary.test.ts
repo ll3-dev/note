@@ -37,6 +37,14 @@ describe("Rust engine boundary", () => {
     expect(source).not.toContain("@/bun/");
     expect(source).not.toContain("node:");
   });
+
+  test("shared RPC validation stays host runtime agnostic", () => {
+    const source = readSource("src/shared/rpcValidation.ts");
+
+    expect(source).not.toContain("electrobun");
+    expect(source).not.toContain("@/bun/");
+    expect(source).not.toContain("node:");
+  });
 });
 
 function readSource(sourcePath: string) {
