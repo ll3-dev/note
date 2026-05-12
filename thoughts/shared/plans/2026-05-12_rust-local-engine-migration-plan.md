@@ -8,6 +8,31 @@
 
 **Tech Stack:** Rust workspace, `axum` 계열 local HTTP server, `rusqlite`, Bun, Electrobun, React Query, TypeScript.
 
+## 2026-05-12 진행 현황
+
+Desktop runtime 기준 Phase 1-3은 구현 완료 상태다.
+
+- 완료: Rust workspace, `note-core`, `note-engine` sidecar.
+- 완료: SQLite current schema bootstrap과 Bun app packaged sidecar copy.
+- 완료: Bun shell의 `NoteRPC` 데이터 요청을 Rust Engine client로 위임.
+- 완료: page read/write/archive/restore/purge.
+- 완료: block create/update/delete/move/batch.
+- 완료: workspace search, page search, backlinks.
+- 완료: page history undo/redo.
+- 완료: engine HTTP smoke test.
+
+현재 Bun에 남아 있는 DB/repository 코드는 앱 런타임 경로가 아니라 legacy parity/unit test와 Automerge storage adapter 테스트가 참조한다. 다음 정리는 두 갈래로 진행한다.
+
+1. Rust `note-core`/`note-engine` 테스트를 기준 테스트로 계속 승격한다.
+2. `src/bun/notes.ts`, `src/bun/repositories/*`, `src/bun/sync/pageHistory*`를 runtime 코드가 아닌 legacy 테스트 fixture로 이동하거나 제거한다.
+
+검증 기준:
+
+- `bun run check`
+- Rust core unit tests
+- Rust engine HTTP smoke tests
+- Bun UI/domain tests
+
 ---
 
 ## 파일 구조

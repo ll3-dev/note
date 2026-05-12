@@ -98,7 +98,14 @@ pub async fn engine_info() -> Json<EngineInfo> {
     Json(EngineInfo {
         engine_version: env!("CARGO_PKG_VERSION"),
         api_version: "1",
-        capabilities: vec!["engine.v1", "database.v1"],
+        capabilities: vec![
+            "engine.v1",
+            "database.v1",
+            "pages.v1",
+            "blocks.v1",
+            "history.v1",
+            "search.v1",
+        ],
     })
 }
 
