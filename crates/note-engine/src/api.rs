@@ -328,6 +328,7 @@ pub async fn backlinks(
 fn map_database_error(error: rusqlite::Error) -> (StatusCode, String) {
     let status = match error {
         rusqlite::Error::QueryReturnedNoRows => StatusCode::NOT_FOUND,
+        rusqlite::Error::InvalidQuery => StatusCode::BAD_REQUEST,
         _ => StatusCode::INTERNAL_SERVER_ERROR,
     };
 

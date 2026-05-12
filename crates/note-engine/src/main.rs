@@ -102,15 +102,26 @@ mod tests {
             path: &str,
             body: Option<Value>,
         ) -> (StatusCode, T) {
+            let (status, bytes) = self.request_raw(method, path, body).await;
+            let value = serde_json::from_slice::<T>(&bytes).expect("decode json");
+
+            (status, value)
+        }
+
+        async fn request_raw(
+            &self,
+            method: Method,
+            path: &str,
+            body: Option<Value>,
+        ) -> (StatusCode, axum::body::Bytes) {
             let request = request_builder(method, path, Some(&self.token), body);
             let response = self.app.clone().oneshot(request).await.expect("response");
             let status = response.status();
             let bytes = to_bytes(response.into_body(), usize::MAX)
                 .await
                 .expect("read body");
-            let value = serde_json::from_slice::<T>(&bytes).expect("decode json");
 
-            (status, value)
+            (status, bytes)
         }
     }
 
@@ -215,6 +226,38 @@ mod tests {
             engine.request(Method::GET, "/pages", None).await;
         assert_eq!(status, StatusCode::OK);
         assert_eq!(active_pages.as_array().expect("active pages").len(), 1);
+    }
+
+    #[tokio::test]
+    async fn maps_missing_rows_and_invalid_domain_requests_to_client_errors() {
+        let engine = TestEngine::new();
+        let (status, document): (StatusCode, Value) = engine
+            .request(
+                Method::POST,
+                "/pages",
+                Some(json!({ "title": "Daily", "parentPageId": null })),
+            )
+            .await;
+        assert_eq!(status, StatusCode::OK);
+
+        let page_id = document["page"]["id"].as_str().expect("page id");
+        let (status, _body) = engine
+            .request_raw(Method::GET, "/pages/missing-page/document", None)
+            .await;
+        assert_eq!(status, StatusCode::NOT_FOUND);
+
+        let (status, _body) = engine
+            .request_raw(
+                Method::POST,
+                "/pages/move",
+                Some(json!({
+                    "afterPageId": null,
+                    "pageId": page_id,
+                    "parentPageId": page_id
+                })),
+            )
+            .await;
+        assert_eq!(status, StatusCode::BAD_REQUEST);
     }
 
     fn request_builder(
