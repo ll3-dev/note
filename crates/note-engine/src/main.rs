@@ -22,6 +22,9 @@ async fn main() -> anyhow::Result<()> {
         .route("/pages", get(api::pages))
         .route("/pages/archived", get(api::archived_pages))
         .route("/pages/:page_id/document", get(api::page_document))
+        .route("/pages/:page_id/backlinks", get(api::backlinks))
+        .route("/search/pages", get(api::page_search))
+        .route("/search/workspace", get(api::workspace_search))
         .route_layer(middleware::from_fn_with_state(
             state.clone(),
             api::require_token,

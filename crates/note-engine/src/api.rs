@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use axum::extract::{Path, Request, State};
+use axum::extract::{Path, Query, Request, State};
 use axum::http::StatusCode;
 use axum::middleware::Next;
 use axum::response::Response;
@@ -10,8 +10,12 @@ use note_core::database::{get_database_status, open_database, DatabaseStatus};
 use note_core::documents::{
     get_page_document, list_archived_pages, list_pages, Page, PageDocument,
 };
+use note_core::search::{
+    list_backlinks, search_pages, search_workspace, Backlink, PageSearchResult,
+    SearchWorkspaceResult,
+};
 use rusqlite::Connection;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use tokio::sync::Mutex;
 
 #[derive(Clone)]
@@ -31,6 +35,12 @@ pub struct EngineInfo {
 #[derive(Serialize)]
 pub struct HealthResponse {
     pub ok: bool,
+}
+
+#[derive(Deserialize)]
+pub struct SearchQuery {
+    pub query: String,
+    pub limit: Option<usize>,
 }
 
 pub fn create_state(user_data_path: PathBuf) -> anyhow::Result<EngineState> {
@@ -105,6 +115,36 @@ pub async fn page_document(
 ) -> Result<Json<PageDocument>, (StatusCode, String)> {
     let connection = state.connection.lock().await;
     get_page_document(&connection, &page_id)
+        .map(Json)
+        .map_err(map_database_error)
+}
+
+pub async fn page_search(
+    State(state): State<EngineState>,
+    Query(query): Query<SearchQuery>,
+) -> Result<Json<Vec<PageSearchResult>>, (StatusCode, String)> {
+    let connection = state.connection.lock().await;
+    search_pages(&connection, &query.query, query.limit)
+        .map(Json)
+        .map_err(map_database_error)
+}
+
+pub async fn workspace_search(
+    State(state): State<EngineState>,
+    Query(query): Query<SearchQuery>,
+) -> Result<Json<Vec<SearchWorkspaceResult>>, (StatusCode, String)> {
+    let connection = state.connection.lock().await;
+    search_workspace(&connection, &query.query, query.limit)
+        .map(Json)
+        .map_err(map_database_error)
+}
+
+pub async fn backlinks(
+    State(state): State<EngineState>,
+    Path(page_id): Path<String>,
+) -> Result<Json<Vec<Backlink>>, (StatusCode, String)> {
+    let connection = state.connection.lock().await;
+    list_backlinks(&connection, &page_id)
         .map(Json)
         .map_err(map_database_error)
 }

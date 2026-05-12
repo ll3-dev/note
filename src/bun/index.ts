@@ -18,15 +18,12 @@ import {
   deleteBlock,
   deleteBlocks,
   deletePage,
-  listBacklinks,
   moveBlock,
   moveBlocks,
   movePage,
   purgeExpiredArchivedPages,
   redoPageHistory,
   restorePage,
-  searchPages,
-  searchWorkspace,
   undoPageHistory,
   updateBlock,
   updatePage
@@ -104,11 +101,11 @@ async function main() {
         listPages: () => engineClient.listPages(),
         listArchivedPages: () => engineClient.listArchivedPages(),
         searchPages: (input) =>
-          searchPages(databaseHandle, validateSearchPagesInput(input)),
+          engineClient.searchPages(validateSearchPagesInput(input)),
         listBacklinks: (input) =>
-          listBacklinks(databaseHandle, validateListBacklinksInput(input)),
+          engineClient.listBacklinks(validateListBacklinksInput(input)),
         searchWorkspace: (input) =>
-          searchWorkspace(databaseHandle, validateSearchWorkspaceInput(input)),
+          engineClient.searchWorkspace(validateSearchWorkspaceInput(input)),
         getPageDocument: (input) =>
           engineClient.getPageDocument(validateGetPageDocumentInput(input)),
         createPage: (input) =>

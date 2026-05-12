@@ -68,6 +68,19 @@ fn run_migrations(connection: &Connection) -> Result<()> {
           created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
           updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
         );
+
+        CREATE VIRTUAL TABLE IF NOT EXISTS pages_fts
+        USING fts5(
+          page_id UNINDEXED,
+          title
+        );
+
+        CREATE VIRTUAL TABLE IF NOT EXISTS blocks_fts
+        USING fts5(
+          block_id UNINDEXED,
+          page_id UNINDEXED,
+          text
+        );
         "#,
     )?;
     Ok(())
@@ -106,4 +119,3 @@ mod tests {
         assert_eq!(status.database_path, database_path);
     }
 }
-
