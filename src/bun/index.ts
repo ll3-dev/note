@@ -18,10 +18,7 @@ import {
   deleteBlock,
   deleteBlocks,
   deletePage,
-  getPageDocument,
-  listArchivedPages,
   listBacklinks,
-  listPages,
   moveBlock,
   moveBlocks,
   movePage,
@@ -104,8 +101,8 @@ async function main() {
           windowToClose?.close();
           return { closed: true };
         },
-        listPages: () => listPages(databaseHandle),
-        listArchivedPages: () => listArchivedPages(databaseHandle),
+        listPages: () => engineClient.listPages(),
+        listArchivedPages: () => engineClient.listArchivedPages(),
         searchPages: (input) =>
           searchPages(databaseHandle, validateSearchPagesInput(input)),
         listBacklinks: (input) =>
@@ -113,7 +110,7 @@ async function main() {
         searchWorkspace: (input) =>
           searchWorkspace(databaseHandle, validateSearchWorkspaceInput(input)),
         getPageDocument: (input) =>
-          getPageDocument(databaseHandle, validateGetPageDocumentInput(input)),
+          engineClient.getPageDocument(validateGetPageDocumentInput(input)),
         createPage: (input) =>
           createPage(databaseHandle, validateCreatePageInput(input)),
         updatePage: (input) =>
@@ -271,4 +268,3 @@ void main().catch((error) => {
   console.error(error);
   Utils.quit();
 });
-

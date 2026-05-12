@@ -19,6 +19,9 @@ async fn main() -> anyhow::Result<()> {
     let protected_routes = Router::new()
         .route("/engine/info", get(api::engine_info))
         .route("/database/status", get(api::database_status))
+        .route("/pages", get(api::pages))
+        .route("/pages/archived", get(api::archived_pages))
+        .route("/pages/:page_id/document", get(api::page_document))
         .route_layer(middleware::from_fn_with_state(
             state.clone(),
             api::require_token,
@@ -35,4 +38,3 @@ async fn main() -> anyhow::Result<()> {
     axum::serve(listener, app).await?;
     Ok(())
 }
-

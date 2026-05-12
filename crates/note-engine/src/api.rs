@@ -1,12 +1,15 @@
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use axum::extract::{Request, State};
+use axum::extract::{Path, Request, State};
 use axum::http::StatusCode;
 use axum::middleware::Next;
 use axum::response::Response;
 use axum::Json;
 use note_core::database::{get_database_status, open_database, DatabaseStatus};
+use note_core::documents::{
+    get_page_document, list_archived_pages, list_pages, Page, PageDocument,
+};
 use rusqlite::Connection;
 use serde::Serialize;
 use tokio::sync::Mutex;
@@ -73,10 +76,44 @@ pub async fn engine_info() -> Json<EngineInfo> {
 
 pub async fn database_status(
     State(state): State<EngineState>,
-) -> Result<Json<DatabaseStatus>, String> {
+) -> Result<Json<DatabaseStatus>, (StatusCode, String)> {
     let connection = state.connection.lock().await;
     get_database_status(&connection, &state.database_path)
         .map(Json)
-        .map_err(|error| error.to_string())
+        .map_err(map_database_error)
 }
 
+pub async fn pages(
+    State(state): State<EngineState>,
+) -> Result<Json<Vec<Page>>, (StatusCode, String)> {
+    let connection = state.connection.lock().await;
+    list_pages(&connection).map(Json).map_err(map_database_error)
+}
+
+pub async fn archived_pages(
+    State(state): State<EngineState>,
+) -> Result<Json<Vec<Page>>, (StatusCode, String)> {
+    let connection = state.connection.lock().await;
+    list_archived_pages(&connection)
+        .map(Json)
+        .map_err(map_database_error)
+}
+
+pub async fn page_document(
+    State(state): State<EngineState>,
+    Path(page_id): Path<String>,
+) -> Result<Json<PageDocument>, (StatusCode, String)> {
+    let connection = state.connection.lock().await;
+    get_page_document(&connection, &page_id)
+        .map(Json)
+        .map_err(map_database_error)
+}
+
+fn map_database_error(error: rusqlite::Error) -> (StatusCode, String) {
+    let status = match error {
+        rusqlite::Error::QueryReturnedNoRows => StatusCode::NOT_FOUND,
+        _ => StatusCode::INTERNAL_SERVER_ERROR,
+    };
+
+    (status, error.to_string())
+}
