@@ -6,9 +6,14 @@ use axum::http::StatusCode;
 use axum::middleware::Next;
 use axum::response::Response;
 use axum::Json;
+use note_core::block_write::{
+    create_block, create_blocks, delete_block, delete_blocks, move_block, move_blocks,
+    update_block, CreateBlockInput, CreateBlocksInput, DeleteBlockInput, DeleteBlocksInput,
+    DeleteBlocksOutput, MoveBlockInput, MoveBlocksInput, UpdateBlockInput,
+};
 use note_core::database::{get_database_status, open_database, DatabaseStatus};
 use note_core::documents::{
-    get_page_document, list_archived_pages, list_pages, Page, PageDocument,
+    get_page_document, list_archived_pages, list_pages, Block, Page, PageDocument,
 };
 use note_core::page_write::{
     create_page, move_page, update_page, CreatePageInput, MovePageInput, UpdatePageInput,
@@ -38,6 +43,11 @@ pub struct EngineInfo {
 #[derive(Serialize)]
 pub struct HealthResponse {
     pub ok: bool,
+}
+
+#[derive(Serialize)]
+pub struct DeleteResponse {
+    pub deleted: bool,
 }
 
 #[derive(Deserialize)]
@@ -100,7 +110,9 @@ pub async fn pages(
     State(state): State<EngineState>,
 ) -> Result<Json<Vec<Page>>, (StatusCode, String)> {
     let connection = state.connection.lock().await;
-    list_pages(&connection).map(Json).map_err(map_database_error)
+    list_pages(&connection)
+        .map(Json)
+        .map_err(map_database_error)
 }
 
 pub async fn archived_pages(
@@ -148,6 +160,76 @@ pub async fn move_page_handler(
 ) -> Result<Json<Page>, (StatusCode, String)> {
     let mut connection = state.connection.lock().await;
     move_page(&mut connection, input)
+        .map(Json)
+        .map_err(map_database_error)
+}
+
+pub async fn create_block_handler(
+    State(state): State<EngineState>,
+    Json(input): Json<CreateBlockInput>,
+) -> Result<Json<Block>, (StatusCode, String)> {
+    let mut connection = state.connection.lock().await;
+    create_block(&mut connection, input)
+        .map(Json)
+        .map_err(map_database_error)
+}
+
+pub async fn create_blocks_handler(
+    State(state): State<EngineState>,
+    Json(input): Json<CreateBlocksInput>,
+) -> Result<Json<Vec<Block>>, (StatusCode, String)> {
+    let mut connection = state.connection.lock().await;
+    create_blocks(&mut connection, input)
+        .map(Json)
+        .map_err(map_database_error)
+}
+
+pub async fn update_block_handler(
+    State(state): State<EngineState>,
+    Json(input): Json<UpdateBlockInput>,
+) -> Result<Json<Block>, (StatusCode, String)> {
+    let mut connection = state.connection.lock().await;
+    update_block(&mut connection, input)
+        .map(Json)
+        .map_err(map_database_error)
+}
+
+pub async fn delete_block_handler(
+    State(state): State<EngineState>,
+    Json(input): Json<DeleteBlockInput>,
+) -> Result<Json<DeleteResponse>, (StatusCode, String)> {
+    let mut connection = state.connection.lock().await;
+    delete_block(&mut connection, input)
+        .map(|()| Json(DeleteResponse { deleted: true }))
+        .map_err(map_database_error)
+}
+
+pub async fn delete_blocks_handler(
+    State(state): State<EngineState>,
+    Json(input): Json<DeleteBlocksInput>,
+) -> Result<Json<DeleteBlocksOutput>, (StatusCode, String)> {
+    let mut connection = state.connection.lock().await;
+    delete_blocks(&mut connection, input)
+        .map(Json)
+        .map_err(map_database_error)
+}
+
+pub async fn move_block_handler(
+    State(state): State<EngineState>,
+    Json(input): Json<MoveBlockInput>,
+) -> Result<Json<Block>, (StatusCode, String)> {
+    let mut connection = state.connection.lock().await;
+    move_block(&mut connection, input)
+        .map(Json)
+        .map_err(map_database_error)
+}
+
+pub async fn move_blocks_handler(
+    State(state): State<EngineState>,
+    Json(input): Json<MoveBlocksInput>,
+) -> Result<Json<Vec<Block>>, (StatusCode, String)> {
+    let mut connection = state.connection.lock().await;
+    move_blocks(&mut connection, input)
         .map(Json)
         .map_err(map_database_error)
 }

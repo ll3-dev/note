@@ -178,7 +178,10 @@ pub fn list_backlinks(connection: &Connection, page_id: &str) -> Result<Vec<Back
     for row in rows {
         let (block_id, source_page_id, page_title, props_json, text) = row?;
 
-        if connected_page_ids(&props_json).iter().any(|id| id == page_id) {
+        if connected_page_ids(&props_json)
+            .iter()
+            .any(|id| id == page_id)
+        {
             backlinks.push(Backlink {
                 block_id,
                 page_id: source_page_id,
@@ -249,13 +252,7 @@ mod tests {
 
         insert_page(&connection, "page-1", "Daily", None);
         insert_page_fts(&connection, "page-1", "Daily");
-        insert_block(
-            &connection,
-            "block-1",
-            "page-1",
-            "Ship local search",
-            "{}",
-        );
+        insert_block(&connection, "block-1", "page-1", "Ship local search", "{}");
         insert_block_fts(&connection, "block-1", "page-1", "Ship local search");
 
         assert_eq!(
@@ -340,12 +337,7 @@ mod tests {
         );
     }
 
-    fn insert_page(
-        connection: &Connection,
-        page_id: &str,
-        title: &str,
-        archived_at: Option<&str>,
-    ) {
+    fn insert_page(connection: &Connection, page_id: &str, title: &str, archived_at: Option<&str>) {
         connection
             .execute(
                 r#"
@@ -395,4 +387,3 @@ mod tests {
             .expect("insert block fts");
     }
 }
-

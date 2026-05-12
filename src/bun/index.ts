@@ -12,18 +12,11 @@ import { startEngineProcess } from "./engine/engineProcess";
 import { resolveMainviewUrl } from "./mainviewUrl";
 import { getNavigationDirectionFromMouseButtons } from "./navigationMouseButtons";
 import {
-  createBlock,
-  createBlocks,
-  deleteBlock,
-  deleteBlocks,
   deletePage,
-  moveBlock,
-  moveBlocks,
   purgeExpiredArchivedPages,
   redoPageHistory,
   restorePage,
   undoPageHistory,
-  updateBlock
 } from "./notes";
 import {
   validateCreateBlockInput,
@@ -115,19 +108,19 @@ async function main() {
           restorePage(databaseHandle, validateRestorePageInput(input)),
         purgeExpiredArchivedPages: () => purgeExpiredArchivedPages(databaseHandle),
         createBlock: (input) =>
-          createBlock(databaseHandle, validateCreateBlockInput(input)),
+          engineClient.createBlock(validateCreateBlockInput(input)),
         createBlocks: (input) =>
-          createBlocks(databaseHandle, validateCreateBlocksInput(input)),
+          engineClient.createBlocks(validateCreateBlocksInput(input)),
         updateBlock: (input) =>
-          updateBlock(databaseHandle, validateUpdateBlockInput(input)),
+          engineClient.updateBlock(validateUpdateBlockInput(input)),
         deleteBlock: (input) =>
-          deleteBlock(databaseHandle, validateDeleteBlockInput(input)),
+          engineClient.deleteBlock(validateDeleteBlockInput(input)),
         deleteBlocks: (input) =>
-          deleteBlocks(databaseHandle, validateDeleteBlocksInput(input)),
+          engineClient.deleteBlocks(validateDeleteBlocksInput(input)),
         moveBlock: (input) =>
-          moveBlock(databaseHandle, validateMoveBlockInput(input)),
+          engineClient.moveBlock(validateMoveBlockInput(input)),
         moveBlocks: (input) =>
-          moveBlocks(databaseHandle, validateMoveBlocksInput(input)),
+          engineClient.moveBlocks(validateMoveBlocksInput(input)),
         movePage: (input) =>
           engineClient.movePage(validateMovePageInput(input)),
         redoPageHistory: (input) =>

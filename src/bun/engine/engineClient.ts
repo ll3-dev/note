@@ -1,9 +1,16 @@
 import type {
   Backlink,
+  Block,
+  CreateBlockInput,
+  CreateBlocksInput,
   CreatePageInput,
   DatabaseStatus,
+  DeleteBlockInput,
+  DeleteBlocksInput,
   GetPageDocumentInput,
   ListBacklinksInput,
+  MoveBlockInput,
+  MoveBlocksInput,
   MovePageInput,
   Page,
   PageDocument,
@@ -11,21 +18,31 @@ import type {
   SearchPagesInput,
   SearchWorkspaceInput,
   SearchWorkspaceResult,
+  UpdateBlockInput,
   UpdatePageInput
 } from "@/shared/contracts";
 
 export type EngineClient = {
+  createBlock: (input: CreateBlockInput) => Promise<Block>;
+  createBlocks: (input: CreateBlocksInput) => Promise<Block[]>;
   createPage: (input: CreatePageInput) => Promise<PageDocument>;
+  deleteBlock: (input: DeleteBlockInput) => Promise<{ deleted: true }>;
+  deleteBlocks: (
+    input: DeleteBlocksInput
+  ) => Promise<{ createdBlock?: Block; deleted: true }>;
   getDatabaseStatus: () => Promise<DatabaseStatus>;
   getPageDocument: (input: GetPageDocumentInput) => Promise<PageDocument>;
   listBacklinks: (input: ListBacklinksInput) => Promise<Backlink[]>;
   listArchivedPages: () => Promise<Page[]>;
   listPages: () => Promise<Page[]>;
+  moveBlock: (input: MoveBlockInput) => Promise<Block>;
+  moveBlocks: (input: MoveBlocksInput) => Promise<Block[]>;
   movePage: (input: MovePageInput) => Promise<Page>;
   searchPages: (input: SearchPagesInput) => Promise<PageSearchResult[]>;
   searchWorkspace: (
     input: SearchWorkspaceInput
   ) => Promise<SearchWorkspaceResult[]>;
+  updateBlock: (input: UpdateBlockInput) => Promise<Block>;
   updatePage: (input: UpdatePageInput) => Promise<Page>;
 };
 
@@ -66,8 +83,24 @@ export function createEngineClient(baseUrl: string, token: string): EngineClient
   }
 
   return {
+    createBlock(input) {
+      return sendJson<Block>("POST", "/blocks", input);
+    },
+    createBlocks(input) {
+      return sendJson<Block[]>("POST", "/blocks/batch", input);
+    },
     createPage(input) {
       return sendJson<PageDocument>("POST", "/pages", input);
+    },
+    deleteBlock(input) {
+      return sendJson<{ deleted: true }>("POST", "/blocks/delete", input);
+    },
+    deleteBlocks(input) {
+      return sendJson<{ createdBlock?: Block; deleted: true }>(
+        "POST",
+        "/blocks/delete-batch",
+        input
+      );
     },
     async getDatabaseStatus() {
       const status = await getJson<{
@@ -98,6 +131,12 @@ export function createEngineClient(baseUrl: string, token: string): EngineClient
     listPages() {
       return getJson<Page[]>("/pages");
     },
+    moveBlock(input) {
+      return sendJson<Block>("POST", "/blocks/move", input);
+    },
+    moveBlocks(input) {
+      return sendJson<Block[]>("POST", "/blocks/move-batch", input);
+    },
     movePage(input) {
       return sendJson<Page>("POST", "/pages/move", input);
     },
@@ -110,6 +149,9 @@ export function createEngineClient(baseUrl: string, token: string): EngineClient
       return getJson<SearchWorkspaceResult[]>(
         `/search/workspace?${new URLSearchParams(toSearchParams(input))}`
       );
+    },
+    updateBlock(input) {
+      return sendJson<Block>("PATCH", "/blocks/update", input);
     },
     updatePage(input) {
       return sendJson<Page>("PATCH", "/pages/update", input);

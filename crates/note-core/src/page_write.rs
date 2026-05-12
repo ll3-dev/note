@@ -351,4 +351,3 @@ mod tests {
         assert_eq!(moved.sort_key, "00000000");
     }
 }
-

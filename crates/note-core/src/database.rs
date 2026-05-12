@@ -264,7 +264,9 @@ mod tests {
         }
 
         let schema_version: i64 = connection
-            .query_row("SELECT MAX(version) FROM schema_migrations", [], |row| row.get(0))
+            .query_row("SELECT MAX(version) FROM schema_migrations", [], |row| {
+                row.get(0)
+            })
             .expect("schema version");
 
         assert_eq!(schema_version, 5);

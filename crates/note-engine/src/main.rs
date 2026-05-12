@@ -26,6 +26,13 @@ async fn main() -> anyhow::Result<()> {
         .route("/pages/update", patch(api::update_page_handler))
         .route("/pages/:page_id/document", get(api::page_document))
         .route("/pages/:page_id/backlinks", get(api::backlinks))
+        .route("/blocks", post(api::create_block_handler))
+        .route("/blocks/batch", post(api::create_blocks_handler))
+        .route("/blocks/delete", post(api::delete_block_handler))
+        .route("/blocks/delete-batch", post(api::delete_blocks_handler))
+        .route("/blocks/move", post(api::move_block_handler))
+        .route("/blocks/move-batch", post(api::move_blocks_handler))
+        .route("/blocks/update", patch(api::update_block_handler))
         .route("/search/pages", get(api::page_search))
         .route("/search/workspace", get(api::workspace_search))
         .route_layer(middleware::from_fn_with_state(
