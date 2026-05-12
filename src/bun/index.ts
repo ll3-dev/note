@@ -6,7 +6,9 @@ import Electrobun, {
   Utils
 } from "electrobun/bun";
 import type { NoteRPC } from "@/shared/contracts";
-import { getDatabaseStatus, openDatabase } from "./database";
+import { openDatabase } from "./database";
+import { createEngineClient } from "./engine/engineClient";
+import { startEngineProcess } from "./engine/engineProcess";
 import { resolveMainviewUrl } from "./mainviewUrl";
 import { getNavigationDirectionFromMouseButtons } from "./navigationMouseButtons";
 import {
@@ -30,7 +32,7 @@ import {
   searchWorkspace,
   undoPageHistory,
   updateBlock,
-  updatePage,
+  updatePage
 } from "./notes";
 import {
   validateCreateBlockInput,
@@ -40,21 +42,18 @@ import {
   validateDeleteBlocksInput,
   validateDeletePageInput,
   validateGetPageDocumentInput,
+  validateListBacklinksInput,
   validateMoveBlockInput,
   validateMoveBlocksInput,
   validateMovePageInput,
   validatePageHistoryInput,
   validateRestorePageInput,
-  validateListBacklinksInput,
   validateSearchPagesInput,
   validateSearchWorkspaceInput,
   validateUpdateBlockInput,
   validateUpdatePageInput
 } from "./rpcValidation";
 
-const databaseHandle = openDatabase(Utils.paths.userData);
-purgeExpiredArchivedPages(databaseHandle);
-const mainviewUrl = resolveMainviewUrl();
 let mainWindow: BrowserWindow | null = null;
 let navigationMouseButtons = 0n;
 const shouldLogNavigationMouseButtons =
@@ -68,168 +67,208 @@ function dispatchMainviewEvent(name: string, detail: unknown) {
   );
 }
 
-const rpc = BrowserView.defineRPC<NoteRPC>({
-  maxRequestTime: 5000,
-  handlers: {
-    requests: {
-      getDatabaseStatus: () => getDatabaseStatus(databaseHandle),
-      closeMainWindow: () => {
-        const windowToClose = mainWindow;
-        mainWindow = null;
-        windowToClose?.close();
-        return { closed: true };
-      },
-      listPages: () => listPages(databaseHandle),
-      listArchivedPages: () => listArchivedPages(databaseHandle),
-      searchPages: (input) => searchPages(databaseHandle, validateSearchPagesInput(input)),
-      listBacklinks: (input) => listBacklinks(databaseHandle, validateListBacklinksInput(input)),
-      searchWorkspace: (input) => searchWorkspace(databaseHandle, validateSearchWorkspaceInput(input)),
-      getPageDocument: (input) => getPageDocument(databaseHandle, validateGetPageDocumentInput(input)),
-      createPage: (input) => createPage(databaseHandle, validateCreatePageInput(input)),
-      updatePage: (input) => updatePage(databaseHandle, validateUpdatePageInput(input)),
-      deletePage: (input) => deletePage(databaseHandle, validateDeletePageInput(input)),
-      restorePage: (input) => restorePage(databaseHandle, validateRestorePageInput(input)),
-      purgeExpiredArchivedPages: () => purgeExpiredArchivedPages(databaseHandle),
-      createBlock: (input) => createBlock(databaseHandle, validateCreateBlockInput(input)),
-      createBlocks: (input) => createBlocks(databaseHandle, validateCreateBlocksInput(input)),
-      updateBlock: (input) => updateBlock(databaseHandle, validateUpdateBlockInput(input)),
-      deleteBlock: (input) => deleteBlock(databaseHandle, validateDeleteBlockInput(input)),
-      deleteBlocks: (input) => deleteBlocks(databaseHandle, validateDeleteBlocksInput(input)),
-      moveBlock: (input) => moveBlock(databaseHandle, validateMoveBlockInput(input)),
-      moveBlocks: (input) => moveBlocks(databaseHandle, validateMoveBlocksInput(input)),
-      movePage: (input) => movePage(databaseHandle, validateMovePageInput(input)),
-      redoPageHistory: (input) => redoPageHistory(databaseHandle, validatePageHistoryInput(input)),
-      undoPageHistory: (input) => undoPageHistory(databaseHandle, validatePageHistoryInput(input)),
-    },
-    messages: {},
-  },
-});
-
-function createMainWindow() {
+function createMainWindow(rpc: ReturnType<typeof BrowserView.defineRPC<NoteRPC>>) {
   return new BrowserWindow({
     title: "Note",
-    url: mainviewUrl,
+    url: resolveMainviewUrl(),
     frame: {
       x: 80,
       y: 80,
       width: 1180,
-      height: 760,
+      height: 760
     },
     titleBarStyle: "hiddenInset",
     renderer: "native",
-    rpc,
+    rpc
   });
 }
 
-mainWindow = createMainWindow();
+async function main() {
+  const databaseHandle = openDatabase(Utils.paths.userData);
+  purgeExpiredArchivedPages(databaseHandle);
 
-setInterval(() => {
-  const currentButtons = Screen.getMouseButtons();
-  const direction = getNavigationDirectionFromMouseButtons(
-    navigationMouseButtons,
-    currentButtons
+  const engineProcess = await startEngineProcess(Utils.paths.userData);
+  const engineClient = createEngineClient(
+    engineProcess.baseUrl,
+    engineProcess.token
   );
 
-  if (
-    shouldLogNavigationMouseButtons &&
-    currentButtons !== navigationMouseButtons
-  ) {
-    console.info(`[navigation] mouse buttons: ${currentButtons.toString(2)}`);
-  }
-
-  navigationMouseButtons = currentButtons;
-
-  if (!direction || !mainWindow) {
-    return;
-  }
-
-  dispatchMainviewEvent("note-navigation-command", direction);
-}, 16);
-
-Electrobun.events.on("close", (event) => {
-  const windowId = (event as { data?: { id?: number } }).data?.id;
-
-  if (windowId === mainWindow?.id) {
-    mainWindow = null;
-  }
-});
-
-Electrobun.events.on("reopen", () => {
-  if (!mainWindow) {
-    mainWindow = createMainWindow();
-  }
-});
-
-ApplicationMenu.setApplicationMenu([
-  {
-    label: "Note",
-    submenu: [
-      {
-        accelerator: "CommandOrControl+Q",
-        action: "note.quit",
-        label: "Quit Note"
-      }
-    ]
-  },
-  {
-    label: "Navigate",
-    submenu: [
-      {
-        accelerator: "CommandOrControl+Left",
-        action: "note.navigateBack",
-        label: "Back"
+  const rpc = BrowserView.defineRPC<NoteRPC>({
+    maxRequestTime: 5000,
+    handlers: {
+      requests: {
+        getDatabaseStatus: () => engineClient.getDatabaseStatus(),
+        closeMainWindow: () => {
+          const windowToClose = mainWindow;
+          mainWindow = null;
+          windowToClose?.close();
+          return { closed: true };
+        },
+        listPages: () => listPages(databaseHandle),
+        listArchivedPages: () => listArchivedPages(databaseHandle),
+        searchPages: (input) =>
+          searchPages(databaseHandle, validateSearchPagesInput(input)),
+        listBacklinks: (input) =>
+          listBacklinks(databaseHandle, validateListBacklinksInput(input)),
+        searchWorkspace: (input) =>
+          searchWorkspace(databaseHandle, validateSearchWorkspaceInput(input)),
+        getPageDocument: (input) =>
+          getPageDocument(databaseHandle, validateGetPageDocumentInput(input)),
+        createPage: (input) =>
+          createPage(databaseHandle, validateCreatePageInput(input)),
+        updatePage: (input) =>
+          updatePage(databaseHandle, validateUpdatePageInput(input)),
+        deletePage: (input) =>
+          deletePage(databaseHandle, validateDeletePageInput(input)),
+        restorePage: (input) =>
+          restorePage(databaseHandle, validateRestorePageInput(input)),
+        purgeExpiredArchivedPages: () => purgeExpiredArchivedPages(databaseHandle),
+        createBlock: (input) =>
+          createBlock(databaseHandle, validateCreateBlockInput(input)),
+        createBlocks: (input) =>
+          createBlocks(databaseHandle, validateCreateBlocksInput(input)),
+        updateBlock: (input) =>
+          updateBlock(databaseHandle, validateUpdateBlockInput(input)),
+        deleteBlock: (input) =>
+          deleteBlock(databaseHandle, validateDeleteBlockInput(input)),
+        deleteBlocks: (input) =>
+          deleteBlocks(databaseHandle, validateDeleteBlocksInput(input)),
+        moveBlock: (input) =>
+          moveBlock(databaseHandle, validateMoveBlockInput(input)),
+        moveBlocks: (input) =>
+          moveBlocks(databaseHandle, validateMoveBlocksInput(input)),
+        movePage: (input) =>
+          movePage(databaseHandle, validateMovePageInput(input)),
+        redoPageHistory: (input) =>
+          redoPageHistory(databaseHandle, validatePageHistoryInput(input)),
+        undoPageHistory: (input) =>
+          undoPageHistory(databaseHandle, validatePageHistoryInput(input))
       },
-      {
-        accelerator: "CommandOrControl+Right",
-        action: "note.navigateForward",
-        label: "Forward"
-      }
-    ]
-  },
-  {
-    label: "Edit",
-    submenu: [
-      {
-        accelerator: "CommandOrControl+Z",
-        action: "note.undo",
-        label: "Undo"
-      },
-      {
-        accelerator: "CommandOrControl+Shift+Z",
-        action: "note.redo",
-        label: "Redo"
-      },
-      { type: "divider" },
-      { role: "cut" },
-      { role: "copy" },
-      { role: "paste" },
-      { role: "selectAll" }
-    ]
-  }
-]);
+      messages: {}
+    }
+  });
 
-ApplicationMenu.on("application-menu-clicked", (event) => {
-  const action = (event as { data?: { action?: string } }).data?.action;
+  mainWindow = createMainWindow(rpc);
 
-  if (action === "note.quit") {
-    Utils.quit();
-    return;
-  }
-
-  if (action === "note.navigateBack" || action === "note.navigateForward") {
-    dispatchMainviewEvent(
-      "note-navigation-command",
-      action === "note.navigateBack" ? "back" : "forward"
+  setInterval(() => {
+    const currentButtons = Screen.getMouseButtons();
+    const direction = getNavigationDirectionFromMouseButtons(
+      navigationMouseButtons,
+      currentButtons
     );
-    return;
-  }
 
-  if (action !== "note.undo" && action !== "note.redo") {
-    return;
-  }
+    if (
+      shouldLogNavigationMouseButtons &&
+      currentButtons !== navigationMouseButtons
+    ) {
+      console.info(`[navigation] mouse buttons: ${currentButtons.toString(2)}`);
+    }
 
-  dispatchMainviewEvent(
-    "note-history-command",
-    action === "note.undo" ? "undo" : "redo"
-  );
+    navigationMouseButtons = currentButtons;
+
+    if (!direction || !mainWindow) {
+      return;
+    }
+
+    dispatchMainviewEvent("note-navigation-command", direction);
+  }, 16);
+
+  Electrobun.events.on("close", (event) => {
+    const windowId = (event as { data?: { id?: number } }).data?.id;
+
+    if (windowId === mainWindow?.id) {
+      mainWindow = null;
+    }
+  });
+
+  Electrobun.events.on("reopen", () => {
+    if (!mainWindow) {
+      mainWindow = createMainWindow(rpc);
+    }
+  });
+
+  ApplicationMenu.setApplicationMenu([
+    {
+      label: "Note",
+      submenu: [
+        {
+          accelerator: "CommandOrControl+Q",
+          action: "note.quit",
+          label: "Quit Note"
+        }
+      ]
+    },
+    {
+      label: "Navigate",
+      submenu: [
+        {
+          accelerator: "CommandOrControl+Left",
+          action: "note.navigateBack",
+          label: "Back"
+        },
+        {
+          accelerator: "CommandOrControl+Right",
+          action: "note.navigateForward",
+          label: "Forward"
+        }
+      ]
+    },
+    {
+      label: "Edit",
+      submenu: [
+        {
+          accelerator: "CommandOrControl+Z",
+          action: "note.undo",
+          label: "Undo"
+        },
+        {
+          accelerator: "CommandOrControl+Shift+Z",
+          action: "note.redo",
+          label: "Redo"
+        },
+        { type: "divider" },
+        { role: "cut" },
+        { role: "copy" },
+        { role: "paste" },
+        { role: "selectAll" }
+      ]
+    }
+  ]);
+
+  ApplicationMenu.on("application-menu-clicked", (event) => {
+    const action = (event as { data?: { action?: string } }).data?.action;
+
+    if (action === "note.quit") {
+      engineProcess.stop();
+      Utils.quit();
+      return;
+    }
+
+    if (action === "note.navigateBack" || action === "note.navigateForward") {
+      dispatchMainviewEvent(
+        "note-navigation-command",
+        action === "note.navigateBack" ? "back" : "forward"
+      );
+      return;
+    }
+
+    if (action !== "note.undo" && action !== "note.redo") {
+      return;
+    }
+
+    dispatchMainviewEvent(
+      "note-history-command",
+      action === "note.undo" ? "undo" : "redo"
+    );
+  });
+
+  process.on("exit", () => {
+    engineProcess.stop();
+  });
+}
+
+void main().catch((error) => {
+  console.error(error);
+  Utils.quit();
 });
+

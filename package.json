@@ -3,13 +3,14 @@
   "private": true,
   "version": "0.1.0",
   "scripts": {
-    "dev": "bun scripts/dev.ts",
+    "dev": "bun run build:engine && bun scripts/dev.ts",
     "dev:electrobun": "electrobun dev",
     "dev:vite": "vite",
-    "build": "bun run build:mainview && electrobun build",
-    "build:dev": "bun run build:mainview && electrobun build",
+    "build": "bun run build:engine && bun run build:mainview && electrobun build",
+    "build:dev": "bun run build:engine && bun run build:mainview && electrobun build",
+    "build:engine": "cargo build -p note-engine",
     "build:mainview": "vite build",
-    "check": "bun run typecheck && bun run test && bun run build",
+    "check": "cargo test && cargo check && bun run typecheck && bun run test && bun run build",
     "test": "bun test src",
     "test:e2e": "playwright test",
     "typecheck": "tsc --noEmit"
