@@ -4,7 +4,7 @@ use std::sync::Arc;
 use axum::extract::{Path, Query, Request, State};
 use axum::http::StatusCode;
 use axum::middleware::Next;
-use axum::response::Response;
+use axum::response::{IntoResponse, Response};
 use axum::Json;
 use note_core::block_write::{
     create_block, create_blocks, delete_block, delete_blocks, move_block, move_blocks,
@@ -55,11 +55,47 @@ pub struct DeleteResponse {
     pub deleted: bool,
 }
 
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ErrorResponse {
+    pub error: ErrorPayload,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ErrorPayload {
+    pub code: &'static str,
+    pub message: String,
+}
+
+pub struct ApiError {
+    pub code: &'static str,
+    pub message: String,
+    pub status: StatusCode,
+}
+
+impl IntoResponse for ApiError {
+    fn into_response(self) -> Response {
+        (
+            self.status,
+            Json(ErrorResponse {
+                error: ErrorPayload {
+                    code: self.code,
+                    message: self.message,
+                },
+            }),
+        )
+            .into_response()
+    }
+}
+
 #[derive(Deserialize)]
 pub struct SearchQuery {
     pub query: String,
     pub limit: Option<usize>,
 }
+
+type ApiResult<T> = Result<Json<T>, ApiError>;
 
 pub fn create_state(user_data_path: PathBuf) -> anyhow::Result<EngineState> {
     let database_path = user_data_path.join("note.sqlite3");
@@ -76,7 +112,7 @@ pub async fn require_token(
     State(state): State<EngineState>,
     request: Request,
     next: Next,
-) -> Result<Response, StatusCode> {
+) -> Result<Response, ApiError> {
     let expected = format!("Bearer {}", state.session_token);
     let actual = request
         .headers()
@@ -84,7 +120,11 @@ pub async fn require_token(
         .and_then(|value| value.to_str().ok());
 
     if actual != Some(expected.as_str()) {
-        return Err(StatusCode::UNAUTHORIZED);
+        return Err(ApiError {
+            code: "unauthorized",
+            message: "engine authorization token is missing or invalid".to_string(),
+            status: StatusCode::UNAUTHORIZED,
+        });
     }
 
     Ok(next.run(request).await)
@@ -109,27 +149,21 @@ pub async fn engine_info() -> Json<EngineInfo> {
     })
 }
 
-pub async fn database_status(
-    State(state): State<EngineState>,
-) -> Result<Json<DatabaseStatus>, (StatusCode, String)> {
+pub async fn database_status(State(state): State<EngineState>) -> ApiResult<DatabaseStatus> {
     let connection = state.connection.lock().await;
     get_database_status(&connection, &state.database_path)
         .map(Json)
         .map_err(map_database_error)
 }
 
-pub async fn pages(
-    State(state): State<EngineState>,
-) -> Result<Json<Vec<Page>>, (StatusCode, String)> {
+pub async fn pages(State(state): State<EngineState>) -> ApiResult<Vec<Page>> {
     let connection = state.connection.lock().await;
     list_pages(&connection)
         .map(Json)
         .map_err(map_database_error)
 }
 
-pub async fn archived_pages(
-    State(state): State<EngineState>,
-) -> Result<Json<Vec<Page>>, (StatusCode, String)> {
+pub async fn archived_pages(State(state): State<EngineState>) -> ApiResult<Vec<Page>> {
     let connection = state.connection.lock().await;
     list_archived_pages(&connection)
         .map(Json)
@@ -139,7 +173,7 @@ pub async fn archived_pages(
 pub async fn page_document(
     State(state): State<EngineState>,
     Path(page_id): Path<String>,
-) -> Result<Json<PageDocument>, (StatusCode, String)> {
+) -> ApiResult<PageDocument> {
     let connection = state.connection.lock().await;
     get_page_document(&connection, &page_id)
         .map(Json)
@@ -149,7 +183,7 @@ pub async fn page_document(
 pub async fn create_page_handler(
     State(state): State<EngineState>,
     Json(input): Json<CreatePageInput>,
-) -> Result<Json<PageDocument>, (StatusCode, String)> {
+) -> ApiResult<PageDocument> {
     let mut connection = state.connection.lock().await;
     create_page(&mut connection, input)
         .map(Json)
@@ -159,7 +193,7 @@ pub async fn create_page_handler(
 pub async fn update_page_handler(
     State(state): State<EngineState>,
     Json(input): Json<UpdatePageInput>,
-) -> Result<Json<Page>, (StatusCode, String)> {
+) -> ApiResult<Page> {
     let mut connection = state.connection.lock().await;
     update_page(&mut connection, input)
         .map(Json)
@@ -169,7 +203,7 @@ pub async fn update_page_handler(
 pub async fn move_page_handler(
     State(state): State<EngineState>,
     Json(input): Json<MovePageInput>,
-) -> Result<Json<Page>, (StatusCode, String)> {
+) -> ApiResult<Page> {
     let mut connection = state.connection.lock().await;
     move_page(&mut connection, input)
         .map(Json)
@@ -179,7 +213,7 @@ pub async fn move_page_handler(
 pub async fn delete_page_handler(
     State(state): State<EngineState>,
     Json(input): Json<DeletePageInput>,
-) -> Result<Json<DeletePageOutput>, (StatusCode, String)> {
+) -> ApiResult<DeletePageOutput> {
     let mut connection = state.connection.lock().await;
     delete_page(&mut connection, input)
         .map(Json)
@@ -189,7 +223,7 @@ pub async fn delete_page_handler(
 pub async fn restore_page_handler(
     State(state): State<EngineState>,
     Json(input): Json<RestorePageInput>,
-) -> Result<Json<RestorePageOutput>, (StatusCode, String)> {
+) -> ApiResult<RestorePageOutput> {
     let mut connection = state.connection.lock().await;
     restore_page(&mut connection, input)
         .map(Json)
@@ -198,7 +232,7 @@ pub async fn restore_page_handler(
 
 pub async fn purge_expired_archived_pages_handler(
     State(state): State<EngineState>,
-) -> Result<Json<PurgeExpiredArchivedPagesOutput>, (StatusCode, String)> {
+) -> ApiResult<PurgeExpiredArchivedPagesOutput> {
     let mut connection = state.connection.lock().await;
     purge_expired_archived_pages(&mut connection)
         .map(Json)
@@ -208,7 +242,7 @@ pub async fn purge_expired_archived_pages_handler(
 pub async fn undo_page_history_handler(
     State(state): State<EngineState>,
     Json(input): Json<PageHistoryInput>,
-) -> Result<Json<Option<PageDocument>>, (StatusCode, String)> {
+) -> ApiResult<Option<PageDocument>> {
     let mut connection = state.connection.lock().await;
     undo_page_history(&mut connection, input)
         .map(Json)
@@ -218,7 +252,7 @@ pub async fn undo_page_history_handler(
 pub async fn redo_page_history_handler(
     State(state): State<EngineState>,
     Json(input): Json<PageHistoryInput>,
-) -> Result<Json<Option<PageDocument>>, (StatusCode, String)> {
+) -> ApiResult<Option<PageDocument>> {
     let mut connection = state.connection.lock().await;
     redo_page_history(&mut connection, input)
         .map(Json)
@@ -228,7 +262,7 @@ pub async fn redo_page_history_handler(
 pub async fn create_block_handler(
     State(state): State<EngineState>,
     Json(input): Json<CreateBlockInput>,
-) -> Result<Json<Block>, (StatusCode, String)> {
+) -> ApiResult<Block> {
     let mut connection = state.connection.lock().await;
     create_block(&mut connection, input)
         .map(Json)
@@ -238,7 +272,7 @@ pub async fn create_block_handler(
 pub async fn create_blocks_handler(
     State(state): State<EngineState>,
     Json(input): Json<CreateBlocksInput>,
-) -> Result<Json<Vec<Block>>, (StatusCode, String)> {
+) -> ApiResult<Vec<Block>> {
     let mut connection = state.connection.lock().await;
     create_blocks(&mut connection, input)
         .map(Json)
@@ -248,7 +282,7 @@ pub async fn create_blocks_handler(
 pub async fn update_block_handler(
     State(state): State<EngineState>,
     Json(input): Json<UpdateBlockInput>,
-) -> Result<Json<Block>, (StatusCode, String)> {
+) -> ApiResult<Block> {
     let mut connection = state.connection.lock().await;
     update_block(&mut connection, input)
         .map(Json)
@@ -258,7 +292,7 @@ pub async fn update_block_handler(
 pub async fn delete_block_handler(
     State(state): State<EngineState>,
     Json(input): Json<DeleteBlockInput>,
-) -> Result<Json<DeleteResponse>, (StatusCode, String)> {
+) -> ApiResult<DeleteResponse> {
     let mut connection = state.connection.lock().await;
     delete_block(&mut connection, input)
         .map(|()| Json(DeleteResponse { deleted: true }))
@@ -268,7 +302,7 @@ pub async fn delete_block_handler(
 pub async fn delete_blocks_handler(
     State(state): State<EngineState>,
     Json(input): Json<DeleteBlocksInput>,
-) -> Result<Json<DeleteBlocksOutput>, (StatusCode, String)> {
+) -> ApiResult<DeleteBlocksOutput> {
     let mut connection = state.connection.lock().await;
     delete_blocks(&mut connection, input)
         .map(Json)
@@ -278,7 +312,7 @@ pub async fn delete_blocks_handler(
 pub async fn move_block_handler(
     State(state): State<EngineState>,
     Json(input): Json<MoveBlockInput>,
-) -> Result<Json<Block>, (StatusCode, String)> {
+) -> ApiResult<Block> {
     let mut connection = state.connection.lock().await;
     move_block(&mut connection, input)
         .map(Json)
@@ -288,7 +322,7 @@ pub async fn move_block_handler(
 pub async fn move_blocks_handler(
     State(state): State<EngineState>,
     Json(input): Json<MoveBlocksInput>,
-) -> Result<Json<Vec<Block>>, (StatusCode, String)> {
+) -> ApiResult<Vec<Block>> {
     let mut connection = state.connection.lock().await;
     move_blocks(&mut connection, input)
         .map(Json)
@@ -298,7 +332,7 @@ pub async fn move_blocks_handler(
 pub async fn page_search(
     State(state): State<EngineState>,
     Query(query): Query<SearchQuery>,
-) -> Result<Json<Vec<PageSearchResult>>, (StatusCode, String)> {
+) -> ApiResult<Vec<PageSearchResult>> {
     let connection = state.connection.lock().await;
     search_pages(&connection, &query.query, query.limit)
         .map(Json)
@@ -308,7 +342,7 @@ pub async fn page_search(
 pub async fn workspace_search(
     State(state): State<EngineState>,
     Query(query): Query<SearchQuery>,
-) -> Result<Json<Vec<SearchWorkspaceResult>>, (StatusCode, String)> {
+) -> ApiResult<Vec<SearchWorkspaceResult>> {
     let connection = state.connection.lock().await;
     search_workspace(&connection, &query.query, query.limit)
         .map(Json)
@@ -318,19 +352,35 @@ pub async fn workspace_search(
 pub async fn backlinks(
     State(state): State<EngineState>,
     Path(page_id): Path<String>,
-) -> Result<Json<Vec<Backlink>>, (StatusCode, String)> {
+) -> ApiResult<Vec<Backlink>> {
     let connection = state.connection.lock().await;
     list_backlinks(&connection, &page_id)
         .map(Json)
         .map_err(map_database_error)
 }
 
-fn map_database_error(error: rusqlite::Error) -> (StatusCode, String) {
-    let status = match error {
-        rusqlite::Error::QueryReturnedNoRows => StatusCode::NOT_FOUND,
-        rusqlite::Error::InvalidQuery => StatusCode::BAD_REQUEST,
-        _ => StatusCode::INTERNAL_SERVER_ERROR,
+fn map_database_error(error: rusqlite::Error) -> ApiError {
+    let (status, code, message) = match error {
+        rusqlite::Error::QueryReturnedNoRows => (
+            StatusCode::NOT_FOUND,
+            "notFound",
+            "requested record was not found".to_string(),
+        ),
+        rusqlite::Error::InvalidQuery => (
+            StatusCode::BAD_REQUEST,
+            "invalidRequest",
+            "request violates note engine domain rules".to_string(),
+        ),
+        _ => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "databaseError",
+            error.to_string(),
+        ),
     };
 
-    (status, error.to_string())
+    ApiError {
+        code,
+        message,
+        status,
+    }
 }

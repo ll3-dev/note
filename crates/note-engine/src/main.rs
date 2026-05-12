@@ -134,8 +134,14 @@ mod tests {
             .oneshot(request_builder(Method::GET, "/pages", None, None))
             .await
             .expect("response");
+        let status = response.status();
+        let body = to_bytes(response.into_body(), usize::MAX)
+            .await
+            .expect("read body");
+        let body = serde_json::from_slice::<Value>(&body).expect("decode body");
 
-        assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+        assert_eq!(status, StatusCode::UNAUTHORIZED);
+        assert_eq!(body["error"]["code"], "unauthorized");
 
         let (status, body): (StatusCode, Value) =
             engine.request(Method::GET, "/health", None).await;
@@ -245,6 +251,8 @@ mod tests {
             .request_raw(Method::GET, "/pages/missing-page/document", None)
             .await;
         assert_eq!(status, StatusCode::NOT_FOUND);
+        let body = serde_json::from_slice::<Value>(&_body).expect("decode not found body");
+        assert_eq!(body["error"]["code"], "notFound");
 
         let (status, _body) = engine
             .request_raw(
@@ -258,6 +266,8 @@ mod tests {
             )
             .await;
         assert_eq!(status, StatusCode::BAD_REQUEST);
+        let body = serde_json::from_slice::<Value>(&_body).expect("decode bad request body");
+        assert_eq!(body["error"]["code"], "invalidRequest");
     }
 
     fn request_builder(

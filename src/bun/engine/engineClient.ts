@@ -54,6 +54,24 @@ export type EngineClient = {
   undoPageHistory: (input: PageHistoryInput) => Promise<PageDocument | null>;
 };
 
+type EngineErrorResponse = {
+  error?: {
+    code?: string;
+    message?: string;
+  };
+};
+
+export class EngineRequestError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+    readonly code?: string
+  ) {
+    super(message);
+    this.name = "EngineRequestError";
+  }
+}
+
 export function createEngineClient(baseUrl: string, token: string): EngineClient {
   async function getJson<T>(path: string): Promise<T> {
     const response = await fetch(`${baseUrl}${path}`, {
@@ -63,7 +81,7 @@ export function createEngineClient(baseUrl: string, token: string): EngineClient
     });
 
     if (!response.ok) {
-      throw new Error(`engine request failed: ${path} ${response.status}`);
+      throw await createEngineRequestError(response, path);
     }
 
     return (await response.json()) as T;
@@ -84,7 +102,7 @@ export function createEngineClient(baseUrl: string, token: string): EngineClient
     });
 
     if (!response.ok) {
-      throw new Error(`engine request failed: ${method} ${path} ${response.status}`);
+      throw await createEngineRequestError(response, `${method} ${path}`);
     }
 
     return (await response.json()) as T;
@@ -184,6 +202,30 @@ export function createEngineClient(baseUrl: string, token: string): EngineClient
       return sendJson<PageDocument | null>("POST", "/history/undo", input);
     }
   };
+}
+
+async function createEngineRequestError(response: Response, operation: string) {
+  const engineError = await readEngineError(response);
+  const suffix = engineError?.message ? `: ${engineError.message}` : "";
+
+  return new EngineRequestError(
+    `engine request failed: ${operation} ${response.status}${suffix}`,
+    response.status,
+    engineError?.code
+  );
+}
+
+async function readEngineError(response: Response) {
+  try {
+    const body = (await response.clone().json()) as EngineErrorResponse;
+    const code = typeof body.error?.code === "string" ? body.error.code : undefined;
+    const message =
+      typeof body.error?.message === "string" ? body.error.message : undefined;
+
+    return code || message ? { code, message } : null;
+  } catch {
+    return null;
+  }
 }
 
 function toSearchParams(input: { limit?: number; query: string }) {

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { createEngineClient } from "./engineClient";
+import { createEngineClient, EngineRequestError } from "./engineClient";
 
 const originalFetch = globalThis.fetch;
 
@@ -69,7 +69,37 @@ describe("engine client", () => {
     });
   });
 
-  test("throws on engine errors", async () => {
+  test("throws structured engine errors", async () => {
+    mockFetch([
+      jsonResponse(
+        { error: { code: "invalidRequest", message: "cannot move page into itself" } },
+        400
+      )
+    ]);
+    const client = createEngineClient("http://127.0.0.1:49152", "token");
+
+    let error: unknown;
+    try {
+      await client.movePage({
+        afterPageId: null,
+        pageId: "page-1",
+        parentPageId: "page-1"
+      });
+    } catch (caught) {
+      error = caught;
+    }
+
+    expect(error).toBeInstanceOf(EngineRequestError);
+    expect(error).toMatchObject({
+      code: "invalidRequest",
+      status: 400
+    });
+    expect((error as Error).message).toBe(
+      "engine request failed: POST /pages/move 400: cannot move page into itself"
+    );
+  });
+
+  test("falls back when engine errors are not structured", async () => {
     mockFetch([new Response("missing", { status: 404 })]);
     const client = createEngineClient("http://127.0.0.1:49152", "token");
 
@@ -79,10 +109,10 @@ describe("engine client", () => {
   });
 });
 
-function jsonResponse(value: unknown) {
+function jsonResponse(value: unknown, status = 200) {
   return new Response(JSON.stringify(value), {
     headers: { "Content-Type": "application/json" },
-    status: 200
+    status
   });
 }
 
