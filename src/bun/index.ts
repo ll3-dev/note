@@ -6,7 +6,7 @@ import Electrobun, {
   Utils
 } from "electrobun/bun";
 import type { NoteRPC } from "@/shared/contracts";
-import { createEngineClient } from "./engine/engineClient";
+import { createEngineClient } from "@/shared/engineClient";
 import { startEngineProcess } from "./engine/engineProcess";
 import { resolveMainviewUrl } from "./mainviewUrl";
 import { getNavigationDirectionFromMouseButtons } from "./navigationMouseButtons";

@@ -20,11 +20,13 @@ Desktop runtime 기준 Phase 1-3은 구현 완료 상태다.
 - 완료: workspace search, page search, backlinks.
 - 완료: page history undo/redo.
 - 완료: engine HTTP smoke test.
+- 완료: engine 오류 응답을 `{ error: { code, message } }` 형태로 구조화.
+- 완료: engine HTTP client를 `src/shared`로 이동해 desktop/mobile shell에서 재사용 가능한 경계로 정리.
 - 완료: Bun legacy SQLite 저장소 제거.
 - 완료: Bun SQLite Automerge storage adapter 제거.
 - 완료: `drizzle-orm`, `@automerge/automerge-repo` 의존성 제거.
 
-Bun shell은 이제 app lifecycle, OS 이벤트, engine lifecycle, RPC validation, engine HTTP client만 담당한다. SQLite 파일은 Rust Engine만 직접 연다.
+Bun shell은 이제 app lifecycle, OS 이벤트, engine lifecycle, RPC validation만 담당한다. Engine HTTP client는 host-agnostic shared module이며, SQLite 파일은 Rust Engine만 직접 연다.
 
 검증 기준:
 
@@ -53,8 +55,8 @@ Bun shell은 이제 app lifecycle, OS 이벤트, engine lifecycle, RPC validatio
   - health/info/database status handlers.
 - Create: `src/bun/engine/engineProcess.ts`
   - sidecar spawn, health wait, shutdown.
-- Create: `src/bun/engine/engineClient.ts`
-  - token-aware HTTP client.
+- Create: `src/shared/engineClient.ts`
+  - token-aware, host-agnostic HTTP client.
 - Modify: `src/bun/index.ts`
   - engine lifecycle bootstrap and `getDatabaseStatus` delegation.
 - Modify: `package.json`

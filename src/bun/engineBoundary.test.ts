@@ -29,6 +29,14 @@ describe("Rust engine boundary", () => {
       expect(source, sourcePath).not.toContain("@/bun/sync/pageHistory");
     }
   });
+
+  test("shared engine client stays host runtime agnostic", () => {
+    const source = readSource("src/shared/engineClient.ts");
+
+    expect(source).not.toContain("electrobun");
+    expect(source).not.toContain("@/bun/");
+    expect(source).not.toContain("node:");
+  });
 });
 
 function readSource(sourcePath: string) {
