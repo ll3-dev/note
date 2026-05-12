@@ -15,6 +15,10 @@ use note_core::database::{get_database_status, open_database, DatabaseStatus};
 use note_core::documents::{
     get_page_document, list_archived_pages, list_pages, Block, Page, PageDocument,
 };
+use note_core::page_archive::{
+    delete_page, purge_expired_archived_pages, restore_page, DeletePageInput, DeletePageOutput,
+    PurgeExpiredArchivedPagesOutput, RestorePageInput, RestorePageOutput,
+};
 use note_core::page_write::{
     create_page, move_page, update_page, CreatePageInput, MovePageInput, UpdatePageInput,
 };
@@ -160,6 +164,35 @@ pub async fn move_page_handler(
 ) -> Result<Json<Page>, (StatusCode, String)> {
     let mut connection = state.connection.lock().await;
     move_page(&mut connection, input)
+        .map(Json)
+        .map_err(map_database_error)
+}
+
+pub async fn delete_page_handler(
+    State(state): State<EngineState>,
+    Json(input): Json<DeletePageInput>,
+) -> Result<Json<DeletePageOutput>, (StatusCode, String)> {
+    let mut connection = state.connection.lock().await;
+    delete_page(&mut connection, input)
+        .map(Json)
+        .map_err(map_database_error)
+}
+
+pub async fn restore_page_handler(
+    State(state): State<EngineState>,
+    Json(input): Json<RestorePageInput>,
+) -> Result<Json<RestorePageOutput>, (StatusCode, String)> {
+    let mut connection = state.connection.lock().await;
+    restore_page(&mut connection, input)
+        .map(Json)
+        .map_err(map_database_error)
+}
+
+pub async fn purge_expired_archived_pages_handler(
+    State(state): State<EngineState>,
+) -> Result<Json<PurgeExpiredArchivedPagesOutput>, (StatusCode, String)> {
+    let mut connection = state.connection.lock().await;
+    purge_expired_archived_pages(&mut connection)
         .map(Json)
         .map_err(map_database_error)
 }

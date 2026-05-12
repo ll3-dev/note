@@ -7,6 +7,7 @@ import type {
   DatabaseStatus,
   DeleteBlockInput,
   DeleteBlocksInput,
+  DeletePageInput,
   GetPageDocumentInput,
   ListBacklinksInput,
   MoveBlockInput,
@@ -15,6 +16,7 @@ import type {
   Page,
   PageDocument,
   PageSearchResult,
+  RestorePageInput,
   SearchPagesInput,
   SearchWorkspaceInput,
   SearchWorkspaceResult,
@@ -30,6 +32,7 @@ export type EngineClient = {
   deleteBlocks: (
     input: DeleteBlocksInput
   ) => Promise<{ createdBlock?: Block; deleted: true }>;
+  deletePage: (input: DeletePageInput) => Promise<{ deleted: true }>;
   getDatabaseStatus: () => Promise<DatabaseStatus>;
   getPageDocument: (input: GetPageDocumentInput) => Promise<PageDocument>;
   listBacklinks: (input: ListBacklinksInput) => Promise<Backlink[]>;
@@ -38,6 +41,8 @@ export type EngineClient = {
   moveBlock: (input: MoveBlockInput) => Promise<Block>;
   moveBlocks: (input: MoveBlocksInput) => Promise<Block[]>;
   movePage: (input: MovePageInput) => Promise<Page>;
+  purgeExpiredArchivedPages: () => Promise<{ purgedCount: number }>;
+  restorePage: (input: RestorePageInput) => Promise<{ restored: true }>;
   searchPages: (input: SearchPagesInput) => Promise<PageSearchResult[]>;
   searchWorkspace: (
     input: SearchWorkspaceInput
@@ -102,6 +107,9 @@ export function createEngineClient(baseUrl: string, token: string): EngineClient
         input
       );
     },
+    deletePage(input) {
+      return sendJson<{ deleted: true }>("POST", "/pages/archive", input);
+    },
     async getDatabaseStatus() {
       const status = await getJson<{
         sqlite_version: string;
@@ -139,6 +147,16 @@ export function createEngineClient(baseUrl: string, token: string): EngineClient
     },
     movePage(input) {
       return sendJson<Page>("POST", "/pages/move", input);
+    },
+    purgeExpiredArchivedPages() {
+      return sendJson<{ purgedCount: number }>(
+        "POST",
+        "/pages/purge-expired-archived",
+        {}
+      );
+    },
+    restorePage(input) {
+      return sendJson<{ restored: true }>("POST", "/pages/restore", input);
     },
     searchPages(input) {
       return getJson<PageSearchResult[]>(

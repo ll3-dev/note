@@ -12,10 +12,7 @@ import { startEngineProcess } from "./engine/engineProcess";
 import { resolveMainviewUrl } from "./mainviewUrl";
 import { getNavigationDirectionFromMouseButtons } from "./navigationMouseButtons";
 import {
-  deletePage,
-  purgeExpiredArchivedPages,
   redoPageHistory,
-  restorePage,
   undoPageHistory,
 } from "./notes";
 import {
@@ -69,13 +66,13 @@ function createMainWindow(rpc: ReturnType<typeof BrowserView.defineRPC<NoteRPC>>
 
 async function main() {
   const databaseHandle = openDatabase(Utils.paths.userData);
-  purgeExpiredArchivedPages(databaseHandle);
 
   const engineProcess = await startEngineProcess(Utils.paths.userData);
   const engineClient = createEngineClient(
     engineProcess.baseUrl,
     engineProcess.token
   );
+  await engineClient.purgeExpiredArchivedPages();
 
   const rpc = BrowserView.defineRPC<NoteRPC>({
     maxRequestTime: 5000,
@@ -103,10 +100,10 @@ async function main() {
         updatePage: (input) =>
           engineClient.updatePage(validateUpdatePageInput(input)),
         deletePage: (input) =>
-          deletePage(databaseHandle, validateDeletePageInput(input)),
+          engineClient.deletePage(validateDeletePageInput(input)),
         restorePage: (input) =>
-          restorePage(databaseHandle, validateRestorePageInput(input)),
-        purgeExpiredArchivedPages: () => purgeExpiredArchivedPages(databaseHandle),
+          engineClient.restorePage(validateRestorePageInput(input)),
+        purgeExpiredArchivedPages: () => engineClient.purgeExpiredArchivedPages(),
         createBlock: (input) =>
           engineClient.createBlock(validateCreateBlockInput(input)),
         createBlocks: (input) =>

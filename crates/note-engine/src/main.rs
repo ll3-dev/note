@@ -22,7 +22,13 @@ async fn main() -> anyhow::Result<()> {
         .route("/pages", get(api::pages))
         .route("/pages", post(api::create_page_handler))
         .route("/pages/archived", get(api::archived_pages))
+        .route(
+            "/pages/purge-expired-archived",
+            post(api::purge_expired_archived_pages_handler),
+        )
+        .route("/pages/archive", post(api::delete_page_handler))
         .route("/pages/move", post(api::move_page_handler))
+        .route("/pages/restore", post(api::restore_page_handler))
         .route("/pages/update", patch(api::update_page_handler))
         .route("/pages/:page_id/document", get(api::page_document))
         .route("/pages/:page_id/backlinks", get(api::backlinks))
