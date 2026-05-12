@@ -15,6 +15,7 @@ import type {
   MovePageInput,
   Page,
   PageDocument,
+  PageHistoryInput,
   PageSearchResult,
   RestorePageInput,
   SearchPagesInput,
@@ -42,6 +43,7 @@ export type EngineClient = {
   moveBlocks: (input: MoveBlocksInput) => Promise<Block[]>;
   movePage: (input: MovePageInput) => Promise<Page>;
   purgeExpiredArchivedPages: () => Promise<{ purgedCount: number }>;
+  redoPageHistory: (input: PageHistoryInput) => Promise<PageDocument | null>;
   restorePage: (input: RestorePageInput) => Promise<{ restored: true }>;
   searchPages: (input: SearchPagesInput) => Promise<PageSearchResult[]>;
   searchWorkspace: (
@@ -49,6 +51,7 @@ export type EngineClient = {
   ) => Promise<SearchWorkspaceResult[]>;
   updateBlock: (input: UpdateBlockInput) => Promise<Block>;
   updatePage: (input: UpdatePageInput) => Promise<Page>;
+  undoPageHistory: (input: PageHistoryInput) => Promise<PageDocument | null>;
 };
 
 export function createEngineClient(baseUrl: string, token: string): EngineClient {
@@ -155,6 +158,9 @@ export function createEngineClient(baseUrl: string, token: string): EngineClient
         {}
       );
     },
+    redoPageHistory(input) {
+      return sendJson<PageDocument | null>("POST", "/history/redo", input);
+    },
     restorePage(input) {
       return sendJson<{ restored: true }>("POST", "/pages/restore", input);
     },
@@ -173,6 +179,9 @@ export function createEngineClient(baseUrl: string, token: string): EngineClient
     },
     updatePage(input) {
       return sendJson<Page>("PATCH", "/pages/update", input);
+    },
+    undoPageHistory(input) {
+      return sendJson<PageDocument | null>("POST", "/history/undo", input);
     }
   };
 }

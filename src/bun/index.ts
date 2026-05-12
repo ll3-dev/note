@@ -6,15 +6,10 @@ import Electrobun, {
   Utils
 } from "electrobun/bun";
 import type { NoteRPC } from "@/shared/contracts";
-import { openDatabase } from "./database";
 import { createEngineClient } from "./engine/engineClient";
 import { startEngineProcess } from "./engine/engineProcess";
 import { resolveMainviewUrl } from "./mainviewUrl";
 import { getNavigationDirectionFromMouseButtons } from "./navigationMouseButtons";
-import {
-  redoPageHistory,
-  undoPageHistory,
-} from "./notes";
 import {
   validateCreateBlockInput,
   validateCreateBlocksInput,
@@ -65,8 +60,6 @@ function createMainWindow(rpc: ReturnType<typeof BrowserView.defineRPC<NoteRPC>>
 }
 
 async function main() {
-  const databaseHandle = openDatabase(Utils.paths.userData);
-
   const engineProcess = await startEngineProcess(Utils.paths.userData);
   const engineClient = createEngineClient(
     engineProcess.baseUrl,
@@ -121,9 +114,9 @@ async function main() {
         movePage: (input) =>
           engineClient.movePage(validateMovePageInput(input)),
         redoPageHistory: (input) =>
-          redoPageHistory(databaseHandle, validatePageHistoryInput(input)),
+          engineClient.redoPageHistory(validatePageHistoryInput(input)),
         undoPageHistory: (input) =>
-          undoPageHistory(databaseHandle, validatePageHistoryInput(input))
+          engineClient.undoPageHistory(validatePageHistoryInput(input))
       },
       messages: {}
     }

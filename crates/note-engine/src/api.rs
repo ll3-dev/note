@@ -19,6 +19,7 @@ use note_core::page_archive::{
     delete_page, purge_expired_archived_pages, restore_page, DeletePageInput, DeletePageOutput,
     PurgeExpiredArchivedPagesOutput, RestorePageInput, RestorePageOutput,
 };
+use note_core::page_history::{redo_page_history, undo_page_history, PageHistoryInput};
 use note_core::page_write::{
     create_page, move_page, update_page, CreatePageInput, MovePageInput, UpdatePageInput,
 };
@@ -193,6 +194,26 @@ pub async fn purge_expired_archived_pages_handler(
 ) -> Result<Json<PurgeExpiredArchivedPagesOutput>, (StatusCode, String)> {
     let mut connection = state.connection.lock().await;
     purge_expired_archived_pages(&mut connection)
+        .map(Json)
+        .map_err(map_database_error)
+}
+
+pub async fn undo_page_history_handler(
+    State(state): State<EngineState>,
+    Json(input): Json<PageHistoryInput>,
+) -> Result<Json<Option<PageDocument>>, (StatusCode, String)> {
+    let mut connection = state.connection.lock().await;
+    undo_page_history(&mut connection, input)
+        .map(Json)
+        .map_err(map_database_error)
+}
+
+pub async fn redo_page_history_handler(
+    State(state): State<EngineState>,
+    Json(input): Json<PageHistoryInput>,
+) -> Result<Json<Option<PageDocument>>, (StatusCode, String)> {
+    let mut connection = state.connection.lock().await;
+    redo_page_history(&mut connection, input)
         .map(Json)
         .map_err(map_database_error)
 }

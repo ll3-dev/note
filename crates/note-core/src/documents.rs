@@ -1,8 +1,8 @@
 use rusqlite::{params, Connection, Result, Row};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-#[derive(Debug, Clone, Serialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct Page {
     pub id: String,
@@ -16,11 +16,13 @@ pub struct Page {
     pub updated_at: String,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
 pub struct Block {
     pub id: String,
     pub page_id: String,
     pub parent_block_id: Option<String>,
+    #[serde(rename = "type")]
     pub block_type: String,
     pub sort_key: String,
     pub text: String,
@@ -29,32 +31,11 @@ pub struct Block {
     pub updated_at: String,
 }
 
-#[derive(Debug, Clone, Serialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct PageDocument {
     pub page: Page,
     pub blocks: Vec<Block>,
-}
-
-impl Serialize for Block {
-    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        use serde::ser::SerializeStruct;
-
-        let mut state = serializer.serialize_struct("Block", 9)?;
-        state.serialize_field("id", &self.id)?;
-        state.serialize_field("pageId", &self.page_id)?;
-        state.serialize_field("parentBlockId", &self.parent_block_id)?;
-        state.serialize_field("type", &self.block_type)?;
-        state.serialize_field("sortKey", &self.sort_key)?;
-        state.serialize_field("text", &self.text)?;
-        state.serialize_field("props", &self.props)?;
-        state.serialize_field("createdAt", &self.created_at)?;
-        state.serialize_field("updatedAt", &self.updated_at)?;
-        state.end()
-    }
 }
 
 pub fn list_pages(connection: &Connection) -> Result<Vec<Page>> {

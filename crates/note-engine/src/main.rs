@@ -32,6 +32,8 @@ async fn main() -> anyhow::Result<()> {
         .route("/pages/update", patch(api::update_page_handler))
         .route("/pages/:page_id/document", get(api::page_document))
         .route("/pages/:page_id/backlinks", get(api::backlinks))
+        .route("/history/redo", post(api::redo_page_history_handler))
+        .route("/history/undo", post(api::undo_page_history_handler))
         .route("/blocks", post(api::create_block_handler))
         .route("/blocks/batch", post(api::create_blocks_handler))
         .route("/blocks/delete", post(api::delete_block_handler))
