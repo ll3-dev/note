@@ -14,19 +14,16 @@ import { getNavigationDirectionFromMouseButtons } from "./navigationMouseButtons
 import {
   createBlock,
   createBlocks,
-  createPage,
   deleteBlock,
   deleteBlocks,
   deletePage,
   moveBlock,
   moveBlocks,
-  movePage,
   purgeExpiredArchivedPages,
   redoPageHistory,
   restorePage,
   undoPageHistory,
-  updateBlock,
-  updatePage
+  updateBlock
 } from "./notes";
 import {
   validateCreateBlockInput,
@@ -109,9 +106,9 @@ async function main() {
         getPageDocument: (input) =>
           engineClient.getPageDocument(validateGetPageDocumentInput(input)),
         createPage: (input) =>
-          createPage(databaseHandle, validateCreatePageInput(input)),
+          engineClient.createPage(validateCreatePageInput(input)),
         updatePage: (input) =>
-          updatePage(databaseHandle, validateUpdatePageInput(input)),
+          engineClient.updatePage(validateUpdatePageInput(input)),
         deletePage: (input) =>
           deletePage(databaseHandle, validateDeletePageInput(input)),
         restorePage: (input) =>
@@ -132,7 +129,7 @@ async function main() {
         moveBlocks: (input) =>
           moveBlocks(databaseHandle, validateMoveBlocksInput(input)),
         movePage: (input) =>
-          movePage(databaseHandle, validateMovePageInput(input)),
+          engineClient.movePage(validateMovePageInput(input)),
         redoPageHistory: (input) =>
           redoPageHistory(databaseHandle, validatePageHistoryInput(input)),
         undoPageHistory: (input) =>

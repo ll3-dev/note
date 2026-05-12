@@ -1,26 +1,32 @@
 import type {
   Backlink,
+  CreatePageInput,
   DatabaseStatus,
   GetPageDocumentInput,
   ListBacklinksInput,
+  MovePageInput,
   Page,
   PageDocument,
   PageSearchResult,
   SearchPagesInput,
   SearchWorkspaceInput,
-  SearchWorkspaceResult
+  SearchWorkspaceResult,
+  UpdatePageInput
 } from "@/shared/contracts";
 
 export type EngineClient = {
+  createPage: (input: CreatePageInput) => Promise<PageDocument>;
   getDatabaseStatus: () => Promise<DatabaseStatus>;
   getPageDocument: (input: GetPageDocumentInput) => Promise<PageDocument>;
   listBacklinks: (input: ListBacklinksInput) => Promise<Backlink[]>;
   listArchivedPages: () => Promise<Page[]>;
   listPages: () => Promise<Page[]>;
+  movePage: (input: MovePageInput) => Promise<Page>;
   searchPages: (input: SearchPagesInput) => Promise<PageSearchResult[]>;
   searchWorkspace: (
     input: SearchWorkspaceInput
   ) => Promise<SearchWorkspaceResult[]>;
+  updatePage: (input: UpdatePageInput) => Promise<Page>;
 };
 
 export function createEngineClient(baseUrl: string, token: string): EngineClient {
@@ -38,7 +44,31 @@ export function createEngineClient(baseUrl: string, token: string): EngineClient
     return (await response.json()) as T;
   }
 
+  async function sendJson<T>(
+    method: "PATCH" | "POST",
+    path: string,
+    body: unknown
+  ): Promise<T> {
+    const response = await fetch(`${baseUrl}${path}`, {
+      body: JSON.stringify(body),
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json"
+      },
+      method
+    });
+
+    if (!response.ok) {
+      throw new Error(`engine request failed: ${method} ${path} ${response.status}`);
+    }
+
+    return (await response.json()) as T;
+  }
+
   return {
+    createPage(input) {
+      return sendJson<PageDocument>("POST", "/pages", input);
+    },
     async getDatabaseStatus() {
       const status = await getJson<{
         sqlite_version: string;
@@ -68,6 +98,9 @@ export function createEngineClient(baseUrl: string, token: string): EngineClient
     listPages() {
       return getJson<Page[]>("/pages");
     },
+    movePage(input) {
+      return sendJson<Page>("POST", "/pages/move", input);
+    },
     searchPages(input) {
       return getJson<PageSearchResult[]>(
         `/search/pages?${new URLSearchParams(toSearchParams(input))}`
@@ -77,6 +110,9 @@ export function createEngineClient(baseUrl: string, token: string): EngineClient
       return getJson<SearchWorkspaceResult[]>(
         `/search/workspace?${new URLSearchParams(toSearchParams(input))}`
       );
+    },
+    updatePage(input) {
+      return sendJson<Page>("PATCH", "/pages/update", input);
     }
   };
 }

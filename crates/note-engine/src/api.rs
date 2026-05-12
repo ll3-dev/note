@@ -10,6 +10,9 @@ use note_core::database::{get_database_status, open_database, DatabaseStatus};
 use note_core::documents::{
     get_page_document, list_archived_pages, list_pages, Page, PageDocument,
 };
+use note_core::page_write::{
+    create_page, move_page, update_page, CreatePageInput, MovePageInput, UpdatePageInput,
+};
 use note_core::search::{
     list_backlinks, search_pages, search_workspace, Backlink, PageSearchResult,
     SearchWorkspaceResult,
@@ -115,6 +118,36 @@ pub async fn page_document(
 ) -> Result<Json<PageDocument>, (StatusCode, String)> {
     let connection = state.connection.lock().await;
     get_page_document(&connection, &page_id)
+        .map(Json)
+        .map_err(map_database_error)
+}
+
+pub async fn create_page_handler(
+    State(state): State<EngineState>,
+    Json(input): Json<CreatePageInput>,
+) -> Result<Json<PageDocument>, (StatusCode, String)> {
+    let mut connection = state.connection.lock().await;
+    create_page(&mut connection, input)
+        .map(Json)
+        .map_err(map_database_error)
+}
+
+pub async fn update_page_handler(
+    State(state): State<EngineState>,
+    Json(input): Json<UpdatePageInput>,
+) -> Result<Json<Page>, (StatusCode, String)> {
+    let mut connection = state.connection.lock().await;
+    update_page(&mut connection, input)
+        .map(Json)
+        .map_err(map_database_error)
+}
+
+pub async fn move_page_handler(
+    State(state): State<EngineState>,
+    Json(input): Json<MovePageInput>,
+) -> Result<Json<Page>, (StatusCode, String)> {
+    let mut connection = state.connection.lock().await;
+    move_page(&mut connection, input)
         .map(Json)
         .map_err(map_database_error)
 }

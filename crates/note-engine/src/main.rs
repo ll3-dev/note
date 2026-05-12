@@ -4,7 +4,7 @@ use std::net::SocketAddr;
 use std::path::PathBuf;
 
 use axum::middleware;
-use axum::routing::get;
+use axum::routing::{get, patch, post};
 use axum::Router;
 
 #[tokio::main]
@@ -20,7 +20,10 @@ async fn main() -> anyhow::Result<()> {
         .route("/engine/info", get(api::engine_info))
         .route("/database/status", get(api::database_status))
         .route("/pages", get(api::pages))
+        .route("/pages", post(api::create_page_handler))
         .route("/pages/archived", get(api::archived_pages))
+        .route("/pages/move", post(api::move_page_handler))
+        .route("/pages/update", patch(api::update_page_handler))
         .route("/pages/:page_id/document", get(api::page_document))
         .route("/pages/:page_id/backlinks", get(api::backlinks))
         .route("/search/pages", get(api::page_search))
