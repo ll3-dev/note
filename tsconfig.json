@@ -21,5 +21,6 @@
       "@/*": ["src/*"]
     }
   },
-  "include": ["electrobun.config.ts", "vite.config.ts", "scripts", "src"]
+  "include": ["electrobun.config.ts", "vite.config.ts", "scripts", "src"],
+  "exclude": ["src/generated"]
 }

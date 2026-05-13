@@ -30,12 +30,10 @@ describe("Rust engine boundary", () => {
     }
   });
 
-  test("shared engine client stays host runtime agnostic", () => {
-    const source = readSource("src/shared/engineClient.ts");
+  test("engine process module does not import electrobun", () => {
+    const source = readSource("src/bun/engine/engineProcess.ts");
 
     expect(source).not.toContain("electrobun");
-    expect(source).not.toContain("@/bun/");
-    expect(source).not.toContain("node:");
   });
 
   test("shared RPC validation stays host runtime agnostic", () => {

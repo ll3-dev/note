@@ -6,8 +6,8 @@ import Electrobun, {
   Utils
 } from "electrobun/bun";
 import type { NoteRPC } from "@/shared/contracts";
-import { createEngineClient } from "@/shared/engineClient";
 import { startEngineProcess } from "./engine/engineProcess";
+import type { EngineProcess } from "./engine/engineProcess";
 import { resolveMainviewUrl } from "./mainviewUrl";
 import { getNavigationDirectionFromMouseButtons } from "./navigationMouseButtons";
 import {
@@ -59,13 +59,85 @@ function createMainWindow(rpc: ReturnType<typeof BrowserView.defineRPC<NoteRPC>>
   });
 }
 
+function createEngineClient(engine: EngineProcess) {
+  function invoke<T>(command: string, args?: unknown): T {
+    return engine.invoke(command, args) as T;
+  }
+
+  return {
+    createBlock(input: unknown) {
+      return invoke<NoteRPC["bun"]["requests"]["createBlock"]["response"]>("createBlock", input);
+    },
+    createBlocks(input: unknown) {
+      return invoke<NoteRPC["bun"]["requests"]["createBlocks"]["response"]>("createBlocks", input);
+    },
+    createPage(input: unknown) {
+      return invoke<NoteRPC["bun"]["requests"]["createPage"]["response"]>("createPage", input);
+    },
+    deleteBlock(input: unknown) {
+      return invoke<NoteRPC["bun"]["requests"]["deleteBlock"]["response"]>("deleteBlock", input);
+    },
+    deleteBlocks(input: unknown) {
+      return invoke<NoteRPC["bun"]["requests"]["deleteBlocks"]["response"]>("deleteBlocks", input);
+    },
+    deletePage(input: unknown) {
+      return invoke<NoteRPC["bun"]["requests"]["deletePage"]["response"]>("deletePage", input);
+    },
+    getDatabaseStatus() {
+      return invoke<NoteRPC["bun"]["requests"]["getDatabaseStatus"]["response"]>("databaseStatus", {});
+    },
+    getPageDocument(input: unknown) {
+      return invoke<NoteRPC["bun"]["requests"]["getPageDocument"]["response"]>("getPageDocument", input);
+    },
+    listBacklinks(input: unknown) {
+      return invoke<NoteRPC["bun"]["requests"]["listBacklinks"]["response"]>("listBacklinks", input);
+    },
+    listArchivedPages() {
+      return invoke<NoteRPC["bun"]["requests"]["listArchivedPages"]["response"]>("listArchivedPages", {});
+    },
+    listPages() {
+      return invoke<NoteRPC["bun"]["requests"]["listPages"]["response"]>("listPages", {});
+    },
+    moveBlock(input: unknown) {
+      return invoke<NoteRPC["bun"]["requests"]["moveBlock"]["response"]>("moveBlock", input);
+    },
+    moveBlocks(input: unknown) {
+      return invoke<NoteRPC["bun"]["requests"]["moveBlocks"]["response"]>("moveBlocks", input);
+    },
+    movePage(input: unknown) {
+      return invoke<NoteRPC["bun"]["requests"]["movePage"]["response"]>("movePage", input);
+    },
+    purgeExpiredArchivedPages() {
+      return invoke<NoteRPC["bun"]["requests"]["purgeExpiredArchivedPages"]["response"]>("purgeExpiredArchivedPages", {});
+    },
+    redoPageHistory(input: unknown) {
+      return invoke<NoteRPC["bun"]["requests"]["redoPageHistory"]["response"]>("redoPageHistory", input);
+    },
+    restorePage(input: unknown) {
+      return invoke<NoteRPC["bun"]["requests"]["restorePage"]["response"]>("restorePage", input);
+    },
+    searchPages(input: unknown) {
+      return invoke<NoteRPC["bun"]["requests"]["searchPages"]["response"]>("searchPages", input);
+    },
+    searchWorkspace(input: unknown) {
+      return invoke<NoteRPC["bun"]["requests"]["searchWorkspace"]["response"]>("searchWorkspace", input);
+    },
+    updateBlock(input: unknown) {
+      return invoke<NoteRPC["bun"]["requests"]["updateBlock"]["response"]>("updateBlock", input);
+    },
+    updatePage(input: unknown) {
+      return invoke<NoteRPC["bun"]["requests"]["updatePage"]["response"]>("updatePage", input);
+    },
+    undoPageHistory(input: unknown) {
+      return invoke<NoteRPC["bun"]["requests"]["undoPageHistory"]["response"]>("undoPageHistory", input);
+    }
+  };
+}
+
 async function main() {
-  const engineProcess = await startEngineProcess(Utils.paths.userData);
-  const engineClient = createEngineClient(
-    engineProcess.baseUrl,
-    engineProcess.token
-  );
-  await engineClient.purgeExpiredArchivedPages();
+  const engineProcess = startEngineProcess(Utils.paths.userData);
+  const engineClient = createEngineClient(engineProcess);
+  engineClient.purgeExpiredArchivedPages();
 
   const rpc = BrowserView.defineRPC<NoteRPC>({
     maxRequestTime: 5000,
