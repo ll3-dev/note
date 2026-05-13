@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use rusqlite::{params, Connection, OptionalExtension, Result};
+use schemars::JsonSchema;
 use serde::Deserialize;
 use serde_json::Value;
 
@@ -8,7 +9,7 @@ use crate::documents::{get_page_document, Block, Page, PageDocument};
 
 const LOCAL_ACTOR_ID: &str = "local";
 
-#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Deserialize, JsonSchema, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct PageHistoryInput {
     pub page_id: String,

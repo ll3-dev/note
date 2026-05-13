@@ -1,12 +1,13 @@
 use std::collections::HashSet;
 
 use rusqlite::{params, Connection, Result};
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Map, Value};
 
 use crate::documents::{get_page_document, Block, PageDocument};
 
-#[derive(Debug, Clone, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Deserialize, JsonSchema, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateBlockInput {
     pub page_id: String,
@@ -22,13 +23,13 @@ pub struct CreateBlockInput {
     pub after_block_id: Option<String>,
 }
 
-#[derive(Debug, Clone, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Deserialize, JsonSchema, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateBlocksInput {
     pub blocks: Vec<CreateBlockInput>,
 }
 
-#[derive(Debug, Clone, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Deserialize, JsonSchema, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateBlockInput {
     pub block_id: String,
@@ -40,20 +41,20 @@ pub struct UpdateBlockInput {
     pub props: Option<Value>,
 }
 
-#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Deserialize, JsonSchema, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct DeleteBlockInput {
     pub block_id: String,
 }
 
-#[derive(Debug, Clone, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Deserialize, JsonSchema, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct DeleteBlocksInput {
     pub block_ids: Vec<String>,
     pub fallback_block: Option<FallbackBlockInput>,
 }
 
-#[derive(Debug, Clone, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Deserialize, JsonSchema, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct FallbackBlockInput {
     pub page_id: String,
@@ -65,14 +66,14 @@ pub struct FallbackBlockInput {
     pub props: Option<Value>,
 }
 
-#[derive(Debug, Clone, Serialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, JsonSchema, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct DeleteBlocksOutput {
     pub created_block: Option<Block>,
     pub deleted: bool,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, JsonSchema, PartialEq, Eq)]
 pub enum ParentBlockIdInput {
     Keep,
     Set(Option<String>),
@@ -84,7 +85,7 @@ impl Default for ParentBlockIdInput {
     }
 }
 
-#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Deserialize, JsonSchema, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct MoveBlockInput {
     pub block_id: String,
@@ -94,7 +95,7 @@ pub struct MoveBlockInput {
     pub parent_block_id: ParentBlockIdInput,
 }
 
-#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Deserialize, JsonSchema, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct MoveBlocksInput {
     pub block_ids: Vec<String>,

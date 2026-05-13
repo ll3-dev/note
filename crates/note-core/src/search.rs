@@ -1,15 +1,16 @@
 use rusqlite::{params, Connection, Result};
+use schemars::JsonSchema;
 use serde::Serialize;
 use serde_json::Value;
 
-#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, JsonSchema, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct PageSearchResult {
     pub page_id: String,
     pub title: String,
 }
 
-#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, JsonSchema, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct Backlink {
     pub block_id: String,
@@ -18,14 +19,14 @@ pub struct Backlink {
     pub text: String,
 }
 
-#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, JsonSchema, PartialEq, Eq)]
 #[serde(untagged)]
 pub enum SearchWorkspaceResult {
     Page(WorkspacePageResult),
     Block(WorkspaceBlockResult),
 }
 
-#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, JsonSchema, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct WorkspacePageResult {
     pub kind: &'static str,
@@ -33,7 +34,7 @@ pub struct WorkspacePageResult {
     pub title: String,
 }
 
-#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, JsonSchema, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct WorkspaceBlockResult {
     pub kind: &'static str,

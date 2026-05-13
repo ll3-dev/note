@@ -1,23 +1,24 @@
 use rusqlite::{params, Connection, OptionalExtension, Result};
+use schemars::JsonSchema;
 use serde::Deserialize;
 
 use crate::documents::{get_page_document, Page, PageDocument};
 
-#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Deserialize, JsonSchema, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct CreatePageInput {
     pub title: String,
     pub parent_page_id: Option<String>,
 }
 
-#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Deserialize, JsonSchema, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdatePageInput {
     pub page_id: String,
     pub title: Option<String>,
 }
 
-#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Deserialize, JsonSchema, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct MovePageInput {
     pub page_id: String,

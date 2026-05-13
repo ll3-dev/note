@@ -2,9 +2,10 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use rusqlite::{Connection, Result};
+use schemars::JsonSchema;
 use serde::Serialize;
 
-#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, JsonSchema, PartialEq, Eq)]
 pub struct DatabaseStatus {
     pub sqlite_version: String,
     pub pages_count: i64,
