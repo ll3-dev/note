@@ -1,0 +1,953 @@
+{
+  "commands": [
+    {
+      "inputSchema": {
+        "properties": {
+          "afterBlockId": {
+            "default": null,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "pageId": {
+            "type": "string"
+          },
+          "parentBlockId": {
+            "default": null,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "props": {
+            "default": null
+          },
+          "text": {
+            "default": null,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "type": {
+            "default": null,
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "pageId"
+        ],
+        "title": "CreateBlockInput",
+        "type": "object"
+      },
+      "inputType": "CreateBlockInput",
+      "name": "createBlock",
+      "outputSchema": {
+        "properties": {
+          "createdAt": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "pageId": {
+            "type": "string"
+          },
+          "parentBlockId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "props": true,
+          "sortKey": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "createdAt",
+          "id",
+          "pageId",
+          "props",
+          "sortKey",
+          "text",
+          "type",
+          "updatedAt"
+        ],
+        "title": "Block",
+        "type": "object"
+      },
+      "outputType": "Block"
+    },
+    {
+      "inputSchema": {
+        "properties": {
+          "blocks": {
+            "items": {
+              "$ref": "#/definitions/CreateBlockInput"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "blocks"
+        ],
+        "title": "CreateBlocksInput",
+        "type": "object"
+      },
+      "inputType": "CreateBlocksInput",
+      "name": "createBlocks",
+      "outputSchema": {
+        "items": {
+          "$ref": "#/definitions/Block"
+        },
+        "title": "Array_of_Block",
+        "type": "array"
+      },
+      "outputType": "Block>"
+    },
+    {
+      "inputSchema": {
+        "properties": {
+          "parentPageId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "title"
+        ],
+        "title": "CreatePageInput",
+        "type": "object"
+      },
+      "inputType": "CreatePageInput",
+      "name": "createPage",
+      "outputSchema": {
+        "properties": {
+          "blocks": {
+            "items": {
+              "$ref": "#/definitions/Block"
+            },
+            "type": "array"
+          },
+          "page": {
+            "$ref": "#/definitions/Page"
+          }
+        },
+        "required": [
+          "blocks",
+          "page"
+        ],
+        "title": "PageDocument",
+        "type": "object"
+      },
+      "outputType": "PageDocument"
+    },
+    {
+      "inputSchema": {
+        "title": "EmptyInput",
+        "type": "object"
+      },
+      "inputType": "EmptyInput",
+      "name": "databaseStatus",
+      "outputSchema": {
+        "properties": {
+          "blocks_count": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "database_path": {
+            "type": "string"
+          },
+          "pages_count": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "sqlite_version": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "blocks_count",
+          "database_path",
+          "pages_count",
+          "sqlite_version"
+        ],
+        "title": "DatabaseStatus",
+        "type": "object"
+      },
+      "outputType": "DatabaseStatus"
+    },
+    {
+      "inputSchema": {
+        "properties": {
+          "blockId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "blockId"
+        ],
+        "title": "DeleteBlockInput",
+        "type": "object"
+      },
+      "inputType": "DeleteBlockInput",
+      "name": "deleteBlock",
+      "outputSchema": {
+        "properties": {
+          "deleted": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "deleted"
+        ],
+        "title": "DeleteBlockOutput",
+        "type": "object"
+      },
+      "outputType": "DeleteBlockOutput"
+    },
+    {
+      "inputSchema": {
+        "properties": {
+          "blockIds": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "fallbackBlock": {
+            "anyOf": [
+              {
+                "$ref": "#/definitions/FallbackBlockInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "blockIds"
+        ],
+        "title": "DeleteBlocksInput",
+        "type": "object"
+      },
+      "inputType": "DeleteBlocksInput",
+      "name": "deleteBlocks",
+      "outputSchema": {
+        "properties": {
+          "createdBlock": {
+            "anyOf": [
+              {
+                "$ref": "#/definitions/Block"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "deleted": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "deleted"
+        ],
+        "title": "DeleteBlocksOutput",
+        "type": "object"
+      },
+      "outputType": "DeleteBlocksOutput"
+    },
+    {
+      "inputSchema": {
+        "properties": {
+          "pageId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "pageId"
+        ],
+        "title": "DeletePageInput",
+        "type": "object"
+      },
+      "inputType": "DeletePageInput",
+      "name": "deletePage",
+      "outputSchema": {
+        "properties": {
+          "deleted": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "deleted"
+        ],
+        "title": "DeletePageOutput",
+        "type": "object"
+      },
+      "outputType": "DeletePageOutput"
+    },
+    {
+      "inputSchema": {
+        "title": "EmptyInput",
+        "type": "object"
+      },
+      "inputType": "EmptyInput",
+      "name": "engineInfo",
+      "outputSchema": {
+        "properties": {
+          "apiVersion": {
+            "type": "string"
+          },
+          "capabilities": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "engineVersion": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "apiVersion",
+          "capabilities",
+          "engineVersion"
+        ],
+        "title": "EngineInfoOutput",
+        "type": "object"
+      },
+      "outputType": "EngineInfoOutput"
+    },
+    {
+      "inputSchema": {
+        "properties": {
+          "pageId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "pageId"
+        ],
+        "title": "GetPageDocumentInput",
+        "type": "object"
+      },
+      "inputType": "GetPageDocumentInput",
+      "name": "getPageDocument",
+      "outputSchema": {
+        "properties": {
+          "blocks": {
+            "items": {
+              "$ref": "#/definitions/Block"
+            },
+            "type": "array"
+          },
+          "page": {
+            "$ref": "#/definitions/Page"
+          }
+        },
+        "required": [
+          "blocks",
+          "page"
+        ],
+        "title": "PageDocument",
+        "type": "object"
+      },
+      "outputType": "PageDocument"
+    },
+    {
+      "inputSchema": {
+        "title": "EmptyInput",
+        "type": "object"
+      },
+      "inputType": "EmptyInput",
+      "name": "listArchivedPages",
+      "outputSchema": {
+        "items": {
+          "$ref": "#/definitions/Page"
+        },
+        "title": "Array_of_Page",
+        "type": "array"
+      },
+      "outputType": "Page>"
+    },
+    {
+      "inputSchema": {
+        "properties": {
+          "pageId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "pageId"
+        ],
+        "title": "ListBacklinksInput",
+        "type": "object"
+      },
+      "inputType": "ListBacklinksInput",
+      "name": "listBacklinks",
+      "outputSchema": {
+        "items": {
+          "$ref": "#/definitions/Backlink"
+        },
+        "title": "Array_of_Backlink",
+        "type": "array"
+      },
+      "outputType": "Backlink>"
+    },
+    {
+      "inputSchema": {
+        "title": "EmptyInput",
+        "type": "object"
+      },
+      "inputType": "EmptyInput",
+      "name": "listPages",
+      "outputSchema": {
+        "items": {
+          "$ref": "#/definitions/Page"
+        },
+        "title": "Array_of_Page",
+        "type": "array"
+      },
+      "outputType": "Page>"
+    },
+    {
+      "inputSchema": {
+        "properties": {
+          "afterBlockId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "blockId": {
+            "type": "string"
+          },
+          "parentBlockId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "blockId"
+        ],
+        "title": "BridgeMoveBlockInput",
+        "type": "object"
+      },
+      "inputType": "BridgeMoveBlockInput",
+      "name": "moveBlock",
+      "outputSchema": {
+        "properties": {
+          "createdAt": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "pageId": {
+            "type": "string"
+          },
+          "parentBlockId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "props": true,
+          "sortKey": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "createdAt",
+          "id",
+          "pageId",
+          "props",
+          "sortKey",
+          "text",
+          "type",
+          "updatedAt"
+        ],
+        "title": "Block",
+        "type": "object"
+      },
+      "outputType": "Block"
+    },
+    {
+      "inputSchema": {
+        "properties": {
+          "afterBlockId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "blockIds": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "parentBlockId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "blockIds"
+        ],
+        "title": "BridgeMoveBlocksInput",
+        "type": "object"
+      },
+      "inputType": "BridgeMoveBlocksInput",
+      "name": "moveBlocks",
+      "outputSchema": {
+        "items": {
+          "$ref": "#/definitions/Block"
+        },
+        "title": "Array_of_Block",
+        "type": "array"
+      },
+      "outputType": "Block>"
+    },
+    {
+      "inputSchema": {
+        "properties": {
+          "afterPageId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "pageId": {
+            "type": "string"
+          },
+          "parentPageId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "pageId"
+        ],
+        "title": "MovePageInput",
+        "type": "object"
+      },
+      "inputType": "MovePageInput",
+      "name": "movePage",
+      "outputSchema": {
+        "properties": {
+          "archivedAt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "cover": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "icon": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "parentPageId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sortKey": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "createdAt",
+          "id",
+          "sortKey",
+          "title",
+          "updatedAt"
+        ],
+        "title": "Page",
+        "type": "object"
+      },
+      "outputType": "Page"
+    },
+    {
+      "inputSchema": {
+        "title": "EmptyInput",
+        "type": "object"
+      },
+      "inputType": "EmptyInput",
+      "name": "purgeExpiredArchivedPages",
+      "outputSchema": {
+        "properties": {
+          "purgedCount": {
+            "format": "uint",
+            "minimum": 0.0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "purgedCount"
+        ],
+        "title": "PurgeExpiredArchivedPagesOutput",
+        "type": "object"
+      },
+      "outputType": "PurgeExpiredArchivedPagesOutput"
+    },
+    {
+      "inputSchema": {
+        "properties": {
+          "pageId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "pageId"
+        ],
+        "title": "PageHistoryInput",
+        "type": "object"
+      },
+      "inputType": "PageHistoryInput",
+      "name": "redoPageHistory",
+      "outputSchema": {
+        "anyOf": [
+          {
+            "$ref": "#/definitions/PageDocument"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Nullable_PageDocument"
+      },
+      "outputType": "PageDocument>"
+    },
+    {
+      "inputSchema": {
+        "properties": {
+          "pageId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "pageId"
+        ],
+        "title": "RestorePageInput",
+        "type": "object"
+      },
+      "inputType": "RestorePageInput",
+      "name": "restorePage",
+      "outputSchema": {
+        "properties": {
+          "restored": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "restored"
+        ],
+        "title": "RestorePageOutput",
+        "type": "object"
+      },
+      "outputType": "RestorePageOutput"
+    },
+    {
+      "inputSchema": {
+        "properties": {
+          "limit": {
+            "format": "uint",
+            "minimum": 0.0,
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "query": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "title": "SearchPagesInput",
+        "type": "object"
+      },
+      "inputType": "SearchPagesInput",
+      "name": "searchPages",
+      "outputSchema": {
+        "items": {
+          "$ref": "#/definitions/PageSearchResult"
+        },
+        "title": "Array_of_PageSearchResult",
+        "type": "array"
+      },
+      "outputType": "PageSearchResult>"
+    },
+    {
+      "inputSchema": {
+        "properties": {
+          "limit": {
+            "format": "uint",
+            "minimum": 0.0,
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "query": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "title": "SearchWorkspaceInput",
+        "type": "object"
+      },
+      "inputType": "SearchWorkspaceInput",
+      "name": "searchWorkspace",
+      "outputSchema": {
+        "items": {
+          "$ref": "#/definitions/SearchWorkspaceResult"
+        },
+        "title": "Array_of_SearchWorkspaceResult",
+        "type": "array"
+      },
+      "outputType": "SearchWorkspaceResult>"
+    },
+    {
+      "inputSchema": {
+        "properties": {
+          "pageId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "pageId"
+        ],
+        "title": "PageHistoryInput",
+        "type": "object"
+      },
+      "inputType": "PageHistoryInput",
+      "name": "undoPageHistory",
+      "outputSchema": {
+        "anyOf": [
+          {
+            "$ref": "#/definitions/PageDocument"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Nullable_PageDocument"
+      },
+      "outputType": "PageDocument>"
+    },
+    {
+      "inputSchema": {
+        "properties": {
+          "blockId": {
+            "type": "string"
+          },
+          "props": {
+            "default": null
+          },
+          "text": {
+            "default": null,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "type": {
+            "default": null,
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "blockId"
+        ],
+        "title": "UpdateBlockInput",
+        "type": "object"
+      },
+      "inputType": "UpdateBlockInput",
+      "name": "updateBlock",
+      "outputSchema": {
+        "properties": {
+          "createdAt": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "pageId": {
+            "type": "string"
+          },
+          "parentBlockId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "props": true,
+          "sortKey": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "createdAt",
+          "id",
+          "pageId",
+          "props",
+          "sortKey",
+          "text",
+          "type",
+          "updatedAt"
+        ],
+        "title": "Block",
+        "type": "object"
+      },
+      "outputType": "Block"
+    },
+    {
+      "inputSchema": {
+        "properties": {
+          "pageId": {
+            "type": "string"
+          },
+          "title": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "pageId"
+        ],
+        "title": "UpdatePageInput",
+        "type": "object"
+      },
+      "inputType": "UpdatePageInput",
+      "name": "updatePage",
+      "outputSchema": {
+        "properties": {
+          "archivedAt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "cover": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "icon": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "parentPageId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sortKey": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "createdAt",
+          "id",
+          "sortKey",
+          "title",
+          "updatedAt"
+        ],
+        "title": "Page",
+        "type": "object"
+      },
+      "outputType": "Page"
+    }
+  ],
+  "packageId": "com.note"
+}
