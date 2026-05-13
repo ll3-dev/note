@@ -36,12 +36,11 @@ export function startEngineProcess(userDataPath: string): EngineProcess {
 }
 
 function resolveEngineLibraryPath() {
-  const ext = suffix;
-  const libName = `libnote_bridge${ext}`;
+  const libName = `libnote_bridge.${suffix}`;
   const candidates = [
     process.env["NOTE_BRIDGE_LIBRARY"],
     path.resolve(process.cwd(), `target/debug/${libName}`),
-    path.resolve(import.meta.dirname, `../../bin/${libName}`),
+    path.resolve(import.meta.dirname, `../bin/${libName}`),
   ].filter((candidate): candidate is string => Boolean(candidate));
 
   const found = candidates.find((p) => existsSync(p));
