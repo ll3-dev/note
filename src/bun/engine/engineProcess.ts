@@ -12,16 +12,19 @@ export function startEngineProcess(userDataPath: string): EngineProcess {
 
   const library = dlopen(libraryPath, {
     rustra_note_invoke: {
-      args: [FFIType.cstring],
+      args: [FFIType.ptr],
       returns: FFIType.cstring,
     },
   });
 
   return {
     invoke(command: string, args: unknown) {
-      const payload = JSON.stringify({ command, args, userDataPath });
-      const resultJson = library.symbols
-        .rustra_note_invoke(payload as unknown as Uint8Array) as unknown as string;
+      const payload = Buffer.from(
+        JSON.stringify({ command, args, userDataPath }) + "\0"
+      );
+      const resultJson = library.symbols.rustra_note_invoke(
+        payload as unknown as Uint8Array
+      ) as unknown as string;
 
       const parsed = JSON.parse(resultJson);
       if (!parsed.ok) {
