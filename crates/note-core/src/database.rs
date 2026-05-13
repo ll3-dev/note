@@ -6,6 +6,7 @@ use schemars::JsonSchema;
 use serde::Serialize;
 
 #[derive(Debug, Clone, Serialize, JsonSchema, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
 pub struct DatabaseStatus {
     pub sqlite_version: String,
     pub pages_count: i64,

@@ -454,7 +454,7 @@ mod tests {
         assert!(info["capabilities"].as_array().unwrap().len() > 0);
 
         let status = bridge.invoke("databaseStatus", json!({}));
-        assert!(!status["sqlite_version"].as_str().unwrap().is_empty());
-        assert_eq!(status["pages_count"], 0);
+        assert!(!status["sqliteVersion"].as_str().unwrap().is_empty());
+        assert_eq!(status["pagesCount"], 0);
     }
 }
