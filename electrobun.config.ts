@@ -46,7 +46,7 @@ const config: ElectrobunConfig = {
       plugins: [srcAliasPlugin],
     },
     copy: {
-      "target/debug/note-engine": "bin/note-engine",
+      "target/debug/libnote_bridge.dylib": "bin/libnote_bridge.dylib",
       "dist/mainview": "views/mainview",
     },
     mac: {

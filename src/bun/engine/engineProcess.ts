@@ -35,15 +35,13 @@ export function startEngineProcess(userDataPath: string): EngineProcess {
   };
 }
 
-function resolveEngineLibraryPath(
-  env: NodeJS.ProcessEnv = process.env,
-  baseDir = process.cwd()
-) {
+function resolveEngineLibraryPath() {
   const ext = suffix;
+  const libName = `libnote_bridge${ext}`;
   const candidates = [
-    env["NOTE_BRIDGE_LIBRARY"],
-    path.resolve(baseDir, `target/debug/libnote_bridge${ext}`),
-    path.resolve(baseDir, `bin/libnote_bridge${ext}`),
+    process.env["NOTE_BRIDGE_LIBRARY"],
+    path.resolve(process.cwd(), `target/debug/${libName}`),
+    path.resolve(import.meta.dirname, `../../bin/${libName}`),
   ].filter((candidate): candidate is string => Boolean(candidate));
 
   const found = candidates.find((p) => existsSync(p));
