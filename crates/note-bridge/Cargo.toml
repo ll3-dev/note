@@ -1,18 +1,22 @@
 [package]
-name = "note-engine"
+name = "note-bridge"
 version = "0.1.0"
 edition = "2021"
 
+[lib]
+crate-type = ["rlib", "cdylib"]
+
+[[bin]]
+name = "note-bridge-generate"
+path = "src/main.rs"
+
 [dependencies]
-anyhow = "1"
-axum = "0.7"
 note-core = { path = "../note-core" }
+rustra = { path = "../../../rustra-bridge/crates/rustra" }
 rusqlite = { version = "0.32", features = ["bundled"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-tokio = { version = "1", features = ["macros", "net", "rt-multi-thread", "signal", "sync"] }
-uuid = { version = "1", features = ["v4"] }
+schemars = "0.8"
 
 [dev-dependencies]
 tempfile = "3"
-tower = { version = "0.5", features = ["util"] }

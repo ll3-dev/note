@@ -1,7 +1,7 @@
 [workspace]
 members = [
   "crates/note-core",
-  "crates/note-engine"
+  "crates/note-bridge"
 ]
 resolver = "2"
 
